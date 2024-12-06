@@ -1,0 +1,25 @@
+/*
+ * Copyright (c) 2024 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	soc {
+		testpattern0: testpattern@b1200000 {
+			compatible = "tinyvision,testpattern";
+			reg = <0xb1200000 0x100000>;
+			status = "disabled";
+
+			port {
+				testpattern0_ep_out: endpoint {
+					remote-endpoint-label = "uvcmanager0_ep_in";
+				};
+			};
+		};
+	};
+};
+
+&uvcmanager0_ep_in {
+	remote-endpoint-label = "testpattern0_ep_out";
+};

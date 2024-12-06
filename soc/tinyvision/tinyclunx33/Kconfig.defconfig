@@ -1,0 +1,22 @@
+# Copyright (c) 2024, tinyVision.ai Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+if SOC_SERIES_TINYCLUNX33
+
+config SYS_CLOCK_HW_CYCLES_PER_SEC
+	default 80000000
+	default 100000000 if SOC_TINYCLUNX33_RTL009
+
+config NUM_IRQS
+	default 12
+
+config SHELL_BACKEND_SERIAL_CHECK_DTR
+	# Usability fix: wait that the client connects
+	default y
+
+config UDC_BUF_FORCE_NOCACHE
+	# All UDC net_buf buffers needs to be put in the .nocache section to
+	# work with DMA, as the DWC3 core cannot access main RAM.
+	default y
+
+endif # SOC_SERIES_TINYCLUNX33

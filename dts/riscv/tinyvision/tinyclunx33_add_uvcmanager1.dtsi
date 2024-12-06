@@ -1,0 +1,54 @@
+/*
+ * Copyright (c) 2024 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	soc {
+		uvcmanager1: uvcmanager@b5000000 {
+			compatible = "tinyvision,uvcmanager";
+			reg = <0xb5000000 0x400
+			       0xb1300000 0x10000>;
+			reg-names = "base",
+				    "fifo";
+			usb-endpoint = <0x81>;
+			status = "disabled";
+
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				uvcmanager1_ep_in: endpoint@0 {
+					reg = <0x0>;
+				};
+
+				uvcmanager1_ep_out: endpoint@1 {
+					remote-endpoint-label = "uvc0_ep_in1";
+					reg = <0x1>;
+				};
+			};
+		};
+	};
+};
+
+&zephyr_udc0 {
+	num-out-endpoints = <1>;
+	num-in-endpoints = <2>;
+	maximum-speed = "super-speed";
+
+	uvc0: uvc {
+		compatible = "zephyr,uvc-device";
+		status = "disabled";
+
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			uvc0_ep_in1: endpoint@1 {
+				reg = <0x1>;
+				remote-endpoint-label = "uvcmanager1_ep_out";
+			};
+		};
+	};
+};

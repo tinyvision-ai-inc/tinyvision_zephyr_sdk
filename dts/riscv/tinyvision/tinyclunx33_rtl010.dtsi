@@ -1,0 +1,10 @@
+/*
+ * Copyright (c) 2024 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "tinyclunx33_add_base.dtsi"
+#include "tinyclunx33_add_litex_i2c.dtsi"
+#include "tinyclunx33_add_uvcmanager0.dtsi"
+#include "tinyclunx33_add_debayer0.dtsi"

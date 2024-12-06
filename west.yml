@@ -1,0 +1,12 @@
+# Copyright (c) 2023-2024 tinyVision.ai Inc.
+# SPDX-License-Identifier: MIT
+
+manifest:
+  projects:
+
+    - name: zephyr
+      url: git@github.com:tinyvision-ai-inc/zephyr
+      revision: usb3
+      import:
+        name-allowlist:
+          - zephyr
