@@ -12,7 +12,8 @@ boards by tinyVision.ai.
 Getting started
 ***************
 
-See the introduction to the `tinyVision Zephyr SDK <https://tinyclunx33.tinyvision.ai/md_appnote.html>`_.
+See the introduction to the
+`tinyVision Zephyr SDK <https://tinyclunx33.tinyvision.ai/appnote_zephyr_sdk.html>`_.
 
 tinyVision.ai is glad to offer further help to get you started with this board
 via the `Discord <https://discord.com/invite/3qbXujE>`_ chat server or
