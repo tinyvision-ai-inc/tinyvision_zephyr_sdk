@@ -1186,7 +1186,7 @@ int dwc3_api_ep_enable(const struct device *dev, struct udc_ep_config *const ep_
 
 	LOG_DBG("%s 0x%02x", __func__, ep_data->cfg.addr);
 
-	memset(ep_data->trb_buf, 0, sizeof(ep_data->trb_buf));
+	memset(ep_data->trb_buf, 0, sizeof(*ep_data->trb_buf) * CONFIG_UDC_DWC3_TRB_NUM);
 	dwc3_depcmd_ep_config(dev, ep_data);
 	dwc3_depcmd_ep_xfer_config(dev, ep_data);
 
