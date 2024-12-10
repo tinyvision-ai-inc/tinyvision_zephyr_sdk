@@ -401,9 +401,9 @@ static int imx219_set_ctrl(const struct device *dev, unsigned int cid, void *val
 	uint32_t u32 = (uint32_t)value;
 
 	switch (cid) {
-	case VIDEO_CID_CAMERA_EXPOSURE:
+	case VIDEO_CID_EXPOSURE:
 		return imx219_write_u16(&conf->i2c, IMX219_REG_INTEGRATION_TIME_MSB, u32);
-	case VIDEO_CID_CAMERA_GAIN:
+	case VIDEO_CID_GAIN:
 		return imx219_write_u8(&conf->i2c, IMX219_REG_ANALOG_GAIN, u32);
 #if 0 /* not yet supported by Zephyr */
 	case VIDEO_CID_DIGITAL_GAIN:
@@ -424,12 +424,12 @@ static int imx219_get_ctrl(const struct device *dev, unsigned int cid, void *val
 	int ret;
 
 	switch (cid) {
-	case VIDEO_CID_CAMERA_EXPOSURE:
+	case VIDEO_CID_EXPOSURE:
 		/* Values for normal frame rate, different range for low frame rate mode */
 		ret = imx219_read_u16(&conf->i2c, IMX219_REG_INTEGRATION_TIME_MSB, &u16);
 		*u32 = u16;
 		return ret;
-	case VIDEO_CID_CAMERA_GAIN:
+	case VIDEO_CID_GAIN:
 		ret = imx219_read_u8(&conf->i2c, IMX219_REG_ANALOG_GAIN, &u8);
 		*u32 = u8;
 		return ret;

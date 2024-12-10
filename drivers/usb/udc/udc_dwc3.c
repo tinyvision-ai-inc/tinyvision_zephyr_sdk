@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2023-2024 tinyVision.ai Inc.
+ * SPDX-License-Identifier: MIT
  *
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2023-2024 tinyVision.ai Inc.
  */
 
 #define DT_DRV_COMPAT snps_dwc3
-
-#error
 
 #include <string.h>
 #include <stdint.h>
@@ -28,7 +26,9 @@ LOG_MODULE_REGISTER(dwc3, CONFIG_UDC_DRIVER_LOG_LEVEL);
 #define LO32(n)                 ((uint32_t)((uint64_t)(n) & 0xffffffff))
 #define HI32(n)                 ((uint32_t)((uint64_t)(n) >> 32))
 #define LOG_EVENT(name)         LOG_DBG("--- %s ---", #name)
+#define USB_EP_IS_CONTROL(addr) ((addr) == USB_CONTROL_EP_IN || (addr) == USB_CONTROL_EP_OUT)
 #define NORMAL_EP(n, fn)        fn(n + 2)
+#define EP_PHYS_NUMBER(addr)    ((((addr) << 1) | ((addr) >> 7)) & 0xff)
 
 /*
  * Shut down the controller completely
@@ -179,11 +179,11 @@ static void dwc3_depcmd_ep_config(const struct device *dev, struct dwc3_ep_data 
 		param0 |= DWC3_DEPCMDPAR0_DEPCFG_EPTYPE_ISOC;
 		break;
 	default:
-		__ASSERT_NOT_REACHED;
+		__ASSERT_NO_MSG(false);
 	}
 
 	/* Max Packet Size according to the USB descriptor configuration */
-		/* IELD_PREP(DWC3_DEPCMDPAR0_DEPCFG_MPS_MASK, ep_data->cfg.mps);
+	param0 |= FIELD_PREP(DWC3_DEPCMDPAR0_DEPCFG_MPS_MASK, ep_data->cfg.mps);
 
 	/* Burst Size of a single packet per burst (encoded as '0'): no burst */
 	param0 |= FIELD_PREP(DWC3_DEPCMDPAR0_DEPCFG_BRSTSIZ_MASK, 15);
@@ -213,8 +213,7 @@ static void dwc3_depcmd_ep_xfer_config(const struct device *dev, struct dwc3_ep_
 	const struct dwc3_config *cfg = dev->config;
 	uint32_t reg;
 
-	LOG_DBG( */
-		__ASSERT_NOT_REACHED;
+	LOG_DBG("cmd: DepXferConfig: ep=0x%02x", ep_data->cfg.addr);
 
 	reg = FIELD_PREP(DWC3_DEPCMDPAR0_DEPXFERCFG_NUMXFERRES_MASK, 1);
 	sys_write32(reg, cfg->base + DWC3_DEPCMDPAR0(ep_data->epn));
@@ -278,7 +277,7 @@ static void dwc3_depcmd_start_config(const struct device *dev, struct dwc3_ep_da
 {
 	uint32_t flags;
 
-	flags = FIELD_PREP(DWC3_DEPCMD_XFERRSCIDX_MASK, ep_data->cfg.caps.control ? 0 : 2);
+	flags = FIELD_PREP(DWC3_DEPCMD_XFERRSCIDX_MASK, USB_EP_IS_CONTROL(ep_data->cfg.addr) ? 0 : 2);
 	dwc3_depcmd(dev, DWC3_DEPCMD(ep_data->epn), DWC3_DEPCMD_DEPSTARTCFG | flags);
 	LOG_DBG("cmd: DepStartConfig done ep=0x%02x", ep_data->cfg.addr);
 }
@@ -546,11 +545,11 @@ static void dwc3_on_soft_reset(const struct device *dev)
 		sys_set_bits(cfg->base + DWC3_DCFG, DWC3_DCFG_DEVSPD_FULL_SPEED);
 		break;
 	default:
-		__ASSERT_NOT_REACHED;
+		__ASSERT_NO_MSG(false);
 	}
 
 	/* Set the number of USB3 packets the device can receive at once */
-		/* >base + DWC3_DCFG);
+	reg = sys_read32(cfg->base + DWC3_DCFG);
 	reg &= ~DWC3_DCFG_NUMP_MASK;
 	reg |= FIELD_PREP(DWC3_DCFG_NUMP_MASK, 15);
 	sys_write32(reg, cfg->base + DWC3_DCFG);
@@ -577,8 +576,7 @@ static void dwc3_on_usb_reset(const struct device *dev)
 {
 	const struct dwc3_config *cfg = dev->config;
 
-	LOG_DBG( */
-		__ASSERT_NOT_REACHED;
+	LOG_DBG("Going through DWC3 reset logic");
 
 	/* Reset all ongoing transfers on non-control IN endpoints */
 	for (int epn = 1; epn < cfg->num_in_eps; epn++) {
@@ -854,9 +852,9 @@ static void dwc3_on_ctrl_in(const struct device *dev)
 		dwc3_trb_ctrl_setup_out(dev);
 		break;
 	default:
-		__ASSERT_NOT_REACHED;
+		__ASSERT_NO_MSG(false);
 		break;
-			/* }
+	}
 }
 
 static void dwc3_on_ctrl_out(const struct device *dev)
@@ -894,7 +892,7 @@ static void dwc3_on_ctrl_out(const struct device *dev)
 		dwc3_trb_ctrl_setup_out(dev);
 		break;
 	default:
-		__ASSERT_NOT_REACHED;
+		__ASSERT_NO_MSG(false);
 		break;
 	}
 }
@@ -923,9 +921,8 @@ static void dwc3_on_xfer_done(const struct device *dev, struct dwc3_ep_data *ep_
 	case DWC3_TRB_STATUS_TRBSTS_OK:
 		break;
 	case DWC3_TRB_STATUS_TRBSTS_MISSEDISOC:
-		LOG_ERR( */
-		__ASSERT_NOT_REACHED;
-		        		break;
+		LOG_ERR("DWC3_TRB_STATUS_TRBSTS_MISSEDISOC");
+		break;
 	case DWC3_TRB_STATUS_TRBSTS_SETUPPENDING:
 		LOG_ERR("DWC3_TRB_STATUS_TRBSTS_SETUPPENDING");
 		break;
@@ -936,11 +933,11 @@ static void dwc3_on_xfer_done(const struct device *dev, struct dwc3_ep_data *ep_
 		LOG_ERR("DWC3_TRB_STATUS_TRBSTS_ZLPPENDING");
 		break;
 	default:
-		__ASSERT_NOT_REACHED;
+		__ASSERT_NO_MSG(false);
 	}
 }
 
-	/* wc3_on_xfer_done_norm(const struct device *dev, uint32_t evt)
+static void dwc3_on_xfer_done_norm(const struct device *dev, uint32_t evt)
 {
 	const struct dwc3_config *cfg = dev->config;
 	int epn = FIELD_GET(DWC3_DEPEVT_EPN_MASK, evt);
@@ -952,9 +949,8 @@ static void dwc3_on_xfer_done(const struct device *dev, struct dwc3_ep_data *ep_
 
 	/* Clear the TRB that triggered the event */
 	buf = dwc3_pop_trb(dev, ep_data);
-	LOG_DBG( */
-		__ASSERT_NOT_REACHED;
-	        		__ASSERT_NO_MSG(buf != NULL);
+	LOG_DBG("evt: XFER_DONE_NORM: EP 0x%02x, data %p", ep_data->cfg.addr, buf->data);
+	__ASSERT_NO_MSG(buf != NULL);
 	dwc3_on_xfer_done(dev, ep_data);
 
 	/* For buffers coming from the host, update the size actually received */
@@ -977,11 +973,7 @@ void dwc3_irq_handler(void *ptr)
 
 	LOG_INF("%s", __func__);
 
-#if 0 /* IRQs are not used for now */
 	cfg->irq_clear_func();
-#endif
-
-	/* Handle all events in the main event work queue */
 	k_work_reschedule(&priv->dwork, K_NO_WAIT);
 }
 
@@ -1014,12 +1006,11 @@ int dwc3_api_ep_enqueue(const struct device *dev, struct udc_ep_config *ep_cfg,
 		} else if (bi->status) {
 			dwc3_trb_ctrl_status_3_in(dev);
 		} else {
-			__ASSERT_NOT_REACHED;
+			__ASSERT_NO_MSG(false);
 		}
 		break;
 	case USB_CONTROL_EP_OUT:
-    		/* expected to be handled by the driver directly */
-		__ASSERT_NOT_REACHED;
+		__ASSERT(false, "expected to be handled by the driver directly");
 		break;
 	default:
 		/* Submit the buffer to the queue */
@@ -1163,15 +1154,11 @@ int dwc3_api_enable(const struct device *dev)
 	dwc3_trb_ctrl_setup_out(dev);
 
 	/* Enable the DWC3 events */
-	not used(cfg->base + DWC3_DCTL, DWC3_DCTL_RUNSTOP);
+	sys_set_bits(cfg->base + DWC3_DCTL, DWC3_DCTL_RUNSTOP);
 
-#endif
-
-	/* Handle all events in the main event work queue */
 	/* Enable the IRQ (for now, just schedule a first work queue job) */
-#else
+	//cfg->irq_enable_func();
 	k_work_schedule(&priv->dwork, K_NO_WAIT);
-#endif
 
 	return 0;
 }
@@ -1205,7 +1192,7 @@ int dwc3_api_ep_enable(const struct device *dev, struct udc_ep_config *const ep_
 	dwc3_depcmd_ep_config(dev, ep_data);
 	dwc3_depcmd_ep_xfer_config(dev, ep_data);
 
-	if (!ep_data->cfg.caps.control) {
+	if (!USB_EP_IS_CONTROL(ep_data->cfg.addr)) {
 		dwc3_trb_norm_init(dev, ep_data);
 	}
 
@@ -1235,9 +1222,7 @@ int dwc3_api_init(const struct device *dev)
 	sys_set_bits(cfg->base + DWC3_GCTL, DWC3_GCTL_CORESOFTRESET);
 	sys_set_bits(cfg->base + DWC3_GUSB3PIPECTL, DWC3_GUSB3PIPECTL_PHYSOFTRST);
 	sys_set_bits(cfg->base + DWC3_GUSB2PHYCFG, DWC3_GUSB2PHYCFG_PHYSOFTRST);
-
-	/* TODO: reduce amount of wait time to what the datahseet advises */
-	k_sleep(K_USEC(1000));
+	k_sleep(K_USEC(1000)); /* TODO: reduce amount of wait time */
 
 	/* Teriminate the reset of the USB2 and USB3 PHY first */
 	sys_clear_bits(cfg->base + DWC3_GUSB3PIPECTL, DWC3_GUSB3PIPECTL_PHYSOFTRST);
@@ -1246,11 +1231,11 @@ int dwc3_api_init(const struct device *dev)
 	/* Teriminate the reset of the DWC3 core after it */
 	sys_clear_bits(cfg->base + DWC3_GCTL, DWC3_GCTL_CORESOFTRESET);
 
-	/* Initialize vendor-specific USB2 PHY wrappers */
+	/* Initialize USB2 PHY vendor-specific wrappers */
 	sys_set_bits(cfg->base + DWC3_U2PHYCTRL1, DWC3_U2PHYCTRL1_SEL_INTERNALCLK);
 	sys_set_bits(cfg->base + DWC3_U2PHYCTRL2, DWC3_U2PHYCTRL2_REFCLK_SEL);
 
-	/* Initialize vendor-specific USB3 PHY wrappers */
+	/* Initialize USB3 PHY vendor-specific wrappers */
 	sys_set_bits(cfg->base + DWC3_U3PHYCTRL1, BIT(22));
 	sys_clear_bits(cfg->base + DWC3_U3PHYCTRL4, DWC3_U3PHYCTRL4_INT_CLOCK);
 
@@ -1390,13 +1375,14 @@ static void dwc3_event_worker(struct k_work *work)
 		LOG_EVENT(DEVT_VNDRDEVTSTRCVED);
 		break;
 	case DWC3_DEVT_ERRTICERR:
-		__ASSERT_NOT_REACHED;
+		__ASSERT(false, "DEVT_ERRTICERR");
 		break;
 	case DWC3_DEVT_EVNTOVERFLOW:
-		__ASSERT_NOT_REACHED;
+		__ASSERT(false, "DEVT_EVNTOVERFLOW");
 		break;
 	default:
-		__ASSERT_NOT_REACHED;
+		LOG_ERR("unhandled event: 0x%x", evt);
+		__ASSERT_NO_MSG(false);
 	}
 
 	sys_write32(sizeof(evt), cfg->base + DWC3_GEVNTCOUNT(0));
@@ -1527,6 +1513,20 @@ int dwc3_driver_preinit(const struct device *dev)
 
 #define DWC3_DEVICE_DEFINE(n)							\
 										\
+	static void dwc3_irq_enable_func_##n(void)				\
+	{									\
+		IRQ_CONNECT(DT_INST_IRQN(n), DT_INST_IRQ(n, priority),		\
+			    dwc3_irq_handler, DEVICE_DT_INST_GET(n), 0);	\
+		irq_enable(DT_INST_IRQN(n));					\
+		sys_write32(0x00000001, DT_INST_REG_ADDR_BY_NAME(n, ev_enable));\
+	}									\
+										\
+	static void dwc3_irq_clear_func_##n(void)				\
+	{									\
+		sys_write32(0x00000001,						\
+			DT_INST_REG_ADDR_BY_NAME(n, ev_pending));		\
+	}									\
+										\
 	static struct dwc3_trb dwc3_dma_trb_i##n				\
 		[DT_INST_PROP(n, num_in_endpoints)][CONFIG_UDC_DWC3_TRB_NUM];	\
 										\
@@ -1552,6 +1552,8 @@ int dwc3_driver_preinit(const struct device *dev)
 		.trb_buf_out = dwc3_dma_trb_o##n,				\
 		.evt_buf = dwc3_dma_evt_buf_##n,				\
 		.maximum_speed_idx = DT_ENUM_IDX(DT_DRV_INST(n), maximum_speed),\
+		.irq_enable_func = dwc3_irq_enable_func_##n,			\
+		.irq_clear_func = dwc3_irq_clear_func_##n,			\
 	};									\
 										\
 	static struct dwc3_data udc_priv_##n = {				\
