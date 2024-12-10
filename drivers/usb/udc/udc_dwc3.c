@@ -179,7 +179,7 @@ static void dwc3_depcmd_ep_config(const struct device *dev, struct dwc3_ep_data 
 		param0 |= DWC3_DEPCMDPAR0_DEPCFG_EPTYPE_ISOC;
 		break;
 	default:
-		__ASSERT_NO_MSG(false);
+		CODE_UNREACHABLE;
 	}
 
 	/* Max Packet Size according to the USB descriptor configuration */
@@ -545,7 +545,7 @@ static void dwc3_on_soft_reset(const struct device *dev)
 		sys_set_bits(cfg->base + DWC3_DCFG, DWC3_DCFG_DEVSPD_FULL_SPEED);
 		break;
 	default:
-		__ASSERT_NO_MSG(false);
+		CODE_UNREACHABLE;
 	}
 
 	/* Set the number of USB3 packets the device can receive at once */
@@ -852,8 +852,7 @@ static void dwc3_on_ctrl_in(const struct device *dev)
 		dwc3_trb_ctrl_setup_out(dev);
 		break;
 	default:
-		__ASSERT_NO_MSG(false);
-		break;
+		CODE_UNREACHABLE;
 	}
 }
 
@@ -892,8 +891,7 @@ static void dwc3_on_ctrl_out(const struct device *dev)
 		dwc3_trb_ctrl_setup_out(dev);
 		break;
 	default:
-		__ASSERT_NO_MSG(false);
-		break;
+		CODE_UNREACHABLE;
 	}
 }
 
@@ -910,7 +908,6 @@ static void dwc3_on_xfer_not_ready(const struct device *dev, uint32_t evt)
 		LOG_EVENT(DWC3_DEPEVT_XFERNOTREADY_CONTROL_STATUS);
 		break;
 	}
-	return;
 }
 
 static void dwc3_on_xfer_done(const struct device *dev, struct dwc3_ep_data *ep_data)
@@ -933,7 +930,7 @@ static void dwc3_on_xfer_done(const struct device *dev, struct dwc3_ep_data *ep_
 		LOG_ERR("DWC3_TRB_STATUS_TRBSTS_ZLPPENDING");
 		break;
 	default:
-		__ASSERT_NO_MSG(false);
+		CODE_UNREACHABLE;
 	}
 }
 
@@ -1006,11 +1003,12 @@ int dwc3_api_ep_enqueue(const struct device *dev, struct udc_ep_config *ep_cfg,
 		} else if (bi->status) {
 			dwc3_trb_ctrl_status_3_in(dev);
 		} else {
-			__ASSERT_NO_MSG(false);
+			CODE_UNREACHABLE;
 		}
 		break;
 	case USB_CONTROL_EP_OUT:
-		__ASSERT(false, "expected to be handled by the driver directly");
+		/* expected to be handled by the driver directly */
+		CODE_UNREACHABLE;
 		break;
 	default:
 		/* Submit the buffer to the queue */
@@ -1375,14 +1373,14 @@ static void dwc3_event_worker(struct k_work *work)
 		LOG_EVENT(DEVT_VNDRDEVTSTRCVED);
 		break;
 	case DWC3_DEVT_ERRTICERR:
-		__ASSERT(false, "DEVT_ERRTICERR");
+		CODE_UNREACHABLE;
 		break;
 	case DWC3_DEVT_EVNTOVERFLOW:
-		__ASSERT(false, "DEVT_EVNTOVERFLOW");
+		CODE_UNREACHABLE;
 		break;
 	default:
 		LOG_ERR("unhandled event: 0x%x", evt);
-		__ASSERT_NO_MSG(false);
+		CODE_UNREACHABLE;
 	}
 
 	sys_write32(sizeof(evt), cfg->base + DWC3_GEVNTCOUNT(0));
