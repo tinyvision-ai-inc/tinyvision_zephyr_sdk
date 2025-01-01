@@ -6,13 +6,13 @@
 
 / {
 	soc {
-		uvcmanager1: uvcmanager@b5000000 {
+		uvcmanager1: uvcmanager@b4000400 {
 			compatible = "tinyvision,uvcmanager";
-			reg = <0xb5000000 0x400
+			reg = <0xb4000400 0x400
 			       0xb1300000 0x10000>;
 			reg-names = "base",
 				    "fifo";
-			usb-endpoint = <0x81>;
+			usb-endpoint = <0x82>;
 			status = "disabled";
 
 			port {
@@ -20,13 +20,13 @@
 				#size-cells = <0>;
 
 				uvcmanager1_ep_in: endpoint@0 {
-					reg = <0>;
 					remote-endpoint-label = "empty";
+					reg = <0>;
 				};
 
 				uvcmanager1_ep_out: endpoint@1 {
 					reg = <1>;
-					remote-endpoint-label = "uvc0_ep_in1";
+					remote-endpoint-label = "uvc_ep_in1";
 				};
 			};
 		};
@@ -35,10 +35,10 @@
 
 &zephyr_udc0 {
 	num-out-endpoints = <1>;
-	num-in-endpoints = <2>;
+	num-in-endpoints = <3>;
 	maximum-speed = "super-speed";
 
-	uvc0: uvc {
+	uvc: uvc {
 		compatible = "zephyr,uvc-device";
 		status = "disabled";
 
@@ -46,7 +46,7 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			uvc0_ep_in1: endpoint@1 {
+			uvc_ep_in1: endpoint@1 {
 				reg = <1>;
 				remote-endpoint-label = "uvcmanager1_ep_out";
 			};

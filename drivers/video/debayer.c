@@ -174,7 +174,8 @@ static int debayer_init(const struct device *dev)
 #define DEBAYER_INIT(n)                                                                            \
 	static struct debayer_data debayer_data_##n;                                               \
 	const static struct debayer_config debayer_cfg_##n = {                                     \
-		.source_dev = DEVICE_DT_GET_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0)),        \
+		.source_dev =                                                                      \
+			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
 	};                                                                                         \
 	DEVICE_DT_INST_DEFINE(n, &debayer_init, NULL, &debayer_data_##n, &debayer_cfg_##n,         \
 			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &debayer_driver_api);
