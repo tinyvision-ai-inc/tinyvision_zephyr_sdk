@@ -5,6 +5,7 @@
 config USBD_VIDEO_CLASS
 	bool "USB Video Class implementation [EXPERIMENTAL]"
 	depends on DT_HAS_ZEPHYR_UVC_DEVICE_ENABLED
+	select EXPERIMENTAL
 	help
 	  USB Device Video Class (UVC) implementation.
 
@@ -55,4 +56,4 @@ module-str = usbd uvc
 default-count = 1
 source "subsys/logging/Kconfig.template.log_config"
 
-endif
+endif # USBD_VIDEO_CLASS

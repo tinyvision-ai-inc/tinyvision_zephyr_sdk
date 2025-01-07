@@ -1,0 +1,10 @@
+identifier: tinyclunx33@rev1/rtl009
+name: tinyCLUNX33
+vendor: tinyVision
+type: mcu
+arch: riscv
+toolchain:
+  - zephyr
+supported:
+  - uart
+  - usbd

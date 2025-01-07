@@ -136,8 +136,8 @@ static int testpattern_init(const struct device *dev)
 	struct video_format fmt;
 
 	fmt.pixelformat = VIDEO_PIX_FMT_YUYV;
-	fmt.width = 1280;
-	fmt.height = 1024;
+	fmt.width = 1920;
+	fmt.height = 1080;
 	fmt.pitch = fmt.width * 2;
 	return testpattern_set_fmt(dev, VIDEO_EP_OUT, &fmt);
 }

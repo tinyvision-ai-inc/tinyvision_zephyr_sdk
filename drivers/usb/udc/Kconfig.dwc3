@@ -5,6 +5,8 @@ config UDC_DWC3
 	bool "Synopsys USB device controller driver"
 	default y
 	depends on DT_HAS_SNPS_DWC3_ENABLED
+	select NOCACHE_MEMORY if ARCH_HAS_NOCACHE_MEMORY_SUPPORT
+	imply UDC_BUF_FORCE_NOCACHE
 	help
 	  Synopsys DWC3 USB device controller driver.
 
@@ -42,4 +44,4 @@ config UDC_DWC3_TRB_NUM
 	  This is a general knob for the number of buffers present for each
 	  endpoint. This does not affect control endpoints. The default is
 	  enough for most conditions, but for performance and debug purposes,
-	  increasing could reveal useful. 
+	  increasing could reveal useful.
