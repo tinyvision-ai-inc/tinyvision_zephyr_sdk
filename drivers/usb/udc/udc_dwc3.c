@@ -290,13 +290,14 @@ static void dwc3_dgcmd(const struct device *dev, uint32_t cmd)
 	}
 }
 
-static void dwc3_dgcmd_exit_latency(const struct device *dev, const struct udc_exit_latency *el)
+static void dwc3_dgcmd_exit_latency(const struct device *dev,
+				    const struct usb_system_exit_latency *sel)
 {
 	const struct dwc3_config *cfg = dev->config;
 	uint32_t reg;
 
 	reg = sys_read32(cfg->base + DWC3_DCTL);
-	reg = (reg & DWC3_DCTL_INITU2ENA) ? el->u2pel : el->u1pel;
+	reg = (reg & DWC3_DCTL_INITU2ENA) ? sel->u2pel : sel->u1pel;
 	reg = (reg > 125) ? 0 : reg;
 	sys_write32(reg, cfg->base + DWC3_DGCMDPAR);
 	dwc3_dgcmd(dev, DWC3_DGCMD_EXITLATENCY);
@@ -1132,11 +1133,12 @@ int dwc3_api_set_address(const struct device *dev, const uint8_t addr)
 	return 0;
 }
 
-int dwc3_api_set_exit_latency(const struct device *dev, const struct udc_exit_latency *el)
+int dwc3_api_set_system_exit_latency(const struct device *dev,
+				     const struct usb_system_exit_latency *sel)
 {
-	LOG_DBG("api: u1sel=%u u1pel=%u u2sel=%u u2pel=%u", el->u1sel, el->u1pel, el->u2sel,
-		el->u2pel);
-	dwc3_dgcmd_exit_latency(dev, el);
+	LOG_DBG("api: u1sel=%u u1pel=%u u2sel=%u u2pel=%u", sel->u1sel, sel->u1pel, sel->u2sel,
+		sel->u2pel);
+	dwc3_dgcmd_exit_latency(dev, sel);
 	return 0;
 }
 
@@ -1287,7 +1289,7 @@ static const struct udc_api dwc3_api = {
 	.disable = dwc3_api_disable,
 	.shutdown = dwc3_api_shutdown,
 	.set_address = dwc3_api_set_address,
-	.set_exit_latency = dwc3_api_set_exit_latency,
+	.set_system_exit_latency = dwc3_api_set_system_exit_latency,
 	.ep_enable = dwc3_api_ep_enable,
 	.ep_disable = dwc3_api_ep_disable,
 	.ep_set_halt = dwc3_api_ep_set_halt,
@@ -1545,10 +1547,13 @@ int dwc3_driver_preinit(const struct device *dev)
 			DT_INST_REG_ADDR_BY_NAME(n, ev_pending));		\
 	}									\
 										\
-	static struct dwc3_trb dwc3_dma_trb_i##n				\
+	static __nocache uint32_t dwc3_dma_evt_buf_##n				\
+		[CONFIG_UDC_DWC3_EVENTS_NUM] __aligned(16);			\
+										\
+	static __nocache struct dwc3_trb dwc3_dma_trb_i##n			\
 		[DT_INST_PROP(n, num_in_endpoints)][CONFIG_UDC_DWC3_TRB_NUM];	\
 										\
-	static struct dwc3_trb dwc3_dma_trb_o##n				\
+	static __nocache struct dwc3_trb dwc3_dma_trb_o##n			\
 		[DT_INST_PROP(n, num_out_endpoints)][CONFIG_UDC_DWC3_TRB_NUM];	\
 										\
 	static struct dwc3_ep_data dwc3_ep_data_i##n				\
@@ -1556,9 +1561,6 @@ int dwc3_driver_preinit(const struct device *dev)
 										\
 	static struct dwc3_ep_data dwc3_ep_data_o##n				\
 		[DT_INST_PROP(n, num_out_endpoints)];				\
-										\
-	uint32_t dwc3_dma_evt_buf_##n						\
-		[CONFIG_UDC_DWC3_EVENTS_NUM] __aligned(16);			\
 										\
 	static const struct dwc3_config dwc3_config_##n = {			\
 		.base = DT_INST_REG_ADDR_BY_NAME(n, base),			\
