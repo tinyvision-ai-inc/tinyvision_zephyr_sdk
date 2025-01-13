@@ -14,9 +14,4 @@ config SHELL_BACKEND_SERIAL_CHECK_DTR
 	# Usability fix: wait that the client connects
 	default y
 
-config UDC_BUF_FORCE_NOCACHE
-	# All UDC net_buf buffers needs to be put in the .nocache section to
-	# work with DMA, as the DWC3 core cannot access main RAM.
-	default y
-
 endif # SOC_SERIES_TINYCLUNX33
