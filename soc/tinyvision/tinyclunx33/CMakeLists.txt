@@ -7,4 +7,8 @@ zephyr_sources(${ZEPHYR_BASE}/soc/common/riscv-privileged/vector.S)
 
 zephyr_include_directories(.)
 
-set(SOC_LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/linker.ld CACHE INTERNAL "")
+# Use native RISC-V linker script
+set(SOC_LINKER_SCRIPT ${ZEPHYR_BASE}/include/zephyr/arch/riscv/common/linker.ld CACHE INTERNAL "")
+
+# Append extra snippets to it
+zephyr_linker_sources(RAM_SECTIONS ${CMAKE_CURRENT_SOURCE_DIR}/linker.ld)

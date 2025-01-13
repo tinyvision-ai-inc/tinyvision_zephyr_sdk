@@ -11,7 +11,7 @@ config NUM_IRQS
 	default 12
 
 config SHELL_BACKEND_SERIAL_CHECK_DTR
-	# Usability fix: wait that the client connects
+	# Usability fix: wait that the client connects before sending the prompt
 	default y
 
 endif # SOC_SERIES_TINYCLUNX33

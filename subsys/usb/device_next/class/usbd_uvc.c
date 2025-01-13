@@ -547,9 +547,8 @@ static const struct uvc_guid_quirk uvc_guid_quirks[] = {
 typedef int uvc_control_fn_t(struct uvc_stream *strm, uint8_t selector, uint8_t request,
 			     struct net_buf *buf);
 
-UDC_BUF_POOL_VAR_DEFINE(uvc_pool, DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT) * 16,
-			512 * DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT) * 16,
-			sizeof(struct uvc_buf_info), NULL);
+#define UVC_BUF_NUM (DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT) * 8)
+UDC_BUF_POOL_VAR_DEFINE(uvc_pool, UVC_BUF_NUM, 512 * UVC_BUF_NUM, sizeof(struct uvc_buf_info), NULL);
 
 static void uvc_fourcc_to_guid(uint8_t guid[16], uint32_t fourcc)
 {
