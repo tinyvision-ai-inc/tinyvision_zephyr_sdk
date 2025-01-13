@@ -1,0 +1,6 @@
+common:
+  tags: usbd
+  integration_platforms:
+    - tinyclunx33@rev2/rtl010
+tests:
+  usb.enumeration: {}
