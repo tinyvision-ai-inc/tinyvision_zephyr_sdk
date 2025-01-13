@@ -444,7 +444,7 @@ struct usbd_uvc_strm_desc {
 	struct usb_ep_descriptor ifN_ep_fs;
 	struct usb_ep_descriptor ifN_ep_hs;
 	struct usb_ep_descriptor ifN_ep_ss;
-	struct usb_co_descriptor ifN_co_ss;
+	struct usb_ss_endpoint_companion_descriptor ifN_ep_ss_co;
 	struct uvc_color_descriptor ifN_color;
 };
 
@@ -547,7 +547,7 @@ static const struct uvc_guid_quirk uvc_guid_quirks[] = {
 typedef int uvc_control_fn_t(struct uvc_stream *strm, uint8_t selector, uint8_t request,
 			     struct net_buf *buf);
 
-NET_BUF_POOL_VAR_DEFINE(uvc_pool, DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT) * 16,
+UDC_BUF_POOL_VAR_DEFINE(uvc_pool, DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT) * 16,
 			512 * DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT) * 16,
 			sizeof(struct uvc_buf_info), NULL);
 
@@ -2071,8 +2071,8 @@ struct usbd_uvc_strm_desc uvc_strm_desc_##n = {					\
 		.bInterval = 0,							\
 	},									\
 										\
-	.ifN_co_ss = {								\
-		.bLength = sizeof(struct usb_co_descriptor),			\
+	.ifN_ep_ss_co = {							\
+		.bLength = sizeof(struct usb_ss_endpoint_companion_descriptor),	\
 		.bDescriptorType = USB_DESC_ENDPOINT_COMPANION,			\
 		.bMaxBurst = 15,						\
 		.bmAttributes = 0,						\
@@ -2185,7 +2185,7 @@ static struct usb_desc_header *uvc_ss_desc_##n[] = {				\
 	LISTIFY(CONFIG_USBD_VIDEO_MAX_VS_DESC, UVC_VIDEO_STREAMING_PTRS, (), n)	\
 	(struct usb_desc_header *)&uvc_strm_desc_##n.ifN_color,			\
 	(struct usb_desc_header *)&uvc_strm_desc_##n.ifN_ep_ss,			\
-	(struct usb_desc_header *)&uvc_strm_desc_##n.ifN_co_ss,
+	(struct usb_desc_header *)&uvc_strm_desc_##n.ifN_ep_ss_co,
 
 #define UVC_STREAM(n)								\
 	{									\
