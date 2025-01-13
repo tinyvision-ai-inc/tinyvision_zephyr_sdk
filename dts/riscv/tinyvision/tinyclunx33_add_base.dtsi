@@ -15,7 +15,6 @@
 		zephyr,code-partition = &slot0_partition;
 		zephyr,console = &uart0;
 		zephyr,shell-uart = &uart0;
-		snps,dwc3-dma = &ram1;
 	};
 
 	cpus {
@@ -63,14 +62,14 @@
 			};
 		};
 
-		ram0: memory@40000000 {
+		sram0: memory@40000000 {
 			compatible = "zephyr,memory-region";
 			device_type = "memory";
 			reg = <0x40000000 0x10000>;
 			zephyr,memory-region = "RAM";
 		};
 
-		ram1: memory@b1000000 {
+		sram1: memory@b1000000 {
 			compatible = "zephyr,memory-region";
 			device_type = "memory";
 			reg = <0xb1000000 0x2000>;
