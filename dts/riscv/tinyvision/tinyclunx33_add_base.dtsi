@@ -74,7 +74,7 @@
 			compatible = "zephyr,memory-region";
 			device_type = "memory";
 			reg = <0xb1000000 0x2000>;
-			zephyr,memory-region = "DWC3_DMA";
+			zephyr,memory-region = "NOCACHE_REGION";
 		};
 
 		ctrl0: soc-controller@e0000000 {
