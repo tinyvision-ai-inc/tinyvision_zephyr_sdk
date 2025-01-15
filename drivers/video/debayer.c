@@ -27,7 +27,8 @@ struct debayer_config {
 /* Used to tune the video format caps from the source at runtime */
 static struct video_format_cap fmts[10];
 
-static int debayer_get_caps(const struct device *dev, enum video_endpoint_id ep, struct video_caps *caps)
+static int debayer_get_caps(const struct device *dev, enum video_endpoint_id ep,
+			    struct video_caps *caps)
 {
 	const struct debayer_config *cfg = dev->config;
 	int ret;

@@ -5,3 +5,6 @@ build:
     dts_root: .
     board_root: .
     soc_root: .
+
+runners:
+  - file: scripts/ecpprog_hook.py
