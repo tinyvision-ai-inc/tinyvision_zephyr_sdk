@@ -1,4 +1,5 @@
 build
 twister-out
 twister-out.*
+__pycache__
 *.html

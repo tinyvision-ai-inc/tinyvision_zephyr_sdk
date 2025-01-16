@@ -32,3 +32,11 @@ For instance, the `tinyclunx33_zephyr_example`_ repository is
 configured to depend on this ``tinyvision_zephyr_sdk`` in its `west.yml`_ file.
 This means that downloading the SDK will be automatic while downloading
 the ``tinyclunx33_zephyr_example`` repository.
+
+
+UVC Manager missing
+*******************
+In case you encounter an error related to a ``uvcmanager.c`` file missing,
+then you may ask tinyVision.ai to access this file and place it in your
+``~/zephyrproject/``. It is only required to access the high-bandwidth
+cores of this system.
