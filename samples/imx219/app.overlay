@@ -6,7 +6,7 @@
 
 / {
 	chosen {
-		zephyr,shell-uart = &cdc_acm_uart0;
+		zephyr,shell-uart = &uart0;
 	};
 };
 
@@ -51,7 +51,7 @@
 	status = "okay";
 
 	/* From UVC's "bEndpointAddress" in "lsusb -v -d 1209:0001" output */
-	usb-endpoint = <0x83>;
+	usb-endpoint = <0x81>;
 };
 
 &uvc {
@@ -59,11 +59,7 @@
 };
 
 &zephyr_udc0 {
-	num-in-endpoints = <4>;
-	num-out-endpoints = <2>;
+	num-in-endpoints = <2>;
+	num-out-endpoints = <1>;
 	status = "okay";
-
-	cdc_acm_uart0: cdc-acm-uart {
-		compatible = "zephyr,cdc-acm-uart";
-	};
 };
