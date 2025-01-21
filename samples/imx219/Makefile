@@ -2,6 +2,7 @@ TTY = /dev/ttyUSB1
 
 all:
 	west build --board tinyclunx33@rev2/rtl011 --shield tinyclunx33_devkit_rev2
+	find build -name uvcmanager.c.obj -exec cp {} ../../../uvcmanager.o \;
 
 clean:
 	rm -rf build
