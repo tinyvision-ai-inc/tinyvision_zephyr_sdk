@@ -36,6 +36,7 @@ the ``tinyclunx33_zephyr_example`` repository.
 
 UVC Manager missing
 *******************
+
 In case you encounter an error related to a ``uvcmanager.c`` file missing,
 then you may ask tinyVision.ai to access this file and place it in your
 ``~/zephyrproject/``. It is only required to access the high-bandwidth

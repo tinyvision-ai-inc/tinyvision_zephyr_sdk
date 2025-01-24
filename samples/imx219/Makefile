@@ -1,7 +1,10 @@
 TTY = /dev/ttyUSB1
+BOARD = tinyclunx33@rev2/rtl011
+SHIELD = tinyclunx33_devkit_rev2
+UVCMANAGER = $$(readlink -f ../../../zephyr_internal/uvcmanager.c)
 
 all:
-	west build --board tinyclunx33@rev2/rtl011 --shield tinyclunx33_devkit_rev2
+	west build --board $(BOARD) --shield $(SHIELD) -- -DUVCMANAGER=$(UVCMANAGER)
 	find build -name uvcmanager.c.obj -exec cp {} ../../../uvcmanager.o \;
 
 clean:
