@@ -5,7 +5,7 @@ UVCMANAGER = $$(readlink -f ../../../zephyr_internal/uvcmanager.c)
 
 all:
 	west build --board $(BOARD) --shield $(SHIELD) -- -DUVCMANAGER=$(UVCMANAGER)
-	find build -name uvcmanager.c.obj -exec cp {} ../../../uvcmanager.o \;
+	find build -path '*/zephyr_internal/uvcmanager.c.obj' -exec cp {} ../../../uvcmanager.o \;
 
 clean:
 	rm -rf build

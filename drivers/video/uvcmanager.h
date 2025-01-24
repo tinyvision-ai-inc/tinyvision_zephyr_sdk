@@ -20,5 +20,5 @@ struct uvcmanager_data {
 
 void uvcmanager_lib_init(const struct uvcmanager_config *cfg);
 void uvcmanager_lib_start(const struct uvcmanager_config *cfg);
-int uvcmanager_lib_set_format(const struct uvcmanager_config *cfg, uint32_t pitch, uint32_t height);
+void uvcmanager_lib_set_format(const struct uvcmanager_config *cfg, uint32_t pitch, uint32_t height);
 int uvcmanager_cmd_conf(const struct shell *sh, size_t argc, char **argv);
