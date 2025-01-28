@@ -121,7 +121,7 @@ static int testpattern_stream_stop(const struct device *dev)
 	return 0;
 }
 
-static const struct video_driver_api testpattern_driver_api = {
+static const DEVICE_API(video, testpattern_driver_api) = {
 	.set_format = testpattern_set_fmt,
 	.get_format = testpattern_get_fmt,
 	.get_caps = testpattern_get_caps,

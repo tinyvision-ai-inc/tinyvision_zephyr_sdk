@@ -137,7 +137,7 @@ static int debayer_stream_stop(const struct device *dev)
 	return video_stream_stop(cfg->source_dev);
 }
 
-static const struct video_driver_api debayer_driver_api = {
+static const DEVICE_API(video, debayer_driver_api) = {
 	.set_format = debayer_set_format,
 	.get_format = debayer_get_format,
 	.get_caps = debayer_get_caps,

@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <zephyr/drivers/video.h>
+#include <zephyr/drivers/video-controls.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/util.h>
@@ -36,14 +37,15 @@ static int uvcmanager_stream_start(const struct device *dev)
 	const struct uvcmanager_config *cfg = dev->config;
 	int ret;
 
-	uvcmanager_lib_start(cfg);
-
 	LOG_INF("%s: starting %s", dev->name, cfg->source_dev->name);
 	ret = video_stream_start(cfg->source_dev);
 	if (ret < 0) {
 		LOG_ERR("%s: failed to start %s", dev->name, cfg->source_dev->name);
 		return ret;
 	}
+
+	k_sleep(K_MSEC(1));
+	uvcmanager_lib_start(cfg);
 
 	return 0;
 }
@@ -53,7 +55,7 @@ static int uvcmanager_stream_stop(const struct device *dev)
 	const struct uvcmanager_config *cfg = dev->config;
 	int ret;
 
-	uvcmanager_lib_start(cfg);
+	uvcmanager_lib_stop(cfg);
 
 	LOG_INF("%s: stopping %s", dev->name, cfg->source_dev->name);
 	ret = video_stream_stop(cfg->source_dev);
@@ -114,6 +116,20 @@ static int uvcmanager_get_format(const struct device *dev, enum video_endpoint_i
 	return 0;
 }
 
+static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void *value)
+{
+	const struct uvcmanager_config *cfg = dev->config;
+
+	switch (cid) {
+	case VIDEO_CID_TEST_PATTERN:
+		uvcmanager_lib_set_test_pattern(cfg, (int)value);
+		return 0;
+	default:
+		LOG_WRN("Control not supported");
+		return -ENOTSUP;
+	}
+}
+
 static int uvcmanager_set_frmival(const struct device *dev, enum video_endpoint_id ep,
 			       struct video_frmival *frmival)
 {
@@ -138,7 +154,7 @@ static int uvcmanager_enum_frmival(const struct device *dev, enum video_endpoint
 	return video_enum_frmival(cfg->source_dev, VIDEO_EP_OUT, fie);
 }
 
-static const struct video_driver_api uvcmanager_driver_api = {
+static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.set_format = uvcmanager_set_format,
 	.get_format = uvcmanager_get_format,
 	.get_caps = uvcmanager_get_caps,
@@ -147,6 +163,7 @@ static const struct video_driver_api uvcmanager_driver_api = {
 	.enum_frmival = uvcmanager_enum_frmival,
 	.stream_start = uvcmanager_stream_start,
 	.stream_stop = uvcmanager_stream_stop,
+	.set_ctrl = uvcmanager_set_ctrl,
 };
 
 #define SRC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 0)

@@ -476,7 +476,7 @@ static int imx219_enum_frmival(const struct device *dev, enum video_endpoint_id 
 	return 0;
 }
 
-static const struct video_driver_api imx219_driver_api = {
+static const DEVICE_API(video, imx219_driver_api) = {
 	.set_format = imx219_set_fmt,
 	.get_format = imx219_get_fmt,
 	.get_caps = imx219_get_caps,

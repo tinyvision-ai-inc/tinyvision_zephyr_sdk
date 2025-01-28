@@ -5,6 +5,7 @@ if VIDEO
 
 rsource "Kconfig.imx219"
 rsource "Kconfig.debayer"
+rsource "Kconfig.shell"
 rsource "Kconfig.testpattern"
 rsource "Kconfig.uvcmanager"
 
