@@ -241,8 +241,6 @@ void dwc3_dump_events(const struct device *dev, const struct shell *sh)
 void dwc3_dump_trb(const struct device *dev, struct dwc3_ep_data *ep_data,
 		     const struct shell *sh)
 {
-	uint32_t reg = 0;
-
 	for (int i = 0; i < CONFIG_UDC_DWC3_TRB_NUM; i++) {
 		struct dwc3_trb trb = ep_data->trb_buf[i];
 		bool hwo = !!(trb.ctrl & DWC3_TRB_CTRL_HWO);
@@ -260,13 +258,12 @@ void dwc3_dump_trb(const struct device *dev, struct dwc3_ep_data *ep_data,
 		char *head = (i == ep_data->head) ? " <HEAD" : "";
 		char *tail = (i == ep_data->tail) ? " <TAIL" : "";
 		char *full = (i == ep_data->head && ep_data->full) ? " <FULL" : "";
-		char *trbid = (i == reg) ? " <TRBID" : "";
 
 		shell_print(sh, "%p ep=0x%02x addr=0x%08x%08x ctl=%u sts=%u hwo=%u lst=%u chn=%u"
-			  " csp=%u isp=%u ioc=%u spr=%u pcm1=%u sof=%u bufsiz=%u%s%s%s%s",
+			  " csp=%u isp=%u ioc=%u spr=%u pcm1=%u sof=%u bufsiz=%u%s%s%s",
 			  &ep_data->trb_buf[i], ep_data->cfg.addr, trb.addr_hi, trb.addr_lo, trbctl,
 			  trbsts, hwo, lst, chn, csp, isp, ioc, spr, pcm1, sidsofn, bufsiz, head,
-			  tail, full, trbid);
+			  tail, full);
 	}
 }
 
