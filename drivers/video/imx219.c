@@ -398,13 +398,14 @@ static int imx219_get_caps(const struct device *dev, enum video_endpoint_id ep,
 static int imx219_set_ctrl(const struct device *dev, unsigned int cid, void *value)
 {
 	const struct imx219_config *conf = dev->config;
-	uint32_t u32 = (uint32_t)value;
 
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
-		return imx219_write_u16(&conf->i2c, IMX219_REG_INTEGRATION_TIME_MSB, u32);
+		return imx219_write_u16(&conf->i2c, IMX219_REG_INTEGRATION_TIME_MSB, (int)value);
 	case VIDEO_CID_GAIN:
-		return imx219_write_u8(&conf->i2c, IMX219_REG_ANALOG_GAIN, u32);
+		return imx219_write_u8(&conf->i2c, IMX219_REG_ANALOG_GAIN, (int)value);
+	case VIDEO_CID_TEST_PATTERN:
+		return imx219_write_u16(&conf->i2c, IMX219_REG_TESTPATTERN_MSB, (int)value);
 #if 0 /* not yet supported by Zephyr */
 	case VIDEO_CID_DIGITAL_GAIN:
 		return imx219_write_u16(&conf->i2c, IMX219_REG_DIGITAL_GAIN_MSB, u32);

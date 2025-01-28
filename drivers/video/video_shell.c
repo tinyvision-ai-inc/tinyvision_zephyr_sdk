@@ -305,7 +305,7 @@ static int cmd_video_ctrl(const struct shell *sh, size_t argc, char **argv)
 	}
 
 	for (int i = 0; i < ARRAY_SIZE(ctrl_names); i++) {
-		if (strcmp(argv[2], ctrl_names[i].name)) {
+		if (strcmp(argv[2], ctrl_names[i].name) == 0) {
 			cid = ctrl_names[i].cid;
 			break;
 		}
@@ -668,48 +668,59 @@ static bool device_is_video_and_ready(const struct device *dev)
 	return device_is_ready(dev) && DEVICE_API_IS(video, dev);
 }
 
-static void complete_video_ctrl_name(size_t idx, struct shell_static_entry *entry)
+static void complete_video_ctrl(size_t idx, struct shell_static_entry *entry)
 {
 	entry->syntax = (idx < ARRAY_SIZE(ctrl_names)) ? ctrl_names[idx].name : NULL;
 	entry->handler = NULL;
 	entry->help = NULL;
 	entry->subcmd = NULL;
 }
-SHELL_DYNAMIC_CMD_CREATE(dsub_video_ctrl_name, complete_video_ctrl_name);
+SHELL_DYNAMIC_CMD_CREATE(dsub_video_ctrl, complete_video_ctrl);
 
-static void complete_video_device_name(size_t idx, struct shell_static_entry *entry)
+static void complete_video_device_ctrl(size_t idx, struct shell_static_entry *entry)
 {
 	const struct device *dev = shell_device_filter(idx, device_is_video_and_ready);
 
 	entry->syntax = (dev != NULL) ? dev->name : NULL;
 	entry->handler = NULL;
 	entry->help = NULL;
-	entry->subcmd = &dsub_video_ctrl_name;
+	entry->subcmd = &dsub_video_ctrl;
 }
-SHELL_DYNAMIC_CMD_CREATE(dsub_video_device_name, complete_video_device_name);
+SHELL_DYNAMIC_CMD_CREATE(dsub_video_device_ctrl, complete_video_device_ctrl);
+
+static void complete_video_device(size_t idx, struct shell_static_entry *entry)
+{
+	const struct device *dev = shell_device_filter(idx, device_is_video_and_ready);
+
+	entry->syntax = (dev != NULL) ? dev->name : NULL;
+	entry->handler = NULL;
+	entry->help = NULL;
+	entry->subcmd = NULL;
+}
+SHELL_DYNAMIC_CMD_CREATE(dsub_video_device, complete_video_device);
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_video_cmds,
-	SHELL_CMD_ARG(start, &dsub_video_device_name,
+	SHELL_CMD_ARG(start, &dsub_video_device,
 		"Start a video device and its sources\n"
 		"Usage: video start <device>",
 		cmd_video_start, 2, 0),
-	SHELL_CMD_ARG(stop, &dsub_video_device_name,
+	SHELL_CMD_ARG(stop, &dsub_video_device,
 		"Stop a video device and its sources\n"
 		"Usage: video stop <device>",
 		cmd_video_stop, 2, 0),
-	SHELL_CMD_ARG(show, &dsub_video_device_name,
+	SHELL_CMD_ARG(show, &dsub_video_device,
 		"Show video device information\n"
 		"Usage: video show <device>",
 		cmd_video_show, 2, 0),
-	SHELL_CMD_ARG(format, &dsub_video_device_name,
+	SHELL_CMD_ARG(format, &dsub_video_device,
 		"Set the active format of a video device\n"
 		"Usage: video format <device> <fourcc> <width>x<height>",
 		cmd_video_format, 4, 0),
-	SHELL_CMD_ARG(framerate, &dsub_video_device_name,
+	SHELL_CMD_ARG(framerate, &dsub_video_device,
 		"Set the frame rate of a video device\n"
 		"Usage: video framerate <device> <fps>",
 		cmd_video_framerate, 3, 0),
-	SHELL_CMD_ARG(ctrl, &dsub_video_device_name,
+	SHELL_CMD_ARG(ctrl, &dsub_video_device_ctrl,
 		"Send an integer-based control to a video device\n"
 		"Usage: video ctrl <device> <cid> <value>",
 		cmd_video_ctrl, 4, 0),
@@ -718,7 +729,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_video_cmds,
 		"Set to 0 to free the buffer completely, ommit argument to show the size\n"
 		"Usage: video alloc [<size>]",
 		cmd_video_alloc, 1, 1),
-	SHELL_CMD_ARG(enqueue, &dsub_video_device_name,
+	SHELL_CMD_ARG(enqueue, &dsub_video_device,
 		"Send a video buffer to a video device\n"
 		"Usage: video enqueue <device>",
 		cmd_video_enqueue, 2, 0),
