@@ -39,6 +39,7 @@ struct ctrl_name ctrl_names[] = {
 };
 
 static struct video_buffer *vbuf;
+static struct video_format *vfmt;
 
 static int video_shell_check_device(const struct shell *sh, const struct device *dev)
 {
@@ -207,7 +208,7 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 			video_shell_show_frmival(sh, dev, px, cap->width_min, cap->height_min);
 			video_shell_show_frmival(sh, dev, px, cap->width_max, cap->height_max);
 		} else {
-			shell_print(sh, "pixel format %c%c%c%c, %ux%u (%u bytes)",
+			shell_print(sh, "pixel format %c%c%c%c %ux%u (%u bytes)",
 				    px & 0xff, px >> 8 & 0xff, px >> 16 & 0xff, px >> 24 & 0xff,
 				    cap->width_max, cap->height_max, size);
 			video_shell_show_frmival(sh, dev, px, cap->width_min, cap->height_min);
@@ -391,7 +392,7 @@ static int cmd_video_enqueue(const struct shell *sh, size_t argc, char **argv)
 
 	ret = video_enqueue(dev, VIDEO_EP_ALL, vbuf);
 	if (ret < 0) {
-		shell_error(sh, "enqueueing buffer to %s failed", dev->name);
+		shell_error(sh, "enqueueing buffer to %s failed: %s", dev->name, strerror(-ret));
 		return ret;
 	}
 
@@ -474,27 +475,95 @@ static int cmd_video_dump(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-#define VIDEO_R8_TO_RGB888(r8) (((r8) & 0xff) << 16)
-#define VIDEO_G8_TO_RGB888(g8) (((g8) & 0xff) << 8)
-#define VIDEO_B8_TO_RGB888(b8) (((b8) & 0xff) << 0)
+static inline uint8_t video_rgb888_to_r8(uint32_t rgb888)
+{
+	return rgb888 >> 16;
+}
 
-#define VIDEO_RGB565_TO_R8(rgb565) ((rgb565) >> (0 + 6 + 5) << (8 - 5) & 0xff)
-#define VIDEO_RGB565_TO_G8(rgb565) ((rgb565) >> (0 + 0 + 5) << (8 - 6) & 0xff)
-#define VIDEO_RGB565_TO_B8(rgb565) ((rgb565) >> (0 + 0 + 0) << (8 - 5) & 0xff)
+static inline uint8_t video_rgb888_to_g8(uint32_t rgb888)
+{
+	return rgb888 >> 8;
+}
 
-#define VIDEO_RGB888_TO_R8(rgb888) (((rgb888) >> 16) & 0xff)
-#define VIDEO_RGB888_TO_G8(rgb888) (((rgb888) >> 8)  & 0xff)
-#define VIDEO_RGB888_TO_B8(rgb888) (((rgb888) >> 0)  & 0xff)
+static inline uint8_t video_rgb888_to_b8(uint32_t rgb888)
+{
+	return rgb888 >> 0;
+}
+
+static inline uint8_t video_rgb565_to_r8(uint16_t rgb565)
+{
+	return rgb565 >> (0 + 6 + 5) << (8 - 5) & 0xff;
+}
+
+static inline uint8_t video_rgb565_to_g8(uint16_t rgb565)
+{
+	return rgb565 >> (0 + 0 + 5) << (8 - 6) & 0xff;
+}
+
+static inline uint8_t video_rgb565_to_b8(uint16_t rgb565)
+{
+	return rgb565 >> (0 + 0 + 0) << (8 - 5) & 0xff;
+}
+
+/* Conversion using BT.709 profile as defined in: https://en.wikipedia.org/wiki/YCbCr */
+
+static inline uint8_t video_yuv422_to_r8_bt709(uint8_t y, uint8_t u, uint8_t v)
+{
+	int32_t y21 = (int32_t)(+1.0000 * (1 << 21)) * y;
+	int32_t u21 = (int32_t)(+0.0000 * (1 << 21)) * ((int32_t)u - 128);
+	int32_t v21 = (int32_t)(+1.5748 * (1 << 21)) * ((int32_t)v - 128);
+	int16_t r16 = (y21 + u21 + v21) >> 21;
+
+	return CLAMP(r16, 0, 0xff);
+}
+
+static inline uint8_t video_yuv422_to_g8_bt709(uint8_t y, uint8_t u, uint8_t v)
+{
+	int32_t y21 = (int32_t)(+1.0000 * (1 << 21)) * y;
+	int32_t u21 = (int32_t)(-0.1873 * (1 << 21)) * ((int32_t)u - 128);
+	int32_t v21 = (int32_t)(-0.4681 * (1 << 21)) * ((int32_t)v - 128);
+	int16_t g16 = (y21 + u21 + v21) >> 21;
+
+	return CLAMP(g16, 0, 0xff);
+}
+
+static inline uint8_t video_yuv422_to_b8_bt709(uint8_t y, uint8_t u, uint8_t v)
+{
+	int32_t y21 = (int32_t)(+1.0000 * (1 << 21)) * y;
+	int32_t u21 = (int32_t)(+1.8556 * (1 << 21)) * ((int32_t)u - 128);
+	int32_t v21 = (int32_t)(+0.0000 * (1 << 21)) * ((int32_t)v - 128);
+	int16_t b16 = (y21 + u21 + v21) >> 21;
+
+	return CLAMP(b16, 0, 0xff);
+}
 
 static inline uint32_t video_rgb565le_to_rgb888(uint16_t rgb565le)
 {
 	uint16_t rgb565 = sys_le16_to_cpu(rgb565le);
 	uint32_t rgb888 = 0;
 
-	rgb888 |= VIDEO_R8_TO_RGB888(VIDEO_RGB565_TO_R8(rgb565));
-	rgb888 |= VIDEO_G8_TO_RGB888(VIDEO_RGB565_TO_G8(rgb565));
-	rgb888 |= VIDEO_B8_TO_RGB888(VIDEO_RGB565_TO_B8(rgb565));
+	rgb888 |= video_rgb565_to_r8(rgb565) << 16;
+	rgb888 |= video_rgb565_to_g8(rgb565) << 8;
+	rgb888 |= video_rgb565_to_b8(rgb565) << 0;
 	return rgb888;
+}
+
+static inline uint64_t video_yuyv422_to_rgb888x2(uint32_t yuyv422)
+{
+	uint8_t y0 = yuyv422 >> 24;
+	int8_t uu = yuyv422 >> 16;
+	int8_t y1 = yuyv422 >> 8;
+	uint8_t vv = yuyv422 >> 0;
+	uint32_t rgb888n0 = 0;
+	uint32_t rgb888n1 = 0;
+
+	rgb888n0 |= video_yuv422_to_r8_bt709(y0, uu, vv) << 16;
+	rgb888n0 |= video_yuv422_to_g8_bt709(y0, uu, vv) << 8;
+	rgb888n0 |= video_yuv422_to_b8_bt709(y0, uu, vv) << 0;
+	rgb888n1 |= video_yuv422_to_r8_bt709(y1, uu, vv) << 16;
+	rgb888n1 |= video_yuv422_to_g8_bt709(y1, uu, vv) << 8;
+	rgb888n1 |= video_yuv422_to_b8_bt709(y1, uu, vv) << 0;
+	return (uint64_t)rgb888n0 << 32 | rgb888n1 << 0;
 }
 
 /**
@@ -507,9 +576,9 @@ static inline uint8_t video_rgb888_to_vt100(uint32_t rgb888)
 {
 	uint8_t vt100 = 16;
 
-	vt100 += VIDEO_RGB888_TO_R8(rgb888) * 6 / 256 * 6 * 6;
-	vt100 += VIDEO_RGB888_TO_G8(rgb888) * 6 / 256 * 6;
-	vt100 += VIDEO_RGB888_TO_B8(rgb888) * 6 / 256;
+	vt100 += video_rgb888_to_r8(rgb888) * 6 / 256 * 6 * 6;
+	vt100 += video_rgb888_to_g8(rgb888) * 6 / 256 * 6;
+	vt100 += video_rgb888_to_b8(rgb888) * 6 / 256;
 	return vt100;
 }
 
@@ -536,10 +605,33 @@ static inline void video_skip_to_next(size_t *i0, size_t len0, size_t *i1, size_
 	*i0 += 1;
 	*debt += len1;
 
+	/* Special case when there the data height and/or width is empty */
+	if (len0 == 0) {
+		return;
+	}
+
 	/* Catch-up any debt in the other direction */
 	while (*debt >= len0) {
 		*i1 += 1;
 		*debt -= len0;
+	}
+}
+
+static void video_line_yuyv422be_to_vt100(uint16_t *yuyv422be_buf, size_t yuyv422be_len,
+					 uint8_t *vt100_buf, size_t vt100_len)
+{
+	size_t yuyv422be_i = 0, vt100_i = 0, debt = 0;
+	uint64_t rgb888x2;
+
+	while (yuyv422be_i < yuyv422be_len && vt100_i < vt100_len) {
+		/* YUYV is having 16-bit per pixel, but odd pixels and even pixels encode different
+		 * color information: We align on a 2-pixels block and grab 2 values at once.
+		 */
+		uint32_t yuyv422x2 = sys_be32_to_cpu(((uint32_t *)yuyv422be_buf)[yuyv422be_i / 2]);
+
+		rgb888x2 = video_yuyv422_to_rgb888x2(yuyv422x2);
+		vt100_buf[vt100_i] = video_rgb888_to_vt100(rgb888x2);
+		video_skip_to_next(&vt100_i, vt100_len, &yuyv422be_i, yuyv422be_len, &debt);
 	}
 }
 
@@ -553,6 +645,21 @@ static void video_line_rgb565le_to_vt100(uint16_t *rgb565le_buf, size_t rgb565le
 		rgb888 = video_rgb565le_to_rgb888(rgb565le_buf[rgb565le_i]);
 		vt100_buf[vt100_i] = video_rgb888_to_vt100(rgb888);
 		video_skip_to_next(&vt100_i, vt100_len, &rgb565le_i, rgb565le_len, &debt);
+	}
+}
+
+static void video_pixfmt_to_vt100(uint32_t pixfmt, void *pixp, uint16_t width,
+				  uint8_t *line_out, uint16_t term_cols)
+{
+	switch (pixfmt) {
+	case VIDEO_PIX_FMT_YUYV:
+		video_line_yuyv422be_to_vt100(pixp, width, line_out, term_cols);
+		break;
+	case VIDEO_PIX_FMT_RGB565:
+		video_line_rgb565le_to_vt100(pixp, width, line_out, term_cols);
+		break;
+	default:
+		CODE_UNREACHABLE;
 	}
 }
 
@@ -572,14 +679,14 @@ static int video_shell_view(const struct shell *sh, uint8_t *buf, size_t size, u
 		return -EINVAL;
 	}
 
-	if (pixfmt != VIDEO_PIX_FMT_RGB565) {
-		shell_error(sh, "only <fourcc> 'RGBP' is supported for now");
+	if (pixfmt != VIDEO_PIX_FMT_RGB565 && pixfmt != VIDEO_PIX_FMT_YUYV) {
+		shell_error(sh, "only <fourcc> 'RGBP' and 'YUYV' are supported for now");
 		return -ENOTSUP;
 	}
 
-	for (size_t h = 0, r = 0, i = 0; i < size; i = pitch * h) {
+	for (size_t h = 0, r = 0, i = 0; i < size; i += pitch * h) {
 		/* Convert this entire row */
-		video_line_rgb565le_to_vt100((uint16_t *)&vbuf->buffer[i], width, line[r % 2], cols);
+		video_pixfmt_to_vt100(pixfmt, &vbuf->buffer[i], width, line[r % 2], cols);
 
 		/* Skip the bytes instead of scaling: poor quality but faster */
 		video_skip_to_next(&r, rows, &h, height, &debt);

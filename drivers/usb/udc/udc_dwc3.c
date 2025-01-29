@@ -1234,7 +1234,7 @@ int dwc3_api_init(const struct device *dev)
 	const struct dwc3_config *cfg = dev->config;
 	int ret;
 
-	LOG_DBG("Initializing the DWC3 core");
+	LOG_INF("Initializing the DWC3 peripheral");
 
 	/* Issue a soft reset to the core and USB2 and USB3 PHY */
 	sys_set_bits(cfg->base + DWC3_GCTL, DWC3_GCTL_CORESOFTRESET);

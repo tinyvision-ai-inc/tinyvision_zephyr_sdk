@@ -8,6 +8,35 @@
 	chosen {
 		zephyr,shell-uart = &uart0;
 	};
+
+	emul_imager {
+		compatible = "zephyr,video-emul-imager";
+
+		port {
+			emul_imager_ep_out: endpoint {
+				remote-endpoint-label = "emul_rx_ep_in";
+			};
+		};
+	};
+
+	emul_rx {
+		compatible = "zephyr,video-emul-rx";
+
+		port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			emul_rx_ep_in: endpoint@0 {
+				reg = <0>;
+				remote-endpoint-label = "emul_imager_ep_out";
+			};
+
+			emul_rx_ep_out: endpoint@1 {
+				reg = <1>;
+				remote-endpoint-label = "empty";
+			};
+		};
+	};
 };
 
 &i2c0 {

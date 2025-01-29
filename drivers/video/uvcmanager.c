@@ -19,19 +19,6 @@
 
 LOG_MODULE_REGISTER(uvcmanager, CONFIG_VIDEO_LOG_LEVEL);
 
-static int uvcmanager_init(const struct device *dev)
-{
-	const struct uvcmanager_config *cfg = dev->config;
-
-	if (!device_is_ready(cfg->source_dev)) {
-		LOG_ERR("%s: source %s is not ready", dev->name, cfg->source_dev->name);
-		return -ENODEV;
-	}
-
-	uvcmanager_lib_init(cfg);
-	return 0;
-}
-
 static int uvcmanager_stream_start(const struct device *dev)
 {
 	const struct uvcmanager_config *cfg = dev->config;
@@ -91,7 +78,7 @@ static int uvcmanager_set_format(const struct device *dev, enum video_endpoint_i
 		return 0;
 	}
 
-	LOG_INF("%s: setting %s to %ux%u", dev->name, sdev->name, sfmt.width, sfmt.height);
+	LOG_INF("setting %s to %ux%u", sdev->name, sfmt.width, sfmt.height);
 	ret = video_set_format(sdev, VIDEO_EP_OUT, &sfmt);
 	if (ret < 0) {
 		LOG_ERR("%s: failed to set %s format", dev->name, sdev->name);
@@ -154,6 +141,87 @@ static int uvcmanager_enum_frmival(const struct device *dev, enum video_endpoint
 	return video_enum_frmival(cfg->source_dev, VIDEO_EP_OUT, fie);
 }
 
+static int uvcmanager_enqueue(const struct device *dev, enum video_endpoint_id ep,
+			   struct video_buffer *vbuf)
+{
+	struct uvcmanager_data *data = dev->data;
+
+	/* Can only enqueue a buffer to get data out, data input is from hardware */
+	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
+		return -EINVAL;
+	}
+
+	/* The buffer has not been filled yet: flag as emtpy */
+	vbuf->bytesused = 0;
+
+	/* Submit the buffer for processing in the worker, where everything happens */
+	k_fifo_put(&data->fifo_in, vbuf);
+	k_work_submit(&data->work);
+
+	return 0;
+}
+
+static int uvcmanager_dequeue(const struct device *dev, enum video_endpoint_id ep,
+			   struct video_buffer **vbufp, k_timeout_t timeout)
+{
+	struct uvcmanager_data *data = dev->data;
+
+	/* Can only dequeue a buffer to get data out, data input is from hardware */
+	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
+		return -EINVAL;
+	}
+
+	/* All the processing is expected to happen in the worker */
+	*vbufp = k_fifo_get(&data->fifo_out, timeout);
+	if (*vbufp == NULL) {
+		return -EAGAIN;
+	}
+
+	return 0;
+}
+
+static void uvcmanager_worker(struct k_work *work)
+{
+	struct uvcmanager_data *data = CONTAINER_OF(work, struct uvcmanager_data, work);
+	const struct device *dev = data->dev;
+	const struct uvcmanager_config *cfg = dev->config;
+	struct video_buffer *vbuf = vbuf;
+	int ret;
+
+	while ((vbuf = k_fifo_get(&data->fifo_in, K_NO_WAIT)) != NULL) {
+		vbuf->bytesused = vbuf->size;
+		vbuf->line_offset = 0;
+
+		LOG_DBG("Inserting %u bytes into buffer %p", vbuf->size, vbuf->buffer);
+
+		ret = uvcmanager_lib_read(cfg, data, vbuf->buffer, vbuf->size);
+		if (ret < 0) {
+			LOG_ERR("Reading data from the UVC Manager failed");
+		}
+
+		/* Once the buffer is completed, submit it to the video buffer */
+		k_fifo_put(&data->fifo_out, vbuf);
+	}
+}
+
+static int uvcmanager_init(const struct device *dev)
+{
+	const struct uvcmanager_config *cfg = dev->config;
+	struct uvcmanager_data *data = dev->data;
+
+	if (!device_is_ready(cfg->source_dev)) {
+		LOG_ERR("%s: source %s is not ready", dev->name, cfg->source_dev->name);
+		return -ENODEV;
+	}
+
+	k_fifo_init(&data->fifo_in);
+	k_fifo_init(&data->fifo_out);
+	k_work_init(&data->work, &uvcmanager_worker);
+
+	uvcmanager_lib_init(cfg);
+	return 0;
+}
+
 static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.set_format = uvcmanager_set_format,
 	.get_format = uvcmanager_get_format,
@@ -164,6 +232,8 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.stream_start = uvcmanager_stream_start,
 	.stream_stop = uvcmanager_stream_stop,
 	.set_ctrl = uvcmanager_set_ctrl,
+	.enqueue = uvcmanager_enqueue,
+	.dequeue = uvcmanager_dequeue,
 };
 
 #define SRC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 0)
@@ -180,7 +250,9 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 		.fifo = DT_INST_REG_ADDR_BY_NAME(inst, fifo),                                      \
 	};                                                                                         \
                                                                                                    \
-	struct uvcmanager_data uvcmanager_data_##inst;                                             \
+	struct uvcmanager_data uvcmanager_data_##inst = {                                          \
+		.dev = DEVICE_DT_INST_GET(inst),                                                   \
+	};                                                                                         \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(inst, uvcmanager_init, NULL, &uvcmanager_data_##inst,                \
 			      &uvcmanager_cfg_##inst, POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY,     \
@@ -190,21 +262,26 @@ DT_INST_FOREACH_STATUS_OKAY(UVCMANAGER_DEVICE_DEFINE)
 
 #ifdef CONFIG_SHELL
 
-static void device_name_get(size_t idx, struct shell_static_entry *entry)
+static bool device_is_video_and_ready(const struct device *dev)
 {
-	const struct device *dev = shell_device_lookup(idx, NULL);
+	return device_is_ready(dev) && DEVICE_API_IS(video, dev);
+}
 
-	entry->syntax = (dev == NULL) ? NULL : dev->name;
+static void complete_video_device(size_t idx, struct shell_static_entry *entry)
+{
+	const struct device *dev = shell_device_filter(idx, device_is_video_and_ready);
+
+	entry->syntax = (dev != NULL) ? dev->name : NULL;
 	entry->handler = NULL;
 	entry->help = NULL;
 	entry->subcmd = NULL;
 }
-SHELL_DYNAMIC_CMD_CREATE(dsub_device_name, device_name_get);
+SHELL_DYNAMIC_CMD_CREATE(dsub_video_device, complete_video_device);
 
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_uvcmanager,
-	SHELL_CMD_ARG(conf, &dsub_device_name,
-		     "Print the uvcmanager configuration\n" "Usage: conf <device>",
-		     uvcmanager_cmd_conf, 2, 0),
+	SHELL_CMD_ARG(show, &dsub_video_device,
+		     "Show statistics about the uvcmanager core\n" "Usage: show <device>",
+		     uvcmanager_cmd_show, 2, 0),
 	SHELL_SUBCMD_SET_END);
 SHELL_CMD_REGISTER(uvcmanager, &sub_uvcmanager, "UVC Manager debug commands", NULL);
 

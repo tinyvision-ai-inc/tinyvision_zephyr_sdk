@@ -461,11 +461,11 @@ static int imx219_get_frmival(const struct device *dev, enum video_endpoint_id e
 static int imx219_enum_frmival(const struct device *dev, enum video_endpoint_id ep,
 				struct video_frmival_enum *fie)
 {
-	if ((ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) || fie->index >= 1) {
+	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
 	}
 
-	/* Only a single frame interval supported */
+	/* Only a single frame interval supported for now */
 	if (fie->index > 0) {
 		return 1;
 	}
