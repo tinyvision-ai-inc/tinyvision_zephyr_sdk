@@ -605,10 +605,7 @@ static inline void video_skip_to_next(size_t *i0, size_t len0, size_t *i1, size_
 	*i0 += 1;
 	*debt += len1;
 
-	/* Special case when there the data height and/or width is empty */
-	if (len0 == 0) {
-		return;
-	}
+	__ASSERT_NO_MSG(len0 > 0);
 
 	/* Catch-up any debt in the other direction */
 	while (*debt >= len0) {
@@ -618,7 +615,7 @@ static inline void video_skip_to_next(size_t *i0, size_t len0, size_t *i1, size_
 }
 
 static void video_line_yuyv422be_to_vt100(uint16_t *yuyv422be_buf, size_t yuyv422be_len,
-					 uint8_t *vt100_buf, size_t vt100_len)
+					  uint8_t *vt100_buf, size_t vt100_len)
 {
 	size_t yuyv422be_i = 0, vt100_i = 0, debt = 0;
 	uint64_t rgb888x2;
@@ -648,8 +645,8 @@ static void video_line_rgb565le_to_vt100(uint16_t *rgb565le_buf, size_t rgb565le
 	}
 }
 
-static void video_pixfmt_to_vt100(uint32_t pixfmt, void *pixp, uint16_t width,
-				  uint8_t *line_out, uint16_t term_cols)
+static void video_line_to_vt100(uint32_t pixfmt, void *pixp, uint16_t width,
+				uint8_t *line_out, uint16_t term_cols)
 {
 	switch (pixfmt) {
 	case VIDEO_PIX_FMT_YUYV:
@@ -686,7 +683,7 @@ static int video_shell_view(const struct shell *sh, uint8_t *buf, size_t size, u
 
 	for (size_t h = 0, r = 0, i = 0; i < size; i += pitch * h) {
 		/* Convert this entire row */
-		video_pixfmt_to_vt100(pixfmt, &vbuf->buffer[i], width, line[r % 2], cols);
+		video_line_to_vt100(pixfmt, &vbuf->buffer[i], width, line[r % 2], cols);
 
 		/* Skip the bytes instead of scaling: poor quality but faster */
 		video_skip_to_next(&r, rows, &h, height, &debt);

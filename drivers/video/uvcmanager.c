@@ -196,7 +196,7 @@ static void uvcmanager_worker(struct k_work *work)
 
 		ret = uvcmanager_lib_read(cfg, data, vbuf->buffer, vbuf->size);
 		if (ret < 0) {
-			LOG_ERR("Reading data from the UVC Manager failed");
+			LOG_ERR("Reading data from the UVC Manager failed: %s", strerror(-ret));
 		}
 
 		/* Once the buffer is completed, submit it to the video buffer */
@@ -208,10 +208,25 @@ static int uvcmanager_init(const struct device *dev)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 	struct uvcmanager_data *data = dev->data;
+	struct video_format fmt;
+	int ret;
 
 	if (!device_is_ready(cfg->source_dev)) {
 		LOG_ERR("%s: source %s is not ready", dev->name, cfg->source_dev->name);
 		return -ENODEV;
+	}
+
+	/* Query the source format */
+	ret = video_get_format(cfg->source_dev, VIDEO_EP_OUT, &fmt);
+	if (ret < 0) {
+		LOG_ERR("Failed to query %s format", cfg->source_dev->name);
+		return ret;
+	}
+
+	/* Set our own format to match it */
+	ret = video_set_format(dev, VIDEO_EP_OUT, &fmt);
+	if (ret < 0) {
+		return ret;
 	}
 
 	k_fifo_init(&data->fifo_in);
