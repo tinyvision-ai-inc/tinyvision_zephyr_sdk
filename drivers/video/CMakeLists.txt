@@ -4,7 +4,7 @@
 zephyr_library()
 
 if (NOT DEFINED UVCMANAGER)
-  set(UVCMANAGER ${ZEPHYR_BASE}/../zephyr_private/uvcmanager.2.o)
+  set(UVCMANAGER ${ZEPHYR_BASE}/../zephyr_private/uvcmanager.3.o)
 endif()
 
 zephyr_include_directories(.)
