@@ -1,6 +1,9 @@
 tinyVision Zephyr SDK
 #####################
 
+.. image:: https://github.com/tinyvision-ai-inc/tinyclunx33_zephyr_example/actions/workflows/getting_started_on_linux.yml/badge.svg
+   :target: https://github.com/tinyvision-ai-inc/tinyclunx33_zephyr_example/actions/workflows/getting_started_on_linux.yml
+
 The tinyVision Zephyr SDK is a `Zephyr <https://zephyrproject.org/>`_
 library that contains extra drivers and configuration for working with
 the `tinyCLUNX33`_ USB3/MIPI module and its devkit, as well as other
