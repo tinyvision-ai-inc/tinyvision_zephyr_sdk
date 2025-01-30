@@ -211,8 +211,16 @@ static int uvcmanager_init(const struct device *dev)
 	struct video_format fmt;
 	int ret;
 
+	if (!device_is_ready(cfg->dwc3_dev)) {
+		LOG_ERR("%s is not ready", cfg->dwc3_dev->name);
+		return -ENODEV;
+	}
+	if (!device_is_ready(cfg->uvc_dev)) {
+		LOG_ERR("%s is not ready", cfg->uvc_dev->name);
+		return -ENODEV;
+	}
 	if (!device_is_ready(cfg->source_dev)) {
-		LOG_ERR("%s: source %s is not ready", dev->name, cfg->source_dev->name);
+		LOG_ERR("%s is not ready", cfg->source_dev->name);
 		return -ENODEV;
 	}
 
