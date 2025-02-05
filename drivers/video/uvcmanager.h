@@ -26,7 +26,8 @@ struct uvcmanager_data {
 void uvcmanager_lib_init(const struct uvcmanager_config *cfg);
 void uvcmanager_lib_start(const struct uvcmanager_config *cfg);
 void uvcmanager_lib_stop(const struct uvcmanager_config *cfg);
-void uvcmanager_lib_set_test_pattern(const struct uvcmanager_config *cfg, bool on);
+void uvcmanager_lib_set_test_pattern(const struct uvcmanager_config *cfg, uint32_t w, uint32_t h,
+				     uint32_t inc);
 void uvcmanager_lib_set_format(const struct uvcmanager_config *cfg, uint32_t pitch, uint32_t height);
 int uvcmanager_lib_read(const struct uvcmanager_config *cfg, struct uvcmanager_data *data,
 			uint8_t *buf_data, size_t buf_size);

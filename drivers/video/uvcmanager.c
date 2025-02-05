@@ -106,10 +106,24 @@ static int uvcmanager_get_format(const struct device *dev, enum video_endpoint_i
 static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void *value)
 {
 	const struct uvcmanager_config *cfg = dev->config;
+	int ret;
 
 	switch (cid) {
 	case VIDEO_CID_TEST_PATTERN:
-		uvcmanager_lib_set_test_pattern(cfg, (int)value);
+		if ((int)value == 0) {
+			LOG_DBG("Disabling the test pattern");
+			uvcmanager_lib_set_test_pattern(cfg, 0, 0, 0);
+		} else {
+			struct video_format fmt;
+
+			ret = uvcmanager_get_format(dev, VIDEO_EP_OUT, &fmt);
+			if (ret < 0) {
+				return ret;
+			}
+
+			LOG_DBG("Setting test pattern to %ux%u", fmt.width, fmt.height);
+			uvcmanager_lib_set_test_pattern(cfg, fmt.width, fmt.height, (int)value);
+		}
 		return 0;
 	default:
 		LOG_WRN("Control not supported");
