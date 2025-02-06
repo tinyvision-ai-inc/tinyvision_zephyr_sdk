@@ -15,13 +15,63 @@
 #include <zephyr/shell/shell.h>
 #include <zephyr/logging/log.h>
 
+#include "udc_dwc3.h"
+#include "udc_common.h"
 #include "uvcmanager.h"
 
 LOG_MODULE_REGISTER(uvcmanager, CONFIG_VIDEO_LOG_LEVEL);
 
+struct uvcmanager_config {
+	const struct device *source_dev;
+	const struct device *dwc3_dev;
+	const struct device *uvc_dev;
+	uintptr_t base;
+	uintptr_t fifo;
+	uint8_t usb_endpoint;
+};
+
+struct uvcmanager_data {
+	const struct device *dev;
+	struct video_format format;
+	struct video_buffer *vbuf;
+	size_t id;
+	struct k_work work;
+	struct k_fifo fifo_in;
+	struct k_fifo fifo_out;
+};
+
+/*
+ * Direct connection APIs with DWC3 register information.
+ */
+
+uint32_t dwc3_get_trb_addr(const struct device *dev, uint8_t ep_addr)
+{
+	struct dwc3_ep_data *ep_data = (void *)udc_get_ep_cfg(dev, ep_addr);
+
+	return (uint32_t)ep_data->trb_buf;
+}
+
+uint32_t dwc3_get_depcmd(const struct device *dev, uint8_t ep_addr)
+{
+	const struct dwc3_config *cfg = dev->config;
+
+	return cfg->base + DWC3_DEPCMD(EP_PHYS_NUMBER(ep_addr));
+}
+
+uint32_t dwc3_get_depupdxfer(const struct device *dev, uint8_t ep_addr)
+{
+	struct dwc3_ep_data *ep_data = (void *)udc_get_ep_cfg(dev, ep_addr);
+
+	return DWC3_DEPCMD_DEPUPDXFER |
+		FIELD_PREP(DWC3_DEPCMD_XFERRSCIDX_MASK, ep_data->xferrscidx);
+}
+
 static int uvcmanager_stream_start(const struct device *dev)
 {
 	const struct uvcmanager_config *cfg = dev->config;
+	uint32_t trb_addr = dwc3_get_trb_addr(cfg->dwc3_dev, cfg->usb_endpoint);
+	uint32_t depupdxfer = dwc3_get_depupdxfer(cfg->dwc3_dev, cfg->usb_endpoint);
+	uint32_t depcmd = dwc3_get_depcmd(cfg->dwc3_dev, cfg->usb_endpoint);
 	int ret;
 
 	LOG_INF("%s: starting %s", dev->name, cfg->source_dev->name);
@@ -31,7 +81,7 @@ static int uvcmanager_stream_start(const struct device *dev)
 		return ret;
 	}
 
-	uvcmanager_lib_start(cfg);
+	uvcmanager_lib_start(cfg->base, trb_addr, depupdxfer, depcmd);
 
 	return 0;
 }
@@ -41,7 +91,7 @@ static int uvcmanager_stream_stop(const struct device *dev)
 	const struct uvcmanager_config *cfg = dev->config;
 	int ret;
 
-	uvcmanager_lib_stop(cfg);
+	uvcmanager_lib_stop(cfg->base);
 
 	LOG_INF("%s: stopping %s", dev->name, cfg->source_dev->name);
 	ret = video_stream_stop(cfg->source_dev);
@@ -84,7 +134,7 @@ static int uvcmanager_set_format(const struct device *dev, enum video_endpoint_i
 		return ret;
 	}
 
-	uvcmanager_lib_set_format(cfg, fmt->pitch, fmt->height);
+	uvcmanager_lib_set_format(cfg->base, fmt->pitch, fmt->height);
 
 	data->format = *fmt;
 	return 0;
@@ -111,7 +161,7 @@ static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void 
 	case VIDEO_CID_TEST_PATTERN:
 		if ((int)value == 0) {
 			LOG_DBG("Disabling the test pattern");
-			uvcmanager_lib_set_test_pattern(cfg, 0, 0, 0);
+			uvcmanager_lib_set_test_pattern(cfg->base, 0, 0, 0);
 		} else {
 			struct video_format fmt;
 
@@ -121,7 +171,7 @@ static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void 
 			}
 
 			LOG_DBG("Setting test pattern to %ux%u", fmt.width, fmt.height);
-			uvcmanager_lib_set_test_pattern(cfg, fmt.width, fmt.height, (int)value);
+			uvcmanager_lib_set_test_pattern(cfg->base, fmt.width, fmt.height, (int)value);
 		}
 		return 0;
 	default:
@@ -198,22 +248,32 @@ static void uvcmanager_worker(struct k_work *work)
 	const struct device *dev = data->dev;
 	const struct uvcmanager_config *cfg = dev->config;
 	struct video_buffer *vbuf = vbuf;
-	int ret;
 
 	while ((vbuf = k_fifo_get(&data->fifo_in, K_NO_WAIT)) != NULL) {
 		vbuf->bytesused = vbuf->size;
 		vbuf->line_offset = 0;
 
 		LOG_DBG("Inserting %u bytes into buffer %p", vbuf->size, vbuf->buffer);
-
-		ret = uvcmanager_lib_read(cfg, data, vbuf->buffer, vbuf->size);
-		if (ret < 0) {
-			LOG_ERR("Reading data from the UVC Manager failed: %s", strerror(-ret));
-		}
-
-		/* Once the buffer is completed, submit it to the video buffer */
+		uvcmanager_lib_read(cfg->base, vbuf->buffer, vbuf->size);
 		k_fifo_put(&data->fifo_out, vbuf);
 	}
+}
+
+int uvcmanager_cmd_show(const struct shell *sh, size_t argc, char **argv)
+{
+	const struct device *dev;
+	const struct uvcmanager_config *cfg;
+
+	dev = device_get_binding(argv[1]);
+	if (dev == NULL) {
+		shell_error(sh, "Device %s not found", argv[1]);
+		return -ENODEV;
+	}
+
+	cfg = dev->config;
+	uvcmanager_lib_cmd_show(cfg->base, sh);
+
+	return 0;
 }
 
 static int uvcmanager_init(const struct device *dev)
@@ -253,7 +313,7 @@ static int uvcmanager_init(const struct device *dev)
 	k_fifo_init(&data->fifo_out);
 	k_work_init(&data->work, &uvcmanager_worker);
 
-	uvcmanager_lib_init(cfg);
+	uvcmanager_lib_init(cfg->base, cfg->fifo);
 	return 0;
 }
 
