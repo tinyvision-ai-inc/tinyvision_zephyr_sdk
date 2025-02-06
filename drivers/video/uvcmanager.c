@@ -31,7 +31,6 @@ static int uvcmanager_stream_start(const struct device *dev)
 		return ret;
 	}
 
-	k_sleep(K_MSEC(1));
 	uvcmanager_lib_start(cfg);
 
 	return 0;
@@ -126,8 +125,7 @@ static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void 
 		}
 		return 0;
 	default:
-		LOG_WRN("Control not supported");
-		return -ENOTSUP;
+		return video_set_ctrl(cfg->source_dev, cid, value);
 	}
 }
 

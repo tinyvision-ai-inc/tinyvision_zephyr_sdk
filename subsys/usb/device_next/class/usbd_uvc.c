@@ -860,7 +860,8 @@ static int uvc_control_probe_max_size(struct uvc_stream *strm, uint8_t request,
 	case GET_MIN:
 	case GET_MAX:
 	case GET_CUR:
-		probe->dwMaxPayloadTransferSize = sys_cpu_to_le32(max_size);
+		probe->dwMaxPayloadTransferSize = sys_cpu_to_le32(max_size) +
+						  CONFIG_USBD_VIDEO_HEADER_SIZE;
 		probe->dwMaxVideoFrameSize = sys_cpu_to_le32(max_size);
 		break;
 	case GET_RES:
@@ -1420,7 +1421,8 @@ static int uvc_init_frame_desc(struct uvc_stream *strm, int *id,
 	desc->frame_discrete.bFrameIndex = ++format_desc->format.bNumFrameDescriptors;
 	desc->frame_discrete.wWidth = sys_cpu_to_le16(w);
 	desc->frame_discrete.wHeight = sys_cpu_to_le16(h);
-	desc->frame_discrete.dwMaxVideoFrameBufferSize = sys_cpu_to_le32(max_size);
+	desc->frame_discrete.dwMaxVideoFrameBufferSize = sys_cpu_to_le32(max_size) +
+		CONFIG_USBD_VIDEO_HEADER_SIZE;
 	desc->frame_discrete.bDescriptorSubtype =
 		(format_desc->frame_discrete.bDescriptorSubtype == VS_FORMAT_UNCOMPRESSED)
 			? VS_FRAME_UNCOMPRESSED
