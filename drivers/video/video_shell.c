@@ -166,6 +166,7 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 	const struct device *dev = device_get_binding(argv[1]);
 	struct video_caps caps = {0};
 	struct video_format fmt = {0};
+	struct video_stats stats = {0};
 	int ret;
 
 	ret = video_shell_check_device(sh, dev);
@@ -213,6 +214,15 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 				    cap->width_max, cap->height_max, size);
 			video_shell_show_frmival(sh, dev, px, cap->width_min, cap->height_min);
 		}
+	}
+
+	ret = video_get_stats(dev, VIDEO_EP_OUT, &stats, K_MSEC(500));
+	if (ret == 0) {
+		shell_print(sh, "sum of Y values: %"PRIu64, stats.sum_y);
+		shell_print(sh, "sum of R values: %"PRIu64, stats.sum_r);
+		shell_print(sh, "sum of G values: %"PRIu64, stats.sum_g);
+		shell_print(sh, "sum of B values: %"PRIu64, stats.sum_b);
+		shell_print(sh, "total frames:    %"PRIu64, stats.frames);
 	}
 
 	return 0;

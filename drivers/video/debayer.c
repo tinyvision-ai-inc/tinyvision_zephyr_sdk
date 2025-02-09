@@ -16,11 +16,18 @@
 
 LOG_MODULE_REGISTER(debayer, CONFIG_VIDEO_LOG_LEVEL);
 
+#define DEBAYER_FRAME_COUNTER 0x0010
+#define DEBAYER_SUM_CHANNEL_0 0x001c
+#define DEBAYER_SUM_CHANNEL_1 0x0020
+#define DEBAYER_SUM_CHANNEL_2 0x0024
+#define DEBAYER_SUM_CHANNEL_3 0x0028
+
 struct debayer_data {
 	struct video_format fmt;
 };
 
 struct debayer_config {
+	uintptr_t base;
 	const struct device *source_dev;
 };
 
@@ -113,6 +120,58 @@ static int debayer_enum_frmival(const struct device *dev, enum video_endpoint_id
 	return video_enum_frmival(cfg->source_dev, ep, fie);
 }
 
+static int debayer_get_stats(const struct device *dev, enum video_endpoint_id ep,
+				struct video_stats *stats, k_timeout_t timeout)
+{
+	const struct debayer_config *cfg = dev->config;
+	uint8_t ch0 = sys_read32(cfg->base + DEBAYER_SUM_CHANNEL_0);
+	uint8_t ch1 = sys_read32(cfg->base + DEBAYER_SUM_CHANNEL_1);
+	uint8_t ch2 = sys_read32(cfg->base + DEBAYER_SUM_CHANNEL_2);
+	uint8_t ch3 = sys_read32(cfg->base + DEBAYER_SUM_CHANNEL_3);
+	struct video_format fmt;
+	int ret;
+
+	ret = video_get_format(cfg->source_dev, VIDEO_EP_OUT, &fmt);
+	if (ret < 0) {
+		return ret;
+	}
+
+	/* Depending on the order of the bayer pattern, the channels will be positioned at a
+	 * different location on the image sensor. i.e. for RGGB, CH0=R, CH1=G , CH2=G, CH3=B.
+	 * [CH0, CH1, CH0, CH1, CH0, CH1, CH0, CH1, CH0, CH1...],
+	 * [CH2, CH3, CH2, CH3, CH2, CH3, CH2, CH3, CH2, CH3...],
+	 * [...]
+	 */
+	switch (fmt.pixelformat) {
+	case VIDEO_PIX_FMT_BGGR8:
+		stats->sum_r = ch3;
+		stats->sum_g = (ch1 + ch2) / 2;
+		stats->sum_b = ch0;
+		break;
+	case VIDEO_PIX_FMT_GBRG8:
+		stats->sum_r = ch2;
+		stats->sum_g = (ch0 + ch3) / 2;
+		stats->sum_b = ch1;
+		break;
+	case VIDEO_PIX_FMT_GRBG8:
+		stats->sum_r = ch1;
+		stats->sum_g = (ch0 + ch3) / 2;
+		stats->sum_b = ch2;
+		break;
+	case VIDEO_PIX_FMT_RGGB8:
+		stats->sum_r = ch0;
+		stats->sum_g = (ch1 + ch2) / 2;
+		stats->sum_b = ch3;
+		break;
+	default:
+		LOG_WRN("Unknown input pixel format, cannot decode the statistics");
+	}
+
+	stats->frames = sys_read32(cfg->base + DEBAYER_FRAME_COUNTER);
+
+	return 0;
+}
+
 static int debayer_get_ctrl(const struct device *dev, unsigned int cid, void *value)
 {
 	const struct debayer_config *cfg = dev->config;
@@ -144,6 +203,7 @@ static const DEVICE_API(video, debayer_driver_api) = {
 	.set_frmival = debayer_set_frmival,
 	.get_frmival = debayer_get_frmival,
 	.enum_frmival = debayer_enum_frmival,
+	.get_stats = debayer_get_stats,
 	.stream_start = debayer_stream_start,
 	.stream_stop = debayer_stream_stop,
 	.set_ctrl = debayer_set_ctrl,
@@ -177,6 +237,7 @@ static int debayer_init(const struct device *dev)
 	const static struct debayer_config debayer_cfg_##n = {                                     \
 		.source_dev =                                                                      \
 			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
+		.base = DT_INST_REG_ADDR(n),                                                       \
 	};                                                                                         \
 	DEVICE_DT_INST_DEFINE(n, &debayer_init, NULL, &debayer_data_##n, &debayer_cfg_##n,         \
 			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &debayer_driver_api);

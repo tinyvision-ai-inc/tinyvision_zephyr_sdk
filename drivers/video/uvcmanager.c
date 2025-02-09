@@ -75,6 +75,7 @@ static int uvcmanager_stream_start(const struct device *dev)
 	int ret;
 
 	LOG_INF("%s: starting %s", dev->name, cfg->source_dev->name);
+
 	ret = video_stream_start(cfg->source_dev);
 	if (ret < 0) {
 		LOG_ERR("%s: failed to start %s", dev->name, cfg->source_dev->name);
@@ -94,6 +95,7 @@ static int uvcmanager_stream_stop(const struct device *dev)
 	uvcmanager_lib_stop(cfg->base);
 
 	LOG_INF("%s: stopping %s", dev->name, cfg->source_dev->name);
+
 	ret = video_stream_stop(cfg->source_dev);
 	if (ret < 0) {
 		LOG_ERR("%s: failed to stop %s", dev->name, cfg->source_dev->name);
@@ -128,6 +130,7 @@ static int uvcmanager_set_format(const struct device *dev, enum video_endpoint_i
 	}
 
 	LOG_INF("setting %s to %ux%u", sdev->name, sfmt.width, sfmt.height);
+
 	ret = video_set_format(sdev, VIDEO_EP_OUT, &sfmt);
 	if (ret < 0) {
 		LOG_ERR("%s: failed to set %s format", dev->name, sdev->name);
@@ -335,7 +338,6 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 #define UVC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 1)
 
 #define UVCMANAGER_DEVICE_DEFINE(inst)                                                             \
-                                                                                                   \
 	const struct uvcmanager_config uvcmanager_cfg_##inst = {                                   \
 		.source_dev = DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(SRC_EP(inst))),                  \
 		.dwc3_dev = DEVICE_DT_GET(DT_BUS(DT_NODE_REMOTE_DEVICE(UVC_EP(inst)))),            \
