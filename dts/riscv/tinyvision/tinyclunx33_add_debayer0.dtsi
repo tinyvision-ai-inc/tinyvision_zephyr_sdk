@@ -6,9 +6,9 @@
 
 / {
 	soc {
-		debayer0: debayer@b1200000 {
+		debayer0: debayer@b2000000 {
 			compatible = "tinyvision,debayer";
-			reg = <0xb2000000 0x20>;
+			reg = <0xb2000000 0x40>;
 			status = "disabled";
 
 			port {

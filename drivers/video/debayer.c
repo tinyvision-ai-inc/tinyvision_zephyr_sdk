@@ -65,7 +65,7 @@ static int debayer_get_caps(const struct device *dev, enum video_endpoint_id ep,
 static int debayer_set_format(const struct device *dev, enum video_endpoint_id ep, struct video_format *fmt)
 {
 	const struct debayer_config *cfg = dev->config;
-	const struct device *sdev = cfg->source_dev;
+	const struct device *source_dev = cfg->source_dev;
 	struct debayer_data *data = dev->data;
 	struct video_format sfmt = *fmt;
 	int ret;
@@ -80,10 +80,11 @@ static int debayer_set_format(const struct device *dev, enum video_endpoint_id e
 	sfmt.height += 2;
 	sfmt.pixelformat = VIDEO_PIX_FMT_BGGR8;
 
-	LOG_DBG("%s: setting %s to %ux%u", dev->name, sdev->name, sfmt.width, sfmt.height);
-	ret = video_set_format(sdev, ep, &sfmt);
+	LOG_DBG("%s: setting %s to %ux%u", dev->name, source_dev->name, sfmt.width, sfmt.height);
+
+	ret = video_set_format(source_dev, ep, &sfmt);
 	if (ret < 0) {
-		LOG_ERR("%s: failed to set %s format", dev->name, sdev->name);
+		LOG_ERR("%s: failed to set %s format", dev->name, source_dev->name);
 		return ret;
 	}
 
