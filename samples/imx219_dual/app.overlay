@@ -1,0 +1,103 @@
+/*
+ * Copyright (c) 2024-2025 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	chosen {
+		zephyr,shell-uart = &uart0;
+	};
+};
+
+&i2c0 {
+	status = "okay";
+
+	pca9542a@71 {
+		compatible = "nxp,pca9542a";
+		reg = <0x71>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		ch@0 {
+			compatible = "nxp,pca9542a-channel";
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			imx219ch0: imx219ch0@10 {
+				compatible = "sony,imx219";
+				reg = <0x10>;
+
+				port {
+					imx219ch0_ep_out: endpoint {
+						remote-endpoint-label = "debayer0_ep_in";
+					};
+				};
+			};
+		};
+
+		ch@1 {
+			compatible = "nxp,pca9542a-channel";
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			imx219ch1: imx219ch1@10 {
+				compatible = "sony,imx219";
+				reg = <0x10>;
+
+				port {
+					imx219ch1_ep_out: endpoint {
+						remote-endpoint-label = "debayer1_ep_in";
+					};
+				};
+			};
+		};
+	};
+};
+
+
+/* Stream 0 */
+
+&debayer0 {
+	status = "okay";
+};
+
+&debayer0_ep_in {
+	remote-endpoint-label = "imx219ch0_ep_out";
+};
+
+&uvcmanager0 {
+	status = "okay";
+	usb-endpoint = <0x81>;
+};
+
+
+/* Stream 1 */
+
+&debayer1 {
+	status = "okay";
+};
+
+&debayer1_ep_in {
+	remote-endpoint-label = "imx219ch1_ep_out";
+};
+
+&uvcmanager1 {
+	status = "okay";
+	usb-endpoint = <0x82>;
+};
+
+
+/* Common */
+
+&uvc {
+	status = "okay";
+};
+
+&zephyr_udc0 {
+	num-in-endpoints = <3>;
+	num-out-endpoints = <1>;
+	status = "okay";
+};
