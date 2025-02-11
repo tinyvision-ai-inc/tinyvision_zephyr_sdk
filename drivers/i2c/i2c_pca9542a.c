@@ -98,7 +98,6 @@ end:
 
 static int pca9542a_root_init(const struct device *dev)
 {
-	struct pca9542a_root_data *data = dev->data;
 	const struct pca9542a_root_config *cfg = dev->config;
 
 	if (!device_is_ready(cfg->i2c.bus)) {
