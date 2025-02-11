@@ -314,7 +314,7 @@ static int imx219_write_multi_u8(const struct i2c_dt_spec *spec, const struct im
 
 	for (int i = 0; i < num_regs; i++) {
 		ret = imx219_write_u8(spec, regs[i].addr, regs[i].val);
-		if (ret) {
+		if (ret != 0) {
 			return ret;
 		}
 	}
@@ -324,8 +324,8 @@ static int imx219_write_multi_u8(const struct i2c_dt_spec *spec, const struct im
 static int imx219_set_fmt(const struct device *dev, enum video_endpoint_id ep,
 			  struct video_format *fmt)
 {
-	struct imx219_data *drv_data = dev->data;
-	const struct imx219_config *conf = dev->config;
+	struct imx219_data *data = dev->data;
+	const struct imx219_config *cfg = dev->config;
 	int ret;
 	int i;
 
@@ -342,18 +342,18 @@ static int imx219_set_fmt(const struct device *dev, enum video_endpoint_id ep,
 		return -ENOTSUP;
 	}
 
-	if (!memcmp(&drv_data->fmt, fmt, sizeof(drv_data->fmt))) {
+	if (!memcmp(&data->fmt, fmt, sizeof(data->fmt))) {
 		return 0;
 	}
 
-	drv_data->fmt = *fmt;
+	data->fmt = *fmt;
 
 	/* Set resolution parameters */
 	for (i = 0; i < ARRAY_SIZE(res_params); i++) {
 		if (fmt->width == res_params[i].width && fmt->height == res_params[i].height) {
-			ret = imx219_write_multi_u8(&conf->i2c, res_params[i].res_params,
+			ret = imx219_write_multi_u8(&cfg->i2c, res_params[i].res_params,
 						    IMX219_RESOLUTION_PARAM_NUM);
-			if (ret) {
+			if (ret != 0) {
 				LOG_ERR("Unable to set resolution parameters");
 				return ret;
 			}
@@ -367,24 +367,24 @@ static int imx219_set_fmt(const struct device *dev, enum video_endpoint_id ep,
 
 static int imx219_stream_start(const struct device *dev)
 {
-	const struct imx219_config *conf = dev->config;
+	const struct imx219_config *cfg = dev->config;
 
-	return imx219_write_u8(&conf->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_STREAMING);
+	return imx219_write_u8(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_STREAMING);
 }
 
 static int imx219_stream_stop(const struct device *dev)
 {
-	const struct imx219_config *conf = dev->config;
+	const struct imx219_config *cfg = dev->config;
 
-	return imx219_write_u8(&conf->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_STANDBY);
+	return imx219_write_u8(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_STANDBY);
 }
 
 static int imx219_get_fmt(const struct device *dev, enum video_endpoint_id ep,
 			  struct video_format *fmt)
 {
-	struct imx219_data *drv_data = dev->data;
+	struct imx219_data *data = dev->data;
 
-	*fmt = drv_data->fmt;
+	*fmt = data->fmt;
 	return 0;
 }
 
@@ -397,18 +397,18 @@ static int imx219_get_caps(const struct device *dev, enum video_endpoint_id ep,
 
 static int imx219_set_ctrl(const struct device *dev, unsigned int cid, void *value)
 {
-	const struct imx219_config *conf = dev->config;
+	const struct imx219_config *cfg = dev->config;
 
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
-		return imx219_write_u16(&conf->i2c, IMX219_REG_INTEGRATION_TIME_MSB, (int)value);
+		return imx219_write_u16(&cfg->i2c, IMX219_REG_INTEGRATION_TIME_MSB, (int)value);
 	case VIDEO_CID_GAIN:
-		return imx219_write_u8(&conf->i2c, IMX219_REG_ANALOG_GAIN, (int)value);
+		return imx219_write_u8(&cfg->i2c, IMX219_REG_ANALOG_GAIN, (int)value);
 	case VIDEO_CID_TEST_PATTERN:
-		return imx219_write_u16(&conf->i2c, IMX219_REG_TESTPATTERN_MSB, (int)value);
+		return imx219_write_u16(&cfg->i2c, IMX219_REG_TESTPATTERN_MSB, (int)value);
 #if 0 /* not yet supported by Zephyr */
 	case VIDEO_CID_DIGITAL_GAIN:
-		return imx219_write_u16(&conf->i2c, IMX219_REG_DIGITAL_GAIN_MSB, u32);
+		return imx219_write_u16(&cfg->i2c, IMX219_REG_DIGITAL_GAIN_MSB, u32);
 #endif
 	default:
 		LOG_WRN("Control not supported");
@@ -418,7 +418,7 @@ static int imx219_set_ctrl(const struct device *dev, unsigned int cid, void *val
 
 static int imx219_get_ctrl(const struct device *dev, unsigned int cid, void *value)
 {
-	const struct imx219_config *conf = dev->config;
+	const struct imx219_config *cfg = dev->config;
 	uint32_t *u32 = value;
 	uint16_t u16;
 	uint8_t u8;
@@ -427,16 +427,16 @@ static int imx219_get_ctrl(const struct device *dev, unsigned int cid, void *val
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
 		/* Values for normal frame rate, different range for low frame rate mode */
-		ret = imx219_read_u16(&conf->i2c, IMX219_REG_INTEGRATION_TIME_MSB, &u16);
+		ret = imx219_read_u16(&cfg->i2c, IMX219_REG_INTEGRATION_TIME_MSB, &u16);
 		*u32 = u16;
 		return ret;
 	case VIDEO_CID_GAIN:
-		ret = imx219_read_u8(&conf->i2c, IMX219_REG_ANALOG_GAIN, &u8);
+		ret = imx219_read_u8(&cfg->i2c, IMX219_REG_ANALOG_GAIN, &u8);
 		*u32 = u8;
 		return ret;
 #if 0 /* Not yet supported by Zephyr */
 	case VIDEO_CID_DIGITAL_GAIN:
-		ret = imx219_read_u16(&conf->i2c, IMX219_REG_DIGITAL_GAIN_MSB, &u16);
+		ret = imx219_read_u16(&cfg->i2c, IMX219_REG_DIGITAL_GAIN_MSB, &u16);
 		*u32 = u16;
 		return ret;
 #endif
@@ -492,12 +492,12 @@ static const DEVICE_API(video, imx219_driver_api) = {
 
 static int imx219_init(const struct device *dev)
 {
-	const struct imx219_config *conf = dev->config;
-	struct video_format fmt;
+	const struct imx219_config *cfg = dev->config;
+	struct imx219_data *data = dev->data;
 	uint16_t chip_id;
 	int ret;
 
-	if (!device_is_ready(conf->i2c.bus)) {
+	if (!device_is_ready(cfg->i2c.bus)) {
 		LOG_ERR("Bus device is not ready");
 		return -ENODEV;
 	}
@@ -505,8 +505,8 @@ static int imx219_init(const struct device *dev)
 	k_sleep(K_MSEC(10));
 
 	/* Software reset */
-	ret = imx219_write_u8(&conf->i2c, IMX219_REG_SOFTWARE_RESET, IMX219_SOFTWARE_RESET);
-	if (ret) {
+	ret = imx219_write_u8(&cfg->i2c, IMX219_REG_SOFTWARE_RESET, IMX219_SOFTWARE_RESET);
+	if (ret != 0) {
 		LOG_ERR("Unable to perform software reset");
 		return -EIO;
 	}
@@ -514,31 +514,28 @@ static int imx219_init(const struct device *dev)
 	k_sleep(K_MSEC(5));
 
 	/* Check sensor chip id */
-	ret = imx219_read_u16(&conf->i2c, CHIP_ID_REG, &chip_id);
-	if (ret) {
+	ret = imx219_read_u16(&cfg->i2c, CHIP_ID_REG, &chip_id);
+	if (ret != 0) {
 		LOG_ERR("Unable to read sensor chip ID, ret = %d", ret);
 		return -ENODEV;
 	}
-
 	if (chip_id != CHIP_ID_VAL) {
 		LOG_ERR("Wrong chip ID: %04x (expected %04x)", chip_id, CHIP_ID_VAL);
 		return -ENODEV;
 	}
 
+	LOG_INF("Got %s chip ID 0x%04x", dev->name, chip_id);
+
 	/* Initialize register values */
-	ret = imx219_write_multi_u8(&conf->i2c, init_params, ARRAY_SIZE(init_params));
-	if (ret) {
+	ret = imx219_write_multi_u8(&cfg->i2c, init_params, ARRAY_SIZE(init_params));
+	if (ret != 0) {
 		LOG_ERR("Unable to initialize the sensor");
 		return -EIO;
 	}
 
-	/* Set default format to 1080p BGGR8 */
-	fmt.pixelformat = VIDEO_PIX_FMT_BGGR8;
-	fmt.width = 1920;
-	fmt.height = 1080;
-	fmt.pitch = fmt.width * 2;
-	ret = imx219_set_fmt(dev, VIDEO_EP_OUT, &fmt);
-	if (ret) {
+	/* Apply the default format */
+	ret = imx219_set_fmt(dev, VIDEO_EP_OUT, &data->fmt);
+	if (ret != 0) {
 		LOG_ERR("Unable to configure default format");
 		return -EIO;
 	}
@@ -547,7 +544,12 @@ static int imx219_init(const struct device *dev)
 }
 
 #define IMX219_INIT(n)                                                                             \
-	static struct imx219_data imx219_data_##n;                                                 \
+	static struct imx219_data imx219_data_##n = {                                              \
+		.fmt.pixelformat = VIDEO_PIX_FMT_BGGR8,                                            \
+		.fmt.width = 1920,                                                                 \
+		.fmt.height = 1080,                                                                \
+		.fmt.pitch = 1920 * 2,                                                             \
+	};                                                                                         \
                                                                                                    \
 	static const struct imx219_config imx219_conf_##n = {                                      \
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \

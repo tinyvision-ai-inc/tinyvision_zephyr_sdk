@@ -32,7 +32,6 @@ struct uvcmanager_config {
 
 struct uvcmanager_data {
 	const struct device *dev;
-	struct video_format format;
 	struct video_buffer *vbuf;
 	size_t id;
 	struct k_work work;
@@ -74,13 +73,15 @@ static int uvcmanager_stream_start(const struct device *dev)
 	uint32_t depcmd = dwc3_get_depcmd(cfg->dwc3_dev, cfg->usb_endpoint);
 	int ret;
 
-	LOG_INF("%s: starting %s", dev->name, cfg->source_dev->name);
+	LOG_DBG("starting %s first", cfg->source_dev->name);
 
 	ret = video_stream_start(cfg->source_dev);
 	if (ret < 0) {
 		LOG_ERR("%s: failed to start %s", dev->name, cfg->source_dev->name);
 		return ret;
 	}
+
+	LOG_DBG("starting %s", dev->name);
 
 	uvcmanager_lib_start(cfg->base, trb_addr, depupdxfer, depcmd);
 
@@ -92,9 +93,11 @@ static int uvcmanager_stream_stop(const struct device *dev)
 	const struct uvcmanager_config *cfg = dev->config;
 	int ret;
 
+	LOG_DBG("starting %s first", dev->name);
+
 	uvcmanager_lib_stop(cfg->base);
 
-	LOG_INF("%s: stopping %s", dev->name, cfg->source_dev->name);
+	LOG_INF("stopping %s", cfg->source_dev->name);
 
 	ret = video_stream_stop(cfg->source_dev);
 	if (ret < 0) {
@@ -114,45 +117,41 @@ static int uvcmanager_get_caps(const struct device *dev, enum video_endpoint_id 
 
 static int uvcmanager_set_format(const struct device *dev, enum video_endpoint_id ep, struct video_format *fmt)
 {
-	struct uvcmanager_data *data = dev->data;
 	const struct uvcmanager_config *cfg = dev->config;
-	const struct device *sdev = cfg->source_dev;
-	struct video_format sfmt = *fmt;
+	const struct device *source_dev = cfg->source_dev;
+	struct video_format source_fmt = *fmt;
 	int ret;
 
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
 	}
 
-	if (sdev == NULL) {
+	if (source_dev == NULL) {
 		LOG_DBG("%s: no source, skipping format selection", dev->name);
 		return 0;
 	}
 
-	LOG_INF("setting %s to %ux%u", sdev->name, sfmt.width, sfmt.height);
+	LOG_INF("setting %s to %ux%u", source_dev->name, source_fmt.width, source_fmt.height);
 
-	ret = video_set_format(sdev, VIDEO_EP_OUT, &sfmt);
+	ret = video_set_format(source_dev, VIDEO_EP_OUT, &source_fmt);
 	if (ret < 0) {
-		LOG_ERR("%s: failed to set %s format", dev->name, sdev->name);
+		LOG_ERR("failed to set %s format", source_dev->name);
 		return ret;
 	}
 
 	uvcmanager_lib_set_format(cfg->base, fmt->pitch, fmt->height);
-
-	data->format = *fmt;
 	return 0;
 }
 
 static int uvcmanager_get_format(const struct device *dev, enum video_endpoint_id ep, struct video_format *fmt)
 {
-	struct uvcmanager_data *data = dev->data;
+	const struct uvcmanager_config *cfg = dev->config;
 
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
 	}
 
-	*fmt = data->format;
-	return 0;
+	return video_get_format(cfg->source_dev, VIDEO_EP_OUT, fmt);
 }
 
 static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void *value)
@@ -250,7 +249,7 @@ static void uvcmanager_worker(struct k_work *work)
 	struct uvcmanager_data *data = CONTAINER_OF(work, struct uvcmanager_data, work);
 	const struct device *dev = data->dev;
 	const struct uvcmanager_config *cfg = dev->config;
-	struct video_buffer *vbuf = vbuf;
+	struct video_buffer *vbuf;
 
 	while ((vbuf = k_fifo_get(&data->fifo_in, K_NO_WAIT)) != NULL) {
 		vbuf->bytesused = vbuf->size;
@@ -283,34 +282,6 @@ static int uvcmanager_init(const struct device *dev)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 	struct uvcmanager_data *data = dev->data;
-	struct video_format fmt;
-	int ret;
-
-	if (!device_is_ready(cfg->dwc3_dev)) {
-		LOG_ERR("%s is not ready", cfg->dwc3_dev->name);
-		return -ENODEV;
-	}
-	if (!device_is_ready(cfg->uvc_dev)) {
-		LOG_ERR("%s is not ready", cfg->uvc_dev->name);
-		return -ENODEV;
-	}
-	if (!device_is_ready(cfg->source_dev)) {
-		LOG_ERR("%s is not ready", cfg->source_dev->name);
-		return -ENODEV;
-	}
-
-	/* Query the source format */
-	ret = video_get_format(cfg->source_dev, VIDEO_EP_OUT, &fmt);
-	if (ret < 0) {
-		LOG_ERR("Failed to query %s format", cfg->source_dev->name);
-		return ret;
-	}
-
-	/* Set our own format to match it */
-	ret = video_set_format(dev, VIDEO_EP_OUT, &fmt);
-	if (ret < 0) {
-		return ret;
-	}
 
 	k_fifo_init(&data->fifo_in);
 	k_fifo_init(&data->fifo_out);

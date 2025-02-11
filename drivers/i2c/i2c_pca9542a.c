@@ -53,7 +53,7 @@ static int pca9542a_set_channel(const struct device *dev, uint8_t chan_num)
 		return 0;
 	}
 
-	LOG_WRN("Changing the channel from %d to %d", data->chan_selected, chan_num);
+	LOG_DBG("Changing the channel from %d to %d", data->chan_selected, chan_num);
 
 	/* As defined in the datasheet */
 	reg = chan_num + 4;
@@ -106,8 +106,6 @@ static int pca9542a_root_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	data->chan_selected = 0;
-
 	return 0;
 }
 
@@ -151,6 +149,7 @@ BUILD_ASSERT(CONFIG_I2C_PCA9542A_CHANNEL_INIT_PRIO > CONFIG_I2C_PCA9542A_ROOT_IN
 	};                                                                                         \
 	static struct pca9542a_root_data pca9542a_data_##n = {                                     \
 		.lock = Z_MUTEX_INITIALIZER(pca9542a_data_##n.lock),                               \
+		.chan_selected = 0xff,                                                             \
 	};                                                                                         \
 	I2C_DEVICE_DT_DEFINE(DT_DRV_INST(n), pca9542a_root_init, NULL,                             \
 			     &pca9542a_data_##n, &pca9542a_cfg_##n, POST_KERNEL,                   \

@@ -22,10 +22,6 @@ LOG_MODULE_REGISTER(debayer, CONFIG_VIDEO_LOG_LEVEL);
 #define DEBAYER_SUM_CHANNEL_2 0x0024
 #define DEBAYER_SUM_CHANNEL_3 0x0028
 
-struct debayer_data {
-	struct video_format fmt;
-};
-
 struct debayer_config {
 	uintptr_t base;
 	const struct device *source_dev;
@@ -66,8 +62,7 @@ static int debayer_set_format(const struct device *dev, enum video_endpoint_id e
 {
 	const struct debayer_config *cfg = dev->config;
 	const struct device *source_dev = cfg->source_dev;
-	struct debayer_data *data = dev->data;
-	struct video_format sfmt = *fmt;
+	struct video_format source_fmt = *fmt;
 	int ret;
 
 	if (fmt->pixelformat != VIDEO_PIX_FMT_YUYV) {
@@ -76,27 +71,41 @@ static int debayer_set_format(const struct device *dev, enum video_endpoint_id e
 	}
 
 	/* Apply the conversion done by hardware to the format */
-	sfmt.width += 2;
-	sfmt.height += 2;
-	sfmt.pixelformat = VIDEO_PIX_FMT_BGGR8;
+	source_fmt.width += 2;
+	source_fmt.height += 2;
+	source_fmt.pixelformat = VIDEO_PIX_FMT_BGGR8;
 
-	LOG_DBG("%s: setting %s to %ux%u", dev->name, source_dev->name, sfmt.width, sfmt.height);
+	LOG_DBG("setting %s to %ux%u", source_dev->name, source_fmt.width, source_fmt.height);
 
-	ret = video_set_format(source_dev, ep, &sfmt);
+	ret = video_set_format(source_dev, ep, &source_fmt);
 	if (ret < 0) {
-		LOG_ERR("%s: failed to set %s format", dev->name, source_dev->name);
+		LOG_ERR("failed to set %s format", source_dev->name);
 		return ret;
 	}
 
-	data->fmt = *fmt;
 	return 0;
 }
 
 static int debayer_get_format(const struct device *dev, enum video_endpoint_id ep,
 			  struct video_format *fmt)
 {
-	struct debayer_data *data = dev->data;
-	*fmt = data->fmt;
+	const struct debayer_config *cfg = dev->config;
+	int ret;
+
+	ret = video_get_format(cfg->source_dev, ep, fmt);
+	if (ret < 0) {
+		LOG_ERR("failed to get %s format", cfg->source_dev->name);
+		return ret;
+	}
+
+	LOG_DBG("%s format is %ux%u, stripping 2 pixels vertically and horizontally",
+		cfg->source_dev->name, fmt->width, fmt->height);
+
+	/* Apply the conversion done by hardware to the format */
+	fmt->width -= 2;
+	fmt->height -= 2;
+	fmt->pixelformat = VIDEO_PIX_FMT_YUYV;
+
 	return 0;
 }
 
@@ -104,6 +113,7 @@ static int debayer_set_frmival(const struct device *dev, enum video_endpoint_id 
 			       struct video_frmival *frmival)
 {
 	const struct debayer_config *cfg = dev->config;
+
 	return video_set_frmival(cfg->source_dev, ep, frmival);
 }
 
@@ -111,6 +121,7 @@ static int debayer_get_frmival(const struct device *dev, enum video_endpoint_id 
 			       struct video_frmival *frmival)
 {
 	const struct debayer_config *cfg = dev->config;
+
 	return video_get_frmival(cfg->source_dev, ep, frmival);
 }
 
@@ -118,6 +129,7 @@ static int debayer_enum_frmival(const struct device *dev, enum video_endpoint_id
 				struct video_frmival_enum *fie)
 {
 	const struct debayer_config *cfg = dev->config;
+
 	return video_enum_frmival(cfg->source_dev, ep, fie);
 }
 
@@ -176,24 +188,28 @@ static int debayer_get_stats(const struct device *dev, enum video_endpoint_id ep
 static int debayer_get_ctrl(const struct device *dev, unsigned int cid, void *value)
 {
 	const struct debayer_config *cfg = dev->config;
+
 	return video_get_ctrl(cfg->source_dev, cid, value);
 }
 
 static int debayer_set_ctrl(const struct device *dev, unsigned int cid, void *value)
 {
 	const struct debayer_config *cfg = dev->config;
+
 	return video_set_ctrl(cfg->source_dev, cid, value);
 }
 
 static int debayer_stream_start(const struct device *dev)
 {
 	const struct debayer_config *cfg = dev->config;
+
 	return video_stream_start(cfg->source_dev);
 }
 
 static int debayer_stream_stop(const struct device *dev)
 {
 	const struct debayer_config *cfg = dev->config;
+
 	return video_stream_stop(cfg->source_dev);
 }
 
@@ -211,36 +227,13 @@ static const DEVICE_API(video, debayer_driver_api) = {
 	.get_ctrl = debayer_get_ctrl,
 };
 
-static int debayer_init(const struct device *dev)
-{
-	struct video_caps caps;
-	struct video_format fmt;
-	int ret;
-
-	debayer_get_caps(dev, VIDEO_EP_OUT, &caps);
-
-	fmt.pixelformat = caps.format_caps[0].pixelformat;
-	fmt.width = caps.format_caps[0].width_max;
-	fmt.height = caps.format_caps[0].height_max;
-	fmt.pitch = fmt.width * video_pix_fmt_bpp(fmt.pixelformat);
-
-	ret = debayer_set_format(dev, VIDEO_EP_OUT, &fmt);
-	if (ret) {
-		LOG_ERR("Unable to configure default format");
-		return -EIO;
-	}
-
-	return 0;
-}
-
 #define DEBAYER_INIT(n)                                                                            \
-	static struct debayer_data debayer_data_##n;                                               \
 	const static struct debayer_config debayer_cfg_##n = {                                     \
 		.source_dev =                                                                      \
 			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
 		.base = DT_INST_REG_ADDR(n),                                                       \
 	};                                                                                         \
-	DEVICE_DT_INST_DEFINE(n, &debayer_init, NULL, &debayer_data_##n, &debayer_cfg_##n,         \
+	DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, &debayer_cfg_##n,                               \
 			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &debayer_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(DEBAYER_INIT)

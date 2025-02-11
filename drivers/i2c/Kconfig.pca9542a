@@ -18,7 +18,7 @@ config I2C_PCA9542A_CHANNEL_INIT_PRIO
 	int "PCA9542A channel driver init priority"
 	default I2C_INIT_PRIORITY
 	help
-	  Should be higher than `I2C_PCA9542A_ROOT_INIT_PRIO`
+	  Should be higher than I2C_PCA9542A_ROOT_INIT_PRIO
 
 config I2C_PCA9542A_IGNORE_FAILURE
 	bool "send the I2C messages when the channel selection fails"
