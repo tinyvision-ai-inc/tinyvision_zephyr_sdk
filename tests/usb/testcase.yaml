@@ -1,6 +1,6 @@
 common:
   tags: usbd
   integration_platforms:
-    - tinyclunx33@rev2/rtl010
+    - tinyclunx33@rev2/rtl_0_10
 tests:
   usb.enumeration: {}

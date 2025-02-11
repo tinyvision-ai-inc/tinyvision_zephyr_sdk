@@ -16,44 +16,44 @@ config SOC_TINYCLUNX33_CUSTOM
 	  the peripheral definition is done in the app.overlay directly.
 	  This is a good starting point for a custom FPGA design.
 
-config SOC_TINYCLUNX33_RTL008
+config SOC_TINYCLUNX33_RTL_0_8
 	bool "tinyCLUNX33 RTL v0.8 release"
 	select SOC_SERIES_TINYCLUNX33
 	help
 	  This SoC lacks MIPI support, but features a test pattern generator
 	  to test the USB bandwidth.
 
-config SOC_TINYCLUNX33_RTL009
+config SOC_TINYCLUNX33_RTL_0_9
 	bool "tinyCLUNX33 RTL v0.9 release"
 	select SOC_SERIES_TINYCLUNX33
 	help
 	  This SoC introduces MIPI support.
 
-config SOC_TINYCLUNX33_RTL010
+config SOC_TINYCLUNX33_RTL_0_10
 	bool "tinyCLUNX33 RTL v0.10 release"
 	select SOC_SERIES_TINYCLUNX33
 	help
 	  The tinyCLUNX33 RTL v0.10 release.
 
-config SOC_TINYCLUNX33_RTL011
+config SOC_TINYCLUNX33_RTL_0_11
 	bool "tinyCLUNX33 RTL v0.11 release"
 	select SOC_SERIES_TINYCLUNX33
 	help
 	  The tinyCLUNX33 RTL v0.11 release.
 
-config SOC_TINYCLUNX33_RTL012
-	bool "tinyCLUNX33 RTL v0.12 release"
+config SOC_TINYCLUNX33_RTL_1_0_2
+	bool "tinyCLUNX33 RTL v1.0.2 release"
 	select SOC_SERIES_TINYCLUNX33
 	help
-	  The tinyCLUNX33 RTL v0.12 release.
+	  The tinyCLUNX33 RTL v1.0.2 release.
 
 config SOC_SERIES
 	default "tinyclunx33" if SOC_SERIES_TINYCLUNX33
 
 config SOC
 	default "custom" if SOC_TINYCLUNX33_CUSTOM
-	default "rtl008" if SOC_TINYCLUNX33_RTL008
-	default "rtl009" if SOC_TINYCLUNX33_RTL009
-	default "rtl010" if SOC_TINYCLUNX33_RTL010
-	default "rtl011" if SOC_TINYCLUNX33_RTL011
-	default "rtl012" if SOC_TINYCLUNX33_RTL012
+	default "rtl_0_8" if SOC_TINYCLUNX33_RTL_0_8
+	default "rtl_0_9" if SOC_TINYCLUNX33_RTL_0_9
+	default "rtl_0_10" if SOC_TINYCLUNX33_RTL_0_10
+	default "rtl_0_11" if SOC_TINYCLUNX33_RTL_0_11
+	default "rtl_1_0_2" if SOC_TINYCLUNX33_RTL_1_0_2

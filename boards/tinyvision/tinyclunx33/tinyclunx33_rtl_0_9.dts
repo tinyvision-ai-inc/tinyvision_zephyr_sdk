@@ -6,4 +6,4 @@
 
 /dts-v1/;
 
-#include <riscv/tinyvision/tinyclunx33_rtl011.dtsi>
+#include <riscv/tinyvision/tinyclunx33_rtl_0_9.dtsi>

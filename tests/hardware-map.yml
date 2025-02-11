@@ -1,6 +1,6 @@
 - connected: true
   id: '0'
-  platform: tinyclunx33@rev2/rtl010
+  platform: tinyclunx33@rev2/rtl_0_10
   product: Dual RS232-HS
   runner: ecpprog_hook
   serial: /dev/ttyUSB1
