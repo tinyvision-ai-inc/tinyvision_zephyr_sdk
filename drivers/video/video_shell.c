@@ -166,7 +166,7 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 	const struct device *dev = device_get_binding(argv[1]);
 	struct video_caps caps = {0};
 	struct video_format fmt = {0};
-	struct video_stats stats = {0};
+	struct video_channel_stats stats = {0};
 	int ret;
 
 	ret = video_shell_check_device(sh, dev);
@@ -216,13 +216,21 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 		}
 	}
 
-	ret = video_get_stats(dev, VIDEO_EP_OUT, &stats, K_MSEC(500));
+	ret = video_get_stats(dev, VIDEO_EP_OUT, VIDEO_STATS_ASK_CHANNELS, &stats.base);
 	if (ret == 0) {
-		shell_print(sh, "sum of Y values: %"PRIu64, stats.sum_y);
-		shell_print(sh, "sum of R values: %"PRIu64, stats.sum_r);
-		shell_print(sh, "sum of G values: %"PRIu64, stats.sum_g);
-		shell_print(sh, "sum of B values: %"PRIu64, stats.sum_b);
-		shell_print(sh, "total frames:    %"PRIu64, stats.frames);
+		shell_print(sh, "total frames: %d", stats.base.frame_counter);
+	}
+	if (stats.base.type_flags & VIDEO_STATS_CHANNELS_Y) {
+		shell_print(sh, "- Channel Y: %d", stats.ch0);
+	}
+	if (stats.base.type_flags & VIDEO_STATS_CHANNELS_YUV) {
+		shell_print(sh, "- Channel U: %d", stats.ch1);
+		shell_print(sh, "- Channel V: %d", stats.ch2);
+	}
+	if (stats.base.type_flags & VIDEO_STATS_CHANNELS_RGB) {
+		shell_print(sh, "- Channel R: %d", stats.ch1);
+		shell_print(sh, "- Channel G: %d", stats.ch2);
+		shell_print(sh, "- Channel B: %d", stats.ch3);
 	}
 
 	return 0;

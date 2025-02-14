@@ -16,11 +16,21 @@
 
 LOG_MODULE_REGISTER(debayer, CONFIG_VIDEO_LOG_LEVEL);
 
-#define DEBAYER_FRAME_COUNTER 0x0010
-#define DEBAYER_SUM_CHANNEL_0 0x001c
-#define DEBAYER_SUM_CHANNEL_1 0x0020
-#define DEBAYER_SUM_CHANNEL_2 0x0024
-#define DEBAYER_SUM_CHANNEL_3 0x0028
+#define DEBAYER_SCRATCH			0x0000
+#define DEBAYER_CONTROL			0x0004
+#define DEBAYER_STATUS			0x0008
+#define DEBAYER_CONFIG			0x000C
+#define DEBAYER_NUM_FRAMES		0x0010
+#define DEBAYER_IMAGE_GAIN		0x0018
+#define DEBAYER_CHAN_AVG_0		0x001C
+#define DEBAYER_CHAN_AVG_1		0x0020
+#define DEBAYER_CHAN_AVG_2		0x0024
+#define DEBAYER_CHAN_AVG_3		0x0028
+#define DEBAYER_NUM_PIXELS		0x002C
+#define DEBAYER_HIST_THRESHOLDS		0x0030
+#define DEBAYER_HIST_0			0x0034
+#define DEBAYER_HIST_1			0x0038
+#define DEBAYER_HIST_2			0x003C
 
 struct debayer_config {
 	uintptr_t base;
@@ -134,15 +144,27 @@ static int debayer_enum_frmival(const struct device *dev, enum video_endpoint_id
 }
 
 static int debayer_get_stats(const struct device *dev, enum video_endpoint_id ep,
-				struct video_stats *stats, k_timeout_t timeout)
+			     uint16_t type_flags, struct video_stats *stats_in)
 {
 	const struct debayer_config *cfg = dev->config;
-	uint8_t ch0 = sys_read32(cfg->base + DEBAYER_SUM_CHANNEL_0);
-	uint8_t ch1 = sys_read32(cfg->base + DEBAYER_SUM_CHANNEL_1);
-	uint8_t ch2 = sys_read32(cfg->base + DEBAYER_SUM_CHANNEL_2);
-	uint8_t ch3 = sys_read32(cfg->base + DEBAYER_SUM_CHANNEL_3);
+	uint8_t ch0 = sys_read32(cfg->base + DEBAYER_CHAN_AVG_0);
+	uint8_t ch1 = sys_read32(cfg->base + DEBAYER_CHAN_AVG_1);
+	uint8_t ch2 = sys_read32(cfg->base + DEBAYER_CHAN_AVG_2);
+	uint8_t ch3 = sys_read32(cfg->base + DEBAYER_CHAN_AVG_3);
+	struct video_channel_stats *stats = (void *)stats_in;
 	struct video_format fmt;
 	int ret;
+
+	/* Unconditionally set the frame counter */
+	stats->base.frame_counter = sys_read32(cfg->base + DEBAYER_NUM_FRAMES);
+
+	if (type_flags == 0) {
+		return 0;
+	}
+
+	if ((type_flags & VIDEO_STATS_ASK_CHANNELS) == 0) {
+		return -ENOTSUP;
+	}
 
 	ret = video_get_format(cfg->source_dev, VIDEO_EP_OUT, &fmt);
 	if (ret < 0) {
@@ -157,30 +179,35 @@ static int debayer_get_stats(const struct device *dev, enum video_endpoint_id ep
 	 */
 	switch (fmt.pixelformat) {
 	case VIDEO_PIX_FMT_BGGR8:
-		stats->sum_r = ch3;
-		stats->sum_g = (ch1 + ch2) / 2;
-		stats->sum_b = ch0;
+		stats->ch1 = ch3; /* red */
+		stats->ch2 = (ch1 + ch2) / 2; /* green */
+		stats->ch3 = ch0; /* blue */
 		break;
 	case VIDEO_PIX_FMT_GBRG8:
-		stats->sum_r = ch2;
-		stats->sum_g = (ch0 + ch3) / 2;
-		stats->sum_b = ch1;
+		stats->ch1 = ch2; /* red */
+		stats->ch2 = (ch0 + ch3) / 2; /* green */
+		stats->ch3 = ch1; /* blue */
 		break;
 	case VIDEO_PIX_FMT_GRBG8:
-		stats->sum_r = ch1;
-		stats->sum_g = (ch0 + ch3) / 2;
-		stats->sum_b = ch2;
+		stats->ch1 = ch1; /* red */
+		stats->ch2 = (ch0 + ch3) / 2; /* green */
+		stats->ch3 = ch2; /* blue */
 		break;
 	case VIDEO_PIX_FMT_RGGB8:
-		stats->sum_r = ch0;
-		stats->sum_g = (ch1 + ch2) / 2;
-		stats->sum_b = ch3;
+		stats->ch1 = ch0; /* red */
+		stats->ch2 = (ch1 + ch2) / 2; /* green */
+		stats->ch3 = ch3; /* blue */
 		break;
 	default:
 		LOG_WRN("Unknown input pixel format, cannot decode the statistics");
 	}
 
-	stats->frames = sys_read32(cfg->base + DEBAYER_FRAME_COUNTER);
+	/* Hardware bug */
+	stats->ch1 = stats->ch1 == 255 ? 0 : stats->ch1;
+	stats->ch2 = stats->ch2 == 255 ? 0 : stats->ch2;
+	stats->ch3 = stats->ch3 == 255 ? 0 : stats->ch3;
+
+	stats->base.type_flags = VIDEO_STATS_CHANNELS_RGB;
 
 	return 0;
 }

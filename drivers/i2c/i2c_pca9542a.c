@@ -59,10 +59,12 @@ static int pca9542a_set_channel(const struct device *dev, uint8_t chan_num)
 	reg = chan_num + 4;
 
 	ret = i2c_write_dt(&cfg->i2c, &reg, sizeof(reg));
+#ifndef CONFIG_I2C_PCA9542A_IGNORE_FAILURE
 	if (ret < 0) {
 		LOG_ERR("Failed to set channel to %u", chan_num);
 		return ret;
 	}
+#endif
 
 	data->chan_selected = chan_num;
 
@@ -83,10 +85,7 @@ static int pca9542a_transfer(const struct device *dev, struct i2c_msg *msgs, uin
 	}
 
 	ret = pca9542a_set_channel(chan_cfg->root_dev, chan_cfg->chan_num);
-	if (ret != 0) {
-#ifdef CONFIG_I2C_PCA9542A_IGNORE_FAILURE
-		ret = i2c_transfer(root_cfg->i2c.bus, msgs, num_msgs, addr);
-#endif
+	if (ret < 0) {
 		goto end;
 	}
 
