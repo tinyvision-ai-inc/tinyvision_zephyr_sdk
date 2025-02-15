@@ -4,5 +4,6 @@
 if USB_DEVICE_STACK_NEXT
 
 rsource "class/Kconfig.uvc"
+rsource "class/Kconfig.cdc_raw"
 
 endif # USB_DEVICE_STACK_NEXT

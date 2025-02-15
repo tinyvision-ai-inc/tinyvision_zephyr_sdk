@@ -4,3 +4,4 @@
 zephyr_library()
 
 zephyr_library_sources_ifdef(CONFIG_USBD_VIDEO_CLASS class/usbd_uvc.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_CDC_RAW_CLASS class/usbd_cdc_raw.c)
