@@ -43,7 +43,7 @@ struct cdc_acm_desc {
 	struct usb_ep_descriptor if0_fs_int_ep;
 	struct usb_ep_descriptor if0_hs_int_ep;
 	struct usb_ep_descriptor if0_ss_int_ep;
-	struct usb_ep_companion if0_ss_int_comp;
+	struct usb_ss_endpoint_companion_descriptor if0_ss_int_comp;
 
 	struct usb_if_descriptor if1;
 	struct usb_ep_descriptor if1_fs_in_ep;
@@ -51,9 +51,9 @@ struct cdc_acm_desc {
 	struct usb_ep_descriptor if1_hs_in_ep;
 	struct usb_ep_descriptor if1_hs_out_ep;
 	struct usb_ep_descriptor if1_ss_in_ep;
-	struct usb_ep_companion if1_ss_in_comp;
+	struct usb_ss_endpoint_companion_descriptor if1_ss_in_comp;
 	struct usb_ep_descriptor if1_ss_out_ep;
-	struct usb_ep_companion if1_ss_out_comp;
+	struct usb_ss_endpoint_companion_descriptor if1_ss_out_comp;
 
 	struct usb_desc_header nil_desc;
 };
@@ -318,7 +318,7 @@ static struct cdc_acm_desc cdc_acm_desc_##n = {					\
 	},									\
 										\
 	.if0_ss_int_comp = {							\
-		.bLength = sizeof(struct usb_ep_companion),			\
+		.bLength = sizeof(struct usb_ss_endpoint_companion_descriptor),	\
 		.bDescriptorType = USB_DESC_ENDPOINT_COMPANION,			\
 		.bMaxBurst = 0,							\
 		.bmAttributes = 0,						\
@@ -383,7 +383,7 @@ static struct cdc_acm_desc cdc_acm_desc_##n = {					\
 	},									\
 										\
 	.if1_ss_in_comp = {							\
-		.bLength = sizeof(struct usb_ep_companion),			\
+		.bLength = sizeof(struct usb_ss_endpoint_companion_descriptor),	\
 		.bDescriptorType = USB_DESC_ENDPOINT_COMPANION,			\
 		.bMaxBurst = 15,						\
 		.bmAttributes = 0,						\
@@ -400,7 +400,7 @@ static struct cdc_acm_desc cdc_acm_desc_##n = {					\
 	},									\
 										\
 	.if1_ss_out_comp = {							\
-		.bLength = sizeof(struct usb_ep_companion),			\
+		.bLength = sizeof(struct usb_ss_endpoint_companion_descriptor),	\
 		.bDescriptorType = USB_DESC_ENDPOINT_COMPANION,			\
 		.bMaxBurst = 15,						\
 		.bmAttributes = 0,						\
