@@ -111,15 +111,11 @@ static int testpattern_enum_frmival(const struct device *dev, enum video_endpoin
 	return 0;
 }
 
-static int testpattern_stream_start(const struct device *dev)
+static int testpattern_set_stream(const struct device *dev, bool on)
 {
 	return 0;
 }
 
-static int testpattern_stream_stop(const struct device *dev)
-{
-	return 0;
-}
 
 static const DEVICE_API(video, testpattern_driver_api) = {
 	.set_format = testpattern_set_fmt,
@@ -127,8 +123,7 @@ static const DEVICE_API(video, testpattern_driver_api) = {
 	.get_caps = testpattern_get_caps,
 	.get_frmival = testpattern_get_frmival,
 	.enum_frmival = testpattern_enum_frmival,
-	.stream_start = testpattern_stream_start,
-	.stream_stop = testpattern_stream_stop,
+	.set_stream = testpattern_set_stream,
 };
 
 static int testpattern_init(const struct device *dev)

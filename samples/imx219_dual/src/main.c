@@ -1,14 +1,20 @@
 #include <zephyr/drivers/video.h>
 #include <zephyr/drivers/video-controls.h>
+#include <zephyr/usb/class/usbd_uvc.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(app_main, LOG_LEVEL_INF);
 
-static const struct device *const source_dev_0 = DEVICE_DT_GET(DT_NODELABEL(debayer0));
-static const struct device *const sensor_dev_0 = DEVICE_DT_GET(DT_NODELABEL(imx219ch0));
-static const struct device *const source_dev_1 = DEVICE_DT_GET(DT_NODELABEL(debayer1));
-static const struct device *const sensor_dev_1 = DEVICE_DT_GET(DT_NODELABEL(imx219ch0));
+static const struct device *const sensor0_dev = DEVICE_DT_GET(DT_NODELABEL(imx219ch0));
+static const struct device *const sensor1_dev = DEVICE_DT_GET(DT_NODELABEL(imx219ch0));
+static const struct device *const source0_dev = DEVICE_DT_GET(DT_NODELABEL(uvcmanager0));
+static const struct device *const source1_dev = DEVICE_DT_GET(DT_NODELABEL(uvcmanager1));
+static const struct device *const uvc0_dev = DEVICE_DT_GET(DT_NODELABEL(uvc0));
+static const struct device *const uvc1_dev = DEVICE_DT_GET(DT_NODELABEL(uvc1));
 
+int app_usb_init(void);
+
+#if 0
 void app_stats_convert(struct video_stats *stats_in, uint16_t stats_wanted)
 {
 	struct video_channel_stats *stats = (void *)stats_in;
@@ -47,7 +53,7 @@ int app_ipa_aec(const struct device *dev, struct video_stats *stats_in)
 	}
 
 	ret = video_get_ctrl(dev, VIDEO_CID_EXPOSURE, (void *)&exposure_prev);
-	if (ret < 0) {
+	if (ret != 0) {
 		LOG_ERR("Cannot get the current control value from %s", dev->name);
 		return ret;
 	}
@@ -75,7 +81,7 @@ int app_ipa_aec(const struct device *dev, struct video_stats *stats_in)
 	}
 
 	video_set_ctrl(dev, VIDEO_CID_EXPOSURE, (void *)exposure_next);
-	if (ret < 0) {
+	if (ret != 0) {
 		LOG_ERR("Cannot set the new control value to %d for %s", exposure_next, dev->name);
 		return ret;
 	}
@@ -83,22 +89,42 @@ int app_ipa_aec(const struct device *dev, struct video_stats *stats_in)
 	LOG_DBG("Updated ISP to new value %d, work is done", exposure_next);
 	return 0;
 }
+#endif
 
 int main(void)
 {
+#if 0
 	struct video_channel_stats stats = {0};
 	struct video_stats *stats_out = (void *)&stats;
+#endif
 	int ret;
 
-	ret = video_set_ctrl(sensor_dev_0, VIDEO_CID_GAIN, (void *)555);
-	if (ret < 0) {
-		LOG_ERR("Cannot set the default gain for %s", sensor_dev_0->name);
+	uvc_set_video_dev(uvc0_dev, source0_dev);
+	uvc_set_video_dev(uvc1_dev, source1_dev);
+
+	ret = app_usb_init();
+	if (ret != 0) {
+		LOG_ERR("Failed to initialize USB");
+		return ret;
+	}
+
+	ret = video_set_ctrl(sensor0_dev, VIDEO_CID_GAIN, (void *)555);
+	if (ret != 0) {
+		LOG_ERR("Cannot set the default gain for %s", sensor0_dev->name);
+		return ret;
+	}
+
+	ret = video_set_ctrl(sensor1_dev, VIDEO_CID_GAIN, (void *)555);
+	if (ret != 0) {
+		LOG_ERR("Cannot set the default gain for %s", sensor0_dev->name);
 		return ret;
 	}
 
 	while (true) {
-		video_get_stats(source_dev_0, VIDEO_EP_OUT, VIDEO_STATS_ASK_CHANNELS, stats_out);
-		app_ipa_aec(sensor_dev_0, stats_out);
+#if 0
+		video_get_stats(source0_dev, VIDEO_EP_OUT, VIDEO_STATS_ASK_CHANNELS, stats_out);
+		app_ipa_aec(sensor0_dev, stats_out);
+#endif
 
 		k_sleep(K_MSEC(10));
 	}

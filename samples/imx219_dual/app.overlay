@@ -6,7 +6,7 @@
 
 / {
 	chosen {
-		zephyr,shell-uart = &uart0;
+		zephyr,shell-uart = &cdc_acm_0;
 	};
 };
 
@@ -57,6 +57,15 @@
 	};
 };
 
+&zephyr_udc0 {
+	num-in-endpoints = <5>;
+	num-out-endpoints = <2>;
+	status = "okay";
+
+	cdc_acm_0: cdc_acm_0 {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
 
 /* Stream 0 */
 
@@ -70,9 +79,12 @@
 
 &uvcmanager0 {
 	status = "okay";
-	usb-endpoint = <0x81>;
+	usb-endpoint = <0x83>;
 };
 
+&uvc0 {
+	status = "okay";
+};
 
 /* Stream 1 */
 
@@ -86,18 +98,9 @@
 
 &uvcmanager1 {
 	status = "okay";
-	usb-endpoint = <0x82>;
+	usb-endpoint = <0x84>;
 };
 
-
-/* Common */
-
-&uvc {
-	status = "okay";
-};
-
-&zephyr_udc0 {
-	num-in-endpoints = <3>;
-	num-out-endpoints = <1>;
+&uvc1 {
 	status = "okay";
 };

@@ -365,18 +365,12 @@ static int imx219_set_fmt(const struct device *dev, enum video_endpoint_id ep,
 	return 0;
 }
 
-static int imx219_stream_start(const struct device *dev)
+static int imx219_set_stream(const struct device *dev, bool on)
 {
 	const struct imx219_config *cfg = dev->config;
 
-	return imx219_write_u8(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_STREAMING);
-}
-
-static int imx219_stream_stop(const struct device *dev)
-{
-	const struct imx219_config *cfg = dev->config;
-
-	return imx219_write_u8(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_STANDBY);
+	return on ? imx219_write_u8(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_STREAMING)
+		  : imx219_write_u8(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_STANDBY);
 }
 
 static int imx219_get_fmt(const struct device *dev, enum video_endpoint_id ep,
@@ -484,8 +478,7 @@ static const DEVICE_API(video, imx219_driver_api) = {
 	.set_frmival = imx219_set_frmival,
 	.get_frmival = imx219_get_frmival,
 	.enum_frmival = imx219_enum_frmival,
-	.stream_start = imx219_stream_start,
-	.stream_stop = imx219_stream_stop,
+	.set_stream = imx219_set_stream,
 	.set_ctrl = imx219_set_ctrl,
 	.get_ctrl = imx219_get_ctrl,
 };

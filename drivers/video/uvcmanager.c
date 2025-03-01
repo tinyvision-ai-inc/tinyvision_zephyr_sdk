@@ -47,6 +47,8 @@ uint32_t dwc3_get_trb_addr(const struct device *dev, uint8_t ep_addr)
 {
 	struct dwc3_ep_data *ep_data = (void *)udc_get_ep_cfg(dev, ep_addr);
 
+	LOG_WRN("%p", ep_data->trb_buf);
+
 	return (uint32_t)ep_data->trb_buf;
 }
 
@@ -65,7 +67,7 @@ uint32_t dwc3_get_depupdxfer(const struct device *dev, uint8_t ep_addr)
 		FIELD_PREP(DWC3_DEPCMD_XFERRSCIDX_MASK, ep_data->xferrscidx);
 }
 
-static int uvcmanager_stream_start(const struct device *dev)
+static int uvcmanager_set_stream(const struct device *dev, bool on)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 	uint32_t trb_addr = dwc3_get_trb_addr(cfg->dwc3_dev, cfg->usb_endpoint);
@@ -73,36 +75,26 @@ static int uvcmanager_stream_start(const struct device *dev)
 	uint32_t depcmd = dwc3_get_depcmd(cfg->dwc3_dev, cfg->usb_endpoint);
 	int ret;
 
-	LOG_DBG("starting %s first", cfg->source_dev->name);
+	if (on) {
+		LOG_DBG("Starting %s, then %s", cfg->source_dev->name, dev->name);
 
-	ret = video_stream_start(cfg->source_dev);
-	if (ret < 0) {
-		LOG_ERR("%s: failed to start %s", dev->name, cfg->source_dev->name);
-		return ret;
-	}
+		ret = video_stream_start(cfg->source_dev);
+		if (ret < 0) {
+			LOG_ERR("%s: failed to start %s", dev->name, cfg->source_dev->name);
+			return ret;
+		}
 
-	LOG_DBG("starting %s", dev->name);
+		uvcmanager_lib_start(cfg->base, trb_addr, depupdxfer, depcmd);
+	} else {
+		LOG_DBG("Stopping %s, then %s", dev->name, cfg->source_dev->name);
 
-	uvcmanager_lib_start(cfg->base, trb_addr, depupdxfer, depcmd);
+		uvcmanager_lib_stop(cfg->base);
 
-	return 0;
-}
-
-static int uvcmanager_stream_stop(const struct device *dev)
-{
-	const struct uvcmanager_config *cfg = dev->config;
-	int ret;
-
-	LOG_DBG("starting %s first", dev->name);
-
-	uvcmanager_lib_stop(cfg->base);
-
-	LOG_INF("stopping %s", cfg->source_dev->name);
-
-	ret = video_stream_stop(cfg->source_dev);
-	if (ret < 0) {
-		LOG_ERR("%s: failed to stop %s", dev->name, cfg->source_dev->name);
-		return ret;
+		ret = video_stream_stop(cfg->source_dev);
+		if (ret < 0) {
+			LOG_ERR("%s: failed to stop %s", dev->name, cfg->source_dev->name);
+			return ret;
+		}
 	}
 
 	return 0;
@@ -298,8 +290,7 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.set_frmival = uvcmanager_set_frmival,
 	.get_frmival = uvcmanager_get_frmival,
 	.enum_frmival = uvcmanager_enum_frmival,
-	.stream_start = uvcmanager_stream_start,
-	.stream_stop = uvcmanager_stream_stop,
+	.set_stream = uvcmanager_set_stream,
 	.set_ctrl = uvcmanager_set_ctrl,
 	.enqueue = uvcmanager_enqueue,
 	.dequeue = uvcmanager_dequeue,

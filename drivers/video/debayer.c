@@ -143,6 +143,7 @@ static int debayer_enum_frmival(const struct device *dev, enum video_endpoint_id
 	return video_enum_frmival(cfg->source_dev, ep, fie);
 }
 
+#if 0
 static int debayer_get_stats(const struct device *dev, enum video_endpoint_id ep,
 			     uint16_t type_flags, struct video_stats *stats_in)
 {
@@ -211,6 +212,7 @@ static int debayer_get_stats(const struct device *dev, enum video_endpoint_id ep
 
 	return 0;
 }
+#endif
 
 static int debayer_get_ctrl(const struct device *dev, unsigned int cid, void *value)
 {
@@ -226,18 +228,11 @@ static int debayer_set_ctrl(const struct device *dev, unsigned int cid, void *va
 	return video_set_ctrl(cfg->source_dev, cid, value);
 }
 
-static int debayer_stream_start(const struct device *dev)
+static int debayer_set_stream(const struct device *dev, bool on)
 {
 	const struct debayer_config *cfg = dev->config;
 
-	return video_stream_start(cfg->source_dev);
-}
-
-static int debayer_stream_stop(const struct device *dev)
-{
-	const struct debayer_config *cfg = dev->config;
-
-	return video_stream_stop(cfg->source_dev);
+	return on ? video_stream_start(cfg->source_dev) : video_stream_stop(cfg->source_dev);
 }
 
 static const DEVICE_API(video, debayer_driver_api) = {
@@ -247,9 +242,10 @@ static const DEVICE_API(video, debayer_driver_api) = {
 	.set_frmival = debayer_set_frmival,
 	.get_frmival = debayer_get_frmival,
 	.enum_frmival = debayer_enum_frmival,
+#if 0
 	.get_stats = debayer_get_stats,
-	.stream_start = debayer_stream_start,
-	.stream_stop = debayer_stream_stop,
+#endif
+	.set_stream = debayer_set_stream,
 	.set_ctrl = debayer_set_ctrl,
 	.get_ctrl = debayer_get_ctrl,
 };

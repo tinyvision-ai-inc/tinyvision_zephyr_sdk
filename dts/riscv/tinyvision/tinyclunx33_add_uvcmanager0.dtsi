@@ -26,7 +26,7 @@
 
 				uvcmanager0_ep_out: endpoint@1 {
 					reg = <1>;
-					remote-endpoint-label = "uvc_ep_in0";
+					remote-endpoint-label = "uvc0_ep_in";
 				};
 			};
 		};
@@ -38,16 +38,12 @@
 	num-in-endpoints = <2>;
 	maximum-speed = "super-speed";
 
-	uvc: uvc {
+	uvc0: uvc0 {
 		compatible = "zephyr,uvc-device";
 		status = "disabled";
 
 		port {
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			uvc_ep_in0: endpoint@0 {
-				reg = <0>;
+			uvc0_ep_in: endpoint {
 				remote-endpoint-label = "uvcmanager0_ep_out";
 			};
 		};

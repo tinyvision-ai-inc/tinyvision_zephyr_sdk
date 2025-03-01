@@ -70,8 +70,8 @@ static int video_shell_parse_fourcc(const struct shell *sh, char *fourcc)
 		return 0;
 	}
 
-	pixfmt = video_fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
-	if (video_pix_fmt_bpp(pixfmt) == 0) {
+	pixfmt = VIDEO_FOURCC(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
+	if (video_bits_per_pixel(pixfmt) == 0) {
 		shell_error(sh, "invalid <fourcc> parameter %s, format not supported", fourcc);
 		shell_print(sh, "see <zephyr/drivers/video.h> for a list valid formats");
 		shell_print(sh, "compressed formats like JPEG are not currently supported");
@@ -166,7 +166,9 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 	const struct device *dev = device_get_binding(argv[1]);
 	struct video_caps caps = {0};
 	struct video_format fmt = {0};
+#if 0
 	struct video_channel_stats stats = {0};
+#endif
 	int ret;
 
 	ret = video_shell_check_device(sh, dev);
@@ -197,7 +199,8 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 	for (int i = 0; caps.format_caps[i].pixelformat != 0; i++) {
 		const struct video_format_cap *cap = &caps.format_caps[i];
 		uint32_t px = cap->pixelformat;
-		size_t size = cap->width_max * cap->height_max * video_pix_fmt_bpp(px);
+		size_t size = cap->width_max * cap->height_max *
+			video_bits_per_pixel(px) / BITS_PER_BYTE;
 
 		if (cap->width_min != cap->width_max || cap->height_min != cap->height_max) {
 			shell_print(sh, "pixel format %c%c%c%c, min %ux%u, max %ux%u, step %ux%u"
@@ -216,6 +219,7 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 		}
 	}
 
+#if 0
 	ret = video_get_stats(dev, VIDEO_EP_OUT, VIDEO_STATS_ASK_CHANNELS, &stats.base);
 	if (ret == 0) {
 		shell_print(sh, "total frames: %d", stats.base.frame_counter);
@@ -232,6 +236,7 @@ static int cmd_video_show(const struct shell *sh, size_t argc, char **argv)
 		shell_print(sh, "- Channel G: %d", stats.ch2);
 		shell_print(sh, "- Channel B: %d", stats.ch3);
 	}
+#endif
 
 	return 0;
 }
@@ -265,7 +270,7 @@ static int cmd_video_format(const struct shell *sh, size_t argc, char **argv)
 		return -EINVAL;
 	}
 
-	fmt.pitch = fmt.width * video_pix_fmt_bpp(fmt.pixelformat);
+	fmt.pitch = fmt.width * video_bits_per_pixel(fmt.pixelformat) / BITS_PER_BYTE;
 
 	shell_print(sh, "setting %s format to %c%c%c%c %ux%u (%u bytes)", dev->name,
 		    fmt.pixelformat >> 0 & 0xff, fmt.pixelformat >> 8 & 0xff,
@@ -682,8 +687,7 @@ static int video_shell_view(const struct shell *sh, uint8_t *buf, size_t size, u
 			     uint16_t width, uint16_t cols)
 {
 	uint8_t line[2][256];
-	uint8_t bpp = video_pix_fmt_bpp(pixfmt);
-	uint16_t pitch = width * bpp;
+	uint16_t pitch = width * video_bits_per_pixel(pixfmt) / BITS_PER_BYTE;
 	size_t height = height = size / pitch;
 	size_t rows = cols * height / width;
 	size_t debt = 0;
@@ -735,7 +739,7 @@ static int cmd_video_view(const struct shell *sh, size_t argc, char **argv)
 	size = vbuf->bytesused;
 
 	pixfmt = video_shell_parse_fourcc(sh, argv[1]);
-	if (pixfmt == 0 || video_pix_fmt_bpp(pixfmt) == 0) {
+	if (pixfmt == 0 || video_bits_per_pixel(pixfmt) == 0) {
 		shell_error(sh, "unsupported <fourcc> %s", argv[1]);
 		return -EINVAL;
 	}
