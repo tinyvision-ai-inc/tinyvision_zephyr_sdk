@@ -11,6 +11,10 @@ properties:
   reg:
     required: true
 
+  usb-controller:
+    type: phandle
+    required: true
+
   usb-endpoint:
     type: int
     required: true
@@ -18,7 +22,3 @@ properties:
 child-binding:
   child-binding:
     include: video-interfaces.yaml
-    properties:
-      reg:
-        type: array
-        required: true

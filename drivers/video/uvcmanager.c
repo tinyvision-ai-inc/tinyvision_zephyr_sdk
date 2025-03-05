@@ -24,7 +24,6 @@ LOG_MODULE_REGISTER(uvcmanager, CONFIG_VIDEO_LOG_LEVEL);
 struct uvcmanager_config {
 	const struct device *source_dev;
 	const struct device *dwc3_dev;
-	const struct device *uvc_dev;
 	uintptr_t base;
 	uintptr_t fifo;
 	uint8_t usb_endpoint;
@@ -77,6 +76,8 @@ static int uvcmanager_set_stream(const struct device *dev, bool on)
 
 	if (on) {
 		LOG_DBG("Starting %s, then %s", cfg->source_dev->name, dev->name);
+		LOG_DBG("trb addr 0x%08x, depupdxfer 0x%02x, depcmd 0x%08x",
+			trb_addr, depupdxfer, depcmd);
 
 		ret = video_stream_start(cfg->source_dev);
 		if (ret < 0) {
@@ -302,8 +303,7 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 #define UVCMANAGER_DEVICE_DEFINE(inst)                                                             \
 	const struct uvcmanager_config uvcmanager_cfg_##inst = {                                   \
 		.source_dev = DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(SRC_EP(inst))),                  \
-		.dwc3_dev = DEVICE_DT_GET(DT_BUS(DT_NODE_REMOTE_DEVICE(UVC_EP(inst)))),            \
-		.uvc_dev = DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(UVC_EP(inst))),                     \
+		.dwc3_dev = DEVICE_DT_GET(DT_INST_PHANDLE(inst, usb_controller)),                  \
 		.usb_endpoint = DT_INST_PROP(inst, usb_endpoint),                                  \
 		.base = DT_INST_REG_ADDR_BY_NAME(inst, base),                                      \
 		.fifo = DT_INST_REG_ADDR_BY_NAME(inst, fifo),                                      \
