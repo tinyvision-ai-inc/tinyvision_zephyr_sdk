@@ -1043,7 +1043,7 @@ static int uvc_get_control_op(const struct device *dev, const struct usb_setup_p
 	return (*map)->op;
 err:
 	LOG_WRN("No control matches selector %u and bUnitID %u", selector, unit_id);
-	data->err = UVC_ERR_INVALID_UNIT;
+	data->err = UVC_ERR_INVALID_CONTROL;
 	return UVC_OP_RETURN_ERROR;
 }
 
@@ -1292,6 +1292,7 @@ static int uvc_add_vs_format_desc(const struct device *dev,
 		*format_desc = (struct uvc_format_descriptor *)desc;
 	}
 
+
 	__ASSERT_NO_MSG(*format_desc != NULL);
 
 	return 0;
@@ -1454,6 +1455,7 @@ static int uvc_init(struct usbd_class_data *const c_data)
 		return 0;
 	}
 
+
 	/* Generating VideoControl descriptors (interface 0) */
 
 	mask = uvc_get_mask(data->video_dev, uvc_control_map_ct);
@@ -1487,6 +1489,7 @@ static int uvc_init(struct usbd_class_data *const c_data)
 
 		if (prev_pixfmt != cap->pixelformat) {
 			if (prev_pixfmt != 0) {
+				cfg->desc->if1_hdr.wTotalLength += cfg->desc->if1_color.bLength;
 				uvc_add_desc(dev, &cfg->desc->if1_color, true, true, true);
 			}
 
@@ -1511,6 +1514,7 @@ static int uvc_init(struct usbd_class_data *const c_data)
 		prev_pixfmt = cap->pixelformat;
 	}
 
+	cfg->desc->if1_hdr.wTotalLength += cfg->desc->if1_color.bLength;
 	uvc_add_desc(dev, &cfg->desc->if1_color, true, true, true);
 	uvc_add_desc(dev, &cfg->desc->if1_ep_fs, true, false, false);
 	uvc_add_desc(dev, &cfg->desc->if1_ep_hs, false, true, false);
@@ -1917,6 +1921,7 @@ static struct uvc_desc uvc_desc_##n = {						\
 			sizeof(struct uvc_camera_terminal_descriptor) +		\
 			sizeof(struct uvc_selector_unit_descriptor) +		\
 			sizeof(struct uvc_processing_unit_descriptor) +		\
+			sizeof(struct uvc_extension_unit_descriptor) +		\
 			sizeof(struct uvc_output_terminal_descriptor)),		\
 		.dwClockFrequency = sys_cpu_to_le32(30000000),			\
 		.bInCollection = 1,						\
@@ -2004,8 +2009,7 @@ static struct uvc_desc uvc_desc_##n = {						\
 		.bDescriptorSubtype = UVC_VS_INPUT_HEADER,			\
 		.bNumFormats = 0,						\
 		.wTotalLength = sys_cpu_to_le16(				\
-			sizeof(struct uvc_stream_header_descriptor) +		\
-			sizeof(struct usb_ep_descriptor)),			\
+			sizeof(struct uvc_stream_header_descriptor)),		\
 		.bEndpointAddress = 0x81,					\
 		.bmInfo = 0,							\
 		.bTerminalLink = UVC_UNIT_ID_OT,				\
