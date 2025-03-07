@@ -139,8 +139,24 @@ static int debayer_enum_frmival(const struct device *dev, enum video_endpoint_id
 				struct video_frmival_enum *fie)
 {
 	const struct debayer_config *cfg = dev->config;
+	const struct video_format *prev_fmt = fie->format;
+	struct video_format fmt = *fie->format;
+	int ret;
 
-	return video_enum_frmival(cfg->source_dev, ep, fie);
+	if (fie->format->pixelformat != VIDEO_PIX_FMT_YUYV) {
+		LOG_ERR("Only YUYV is supported");
+		return -ENOTSUP;
+	}
+
+	fmt.width += 2;
+	fmt.height += 2;
+	fmt.pixelformat = VIDEO_PIX_FMT_BGGR8,
+
+	fie->format = &fmt;
+	ret = video_enum_frmival(cfg->source_dev, ep, fie);
+	fie->format = prev_fmt;
+
+	return ret;
 }
 
 #if 0

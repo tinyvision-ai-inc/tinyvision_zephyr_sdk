@@ -8,6 +8,7 @@ if (NOT DEFINED UVCMANAGER)
 endif()
 
 zephyr_include_directories(.)
+zephyr_library_sources(video_imager.c)
 zephyr_library_sources_ifdef(CONFIG_VIDEO_TINYVISION_UVCMANAGER uvcmanager.c ${UVCMANAGER})
 zephyr_library_sources_ifdef(CONFIG_VIDEO_IMX219 imx219.c)
 zephyr_library_sources_ifdef(CONFIG_VIDEO_TINYVISION_TESTPATTERN testpattern.c)
