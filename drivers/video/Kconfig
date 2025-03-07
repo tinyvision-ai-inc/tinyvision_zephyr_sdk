@@ -4,6 +4,7 @@
 if VIDEO
 
 rsource "Kconfig.imx219"
+rsource "Kconfig.imx296"
 rsource "Kconfig.debayer"
 rsource "Kconfig.shell"
 rsource "Kconfig.testpattern"
