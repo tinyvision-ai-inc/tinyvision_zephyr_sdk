@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2023 Gaurav Singh www.CircuitValley.com
- * Copyright (c) 2024 NXP
- * Copyright (c) 2024 tinyVision.ai Inc.
+ * Copyright (c) 2024-2025 tinyVision.ai Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -20,158 +18,50 @@
 
 LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
 
-#define CHIP_ID_REG 0x0000
-#define CHIP_ID_VAL 0x0219
-
+#define IMX219_REG_CHIP_ID 0x0000
 #define IMX219_REG_SOFTWARE_RESET 0x0103
-#define IMX219_SOFTWARE_RESET     1
-
 #define IMX219_REG_MODE_SELECT 0x0100
 #define IMX219_MODE_STANDBY    0x00
 #define IMX219_MODE_STREAMING  0x01
-
-#define IMX219_REG_CSI_LANE_MODE 0x0114
-#define IMX219_CSI_2_LANE_MODE   0x01
-#define IMX219_CSI_4_LANE_MODE   0x03
-
-#define IMX219_REG_DPHY_CTRL           0x0128
-#define IMX219_DPHY_CTRL_TIMING_AUTO   0
-#define IMX219_DPHY_CTRL_TIMING_MANUAL 1
-
-#define IMX219_REG_EXCK_FREQ     0x012a
-#define IMX219_REG_EXCK_FREQ_LSB 0x012B
-
 #define IMX219_REG_ANALOG_GAIN 0x0157
+#define IMX219_REG_DIGITAL_GAIN 0x0158
+#define IMX219_REG_INTEGRATION_TIME 0x015A
+#define IMX219_REG_TESTPATTERN 0x0600
 
-#define IMX219_REG_DIGITAL_GAIN_MSB 0x0158
-#define IMX219_REG_DIGITAL_GAIN_LSB 0x0159
-#define IMX219_DGTL_GAIN_DEF        0x0100
-
-/* Exposure control */
-#define IMX219_REG_INTEGRATION_TIME_MSB 0x015A
-#define IMX219_REG_INTEGRATION_TIME_LSB 0x015B
-
-/* V_TIMING internal */
-#define IMX219_REG_FRAME_LEN_MSB 0x0160
-#define IMX219_REG_FRAME_LEN_LSB 0x0161
-
-#define IMX219_REG_LINE_LENGTH_A_MSB 0x0162
-#define IMX219_REG_LINE_LENGTH_A_LSB 0x0163
-#define IMX219_REG_X_ADD_STA_A_MSB   0x0164
-#define IMX219_REG_X_ADD_STA_A_LSB   0x0165
-#define IMX219_REG_X_ADD_END_A_MSB   0x0166
-#define IMX219_REG_X_ADD_END_A_LSB   0x0167
-#define IMX219_REG_Y_ADD_STA_A_MSB   0x0168
-#define IMX219_REG_Y_ADD_STA_A_LSB   0x0169
-#define IMX219_REG_Y_ADD_END_A_MSB   0x016a
-#define IMX219_REG_Y_ADD_END_A_LSB   0x016b
-#define IMX219_REG_X_OUTPUT_SIZE_MSB 0x016c
-#define IMX219_REG_X_OUTPUT_SIZE_LSB 0x016d
-#define IMX219_REG_Y_OUTPUT_SIZE_MSB 0x016e
-#define IMX219_REG_Y_OUTPUT_SIZE_LSB 0x016f
-#define IMX219_REG_X_ODD_INC_A       0x0170
-#define IMX219_REG_Y_ODD_INC_A       0x0171
-#define IMX219_REG_ORIENTATION       0x0172
-
-/* Binning  Mode */
-#define IMX219_REG_BINNING_MODE_H 0x0174
-#define IMX219_REG_BINNING_MODE_V 0x0175
-#define IMX219_BINNING_NONE       0x00
-
-#define IMX219_REG_CSI_DATA_FORMAT_A_MSB 0x018c
-#define IMX219_REG_CSI_DATA_FORMAT_A_LSB 0x018d
-
-/* PLL Settings */
-#define IMX219_REG_VTPXCK_DIV      0x0301
-#define IMX219_REG_VTSYCK_DIV      0x0303
-#define IMX219_REG_PREPLLCK_VT_DIV 0x0304
-#define IMX219_REG_PREPLLCK_OP_DIV 0x0305
-#define IMX219_REG_PLL_VT_MPY_MSB  0x0306
-#define IMX219_REG_PLL_VT_MPY_LSB  0x0307
-#define IMX219_REG_OPPXCK_DIV      0x0309
-#define IMX219_REG_OPSYCK_DIV      0x030b
-#define IMX219_REG_PLL_OP_MPY_MSB  0x030c
-#define IMX219_REG_PLL_OP_MPY_LSB  0x030d
-
-/* Test Pattern Control */
-#define IMX219_REG_TESTPATTERN_MSB 0x0600
-#define IMX219_REG_TESTPATTERN_LSB 0x0601
-#define IMX219_TESTPATTERN_DISABLE 0
-
-#define IMX219_REG_TP_X_OFFSET_MSB 0x0620
-#define IMX219_REG_TP_X_OFFSET_LSB 0x0621
-#define IMX219_REG_TP_Y_OFFSET_MSB 0x0622
-#define IMX219_REG_TP_Y_OFFSET_LSB 0x0623
-
-/* Test pattern colour components */
-#define IMX219_REG_TESTP_RED_MSB    0x0602
-#define IMX219_REG_TESTP_RED_LSB    0x0603
-#define IMX219_REG_TESTP_GREENR_MSB 0x0604
-#define IMX219_REG_TESTP_GREENR_LSB 0x0605
-#define IMX219_REG_TESTP_BLUE_MSB   0x0606
-#define IMX219_REG_TESTP_BLUE_LSB   0x0607
-
-#define IMX219_REG_TP_WINDOW_WIDTH_MSB  0x0624
-#define IMX219_REG_TP_WINDOW_WIDTH_LSB  0x0625
-#define IMX219_REG_TP_WINDOW_HEIGHT_MSB 0x0626
-#define IMX219_REG_TP_WINDOW_HEIGHT_LSB 0x0627
-
-#define IMX219_RESOLUTION_PARAM_NUM 20
+#define U16(addr, reg) {(addr + 0), (reg) >> 8}, {(addr) + 1, (reg) >> 0}
 
 static const struct video_imager_reg16 init_regs[] = {
-	{IMX219_REG_MODE_SELECT, IMX219_MODE_STANDBY},
-	{0x30EB, 0x05}, // access sequence
+	{0x0100, 0x00}, /* MODE_SELECT: standby */
+	{0x30EB, 0x05},
 	{0x30EB, 0x0C},
 	{0x300A, 0xFF},
 	{0x300B, 0xFF},
 	{0x30EB, 0x05},
 	{0x30EB, 0x09},
-	{IMX219_REG_CSI_LANE_MODE, IMX219_CSI_2_LANE_MODE},   // 3-> 4Lane 1-> 2Lane
-	{IMX219_REG_DPHY_CTRL, IMX219_DPHY_CTRL_TIMING_AUTO}, // DPHY timing 0-> auot 1-> manual
-	{IMX219_REG_EXCK_FREQ, 0x18}, // external oscillator frequncy 0x18 -> 24Mhz
-	{IMX219_REG_EXCK_FREQ_LSB, 0x00},
-	// frame length , Raspberry pi sends this commands continously when recording video
-	// @60fps ,writes come at interval of 32ms , Data 355 for resolution 1280x720
-	// command 162 also comes along with data 0DE7 also 15A with data 0200
-	{IMX219_REG_FRAME_LEN_MSB, 0x06},
-	{IMX219_REG_FRAME_LEN_LSB, 0xE3},
-	// does not directly affect how many bits on wire in
-	// one line does affect how many clock between lines
-	{IMX219_REG_LINE_LENGTH_A_MSB, 0x0d},
-	// appears to be having step in value, not every LSb change will reflect on fps
-	{IMX219_REG_LINE_LENGTH_A_LSB, 0x78},
-	{IMX219_REG_X_ADD_STA_A_MSB, 0x02}, // x start
-	{IMX219_REG_X_ADD_STA_A_LSB, 0xA8},
-	{IMX219_REG_X_ADD_END_A_MSB, 0x0A}, // x end
-	{IMX219_REG_X_ADD_END_A_LSB, 0x27},
-	{IMX219_REG_Y_ADD_STA_A_MSB, 0x02}, // y start
-	{IMX219_REG_Y_ADD_STA_A_LSB, 0xB4},
-	{IMX219_REG_Y_ADD_END_A_MSB, 0x06}, // y end
-	{IMX219_REG_Y_ADD_END_A_LSB, 0xEB},
-	// resolution 1280 -> 5 00 , 1920 -> 780 , 2048 -> 0x8 0x00
-	{IMX219_REG_X_OUTPUT_SIZE_MSB, 0x07},
-	{IMX219_REG_X_OUTPUT_SIZE_LSB, 0x80},
-	// 720 -> 0x02D0 | 1080 -> 0x438  | this setting changes how many line over wire
-	// does not affect frame rate
-	{IMX219_REG_Y_OUTPUT_SIZE_MSB, 0x04},
-	{IMX219_REG_Y_OUTPUT_SIZE_LSB, 0x38},
-	{IMX219_REG_X_ODD_INC_A, 0x01},           // increment
-	{IMX219_REG_Y_ODD_INC_A, 0x01},           // increment
-	{IMX219_REG_BINNING_MODE_H, 0x00},        // binning H 0 off 1 x2 2 x4 3 x2 analog
-	{IMX219_REG_BINNING_MODE_V, 0x00},        // binning H 0 off 1 x2 2 x4 3 x2 analog
-	{IMX219_REG_CSI_DATA_FORMAT_A_MSB, 0x0A}, // CSI Data format A-> 10bit
-	{IMX219_REG_CSI_DATA_FORMAT_A_LSB, 0x0A}, // CSI Data format
-	{IMX219_REG_VTPXCK_DIV, 0x05},            // vtpxclkd_div	5 301
-	{IMX219_REG_VTSYCK_DIV, 0x01},            // vtsclk _div  1	303
-	{IMX219_REG_PREPLLCK_VT_DIV, 0x03},       // external oscillator /3
-	{IMX219_REG_PREPLLCK_OP_DIV, 0x03},       // external oscillator /3
-	{IMX219_REG_PLL_VT_MPY_MSB, 0x00},        // PLL_VT multiplizer
-	{IMX219_REG_PLL_VT_MPY_LSB, 0x52}, // Changes Frame rate with , integration register 0x15a
-	{IMX219_REG_OPPXCK_DIV, 0x0A},     // oppxck_div
-	{IMX219_REG_OPSYCK_DIV, 0x01},     // opsysck_div
-	// PLL_OP // 8Mhz x 0x57 ->696Mhz -> 348Mhz |  0x32 -> 200Mhz | 0x40 -> 256Mhz
-	{IMX219_REG_PLL_OP_MPY_MSB, 0x00},
-	{IMX219_REG_PLL_OP_MPY_LSB, 0x32},
+	{0x0114, 0x01},		/* CSI_LANE_MODE: 2 lanes */
+	{0x0128, 0x00},		/* DPHY_CTRL: auto */
+	U16(0x012a, 0x1800),	/* EXCK_FREQ: 24 MHz */
+	U16(0x0160, 0x06e3),	/* FRAME_LEN */
+	U16(0x0162, 0x0d78),	/* LINE_LENGTH_A  */
+	U16(0x0164, 0x02A8),	/* X_ADD_STA_A */
+	U16(0x0166, 0x0A27),	/* X_ADD_END_A */
+	U16(0x0168, 0x02B4),	/* Y_ADD_STA_A */
+	U16(0x016a, 0x06EB),	/* Y_ADD_END_A */
+	U16(0x016c, 0x0780),	/* X_OUTPUT_SIZE */
+	U16(0x016e, 0x0438),	/* Y_OUTPUT_SIZE */
+	{0x0170, 0x01},		/* X_ODD_INC_A */
+	{0x0171, 0x01},		/* Y_ODD_INC_A */
+	{0x0174, 0x00},		/* BINNING_MODE_H */
+	{0x0175, 0x00},		/* BINNING_MODE_V */
+	U16(0x018c, 0x0A0A),	/* CSI_DATA_FORMAT_A */
+	{0x0301, 0x05},		/* VTPXCK_DIV */
+	{0x0303, 0x01},		/* VTSYCK_DIV */
+	{0x0304, 0x03},		/* PREPLLCK_VT_DIV */
+	{0x0305, 0x03},		/* PREPLLCK_OP_DIV */
+	U16(0x0306, 0x0052),	/* PLL_VT_MPY */
+	{0x0309, 0x0A},		/* OPPXCK_DIV */
+	{0x030b, 0x01},		/* OPSYCK_DIV */
+	U16(0x030c, 0x0032),	/* PLL_OP_MPY */
 	{0x455E, 0x00},
 	{0x471E, 0x4B},
 	{0x4767, 0x0F},
@@ -184,60 +74,37 @@ static const struct video_imager_reg16 init_regs[] = {
 	{0x4793, 0x10},
 	{0x4797, 0x0E},
 	{0x479B, 0x0E},
-	{IMX219_REG_TESTP_RED_MSB, 0x00},
-	{IMX219_REG_TESTP_RED_LSB, 0x00},
-	{IMX219_REG_TESTP_GREENR_MSB, 0x00},
-	{IMX219_REG_TESTP_GREENR_LSB, 0x00},
-	{IMX219_REG_TESTP_BLUE_MSB, 0x00},
-	{IMX219_REG_TESTP_BLUE_LSB, 0x00},
-	{IMX219_REG_TESTPATTERN_MSB, 0x00}, // test pattern
-	{IMX219_REG_TESTPATTERN_LSB, 0x00},
-	{IMX219_REG_TP_X_OFFSET_MSB, 0x00}, // tp offset x 0
-	{IMX219_REG_TP_X_OFFSET_LSB, 0x00},
-	{IMX219_REG_TP_Y_OFFSET_MSB, 0x00}, // tp offset y 0
-	{IMX219_REG_TP_Y_OFFSET_LSB, 0x00},
-	{IMX219_REG_TP_WINDOW_WIDTH_MSB, 0x05}, // TP width 1920 ->780 1280->500
-	{IMX219_REG_TP_WINDOW_WIDTH_LSB, 0x00},
-	{IMX219_REG_TP_WINDOW_HEIGHT_MSB, 0x02}, // TP height 1080 -> 438 720->2D0
-	{IMX219_REG_TP_WINDOW_HEIGHT_LSB, 0xD0},
-	{IMX219_REG_DIGITAL_GAIN_MSB, 0x01},
-	{IMX219_REG_DIGITAL_GAIN_LSB, 0x00},
-	// analog gain , raspberry pi constinouly changes this depending on scene
-	{IMX219_REG_ANALOG_GAIN, 0x80},
-	// integration time , really important for frame rate
-	{IMX219_REG_INTEGRATION_TIME_MSB, 0x03},
-	{IMX219_REG_INTEGRATION_TIME_LSB, 0x51},
-	// image_orientation (for both direction) bit[0]: hor bit[1]: vert
-	{IMX219_REG_ORIENTATION, 0x03},
+	U16(0x0602, 0x0000),	/* TESTP_RED */
+	U16(0x0604, 0x0000),	/* TESTP_GREENR */
+	U16(0x0606, 0x0000),	/* TESTP_BLUE */
+	U16(0x0600, 0x0000),	/* TESTPATTERN */
+	U16(0x0620, 0x0000),	/* TP_X_OFFSET */
+	U16(0x0622, 0x0000),	/* TP_Y_OFFSET */
+	U16(0x0624, 0x0500),	/* TP_WINDOW_WIDTH */
+	U16(0x0626, 0x02D0),	/* TP_WINDOW_HEIGHT */
+	U16(0x0158, 0x0100),	/* DIGITAL_GAIN */
+	{0x0157, 0x80},		/* ANALOG_GAIN */
+	U16(0x015A, 0x0351),	/* INTEGRATION_TIME */
+	{0x0172, 0x03},		/* ORIENTATION */
 	{0},
 };
 
 static const struct video_imager_reg16 bggr8_1920x1080[] = {
-	{IMX219_REG_PLL_VT_MPY_MSB, 0x00},
-	{IMX219_REG_PLL_VT_MPY_LSB, 0x20},
-	{IMX219_REG_VTPXCK_DIV, 0x04},
-	{IMX219_REG_INTEGRATION_TIME_MSB, 0x04},
-	{IMX219_REG_INTEGRATION_TIME_LSB, 0xac},
-	{IMX219_REG_ANALOG_GAIN, 0x80},
-	{IMX219_REG_LINE_LENGTH_A_MSB, 0x0d},
-	{IMX219_REG_LINE_LENGTH_A_LSB, 0x78},
-	{IMX219_REG_FRAME_LEN_MSB, 0x04},
-	{IMX219_REG_FRAME_LEN_LSB, 0xb0},
-	{IMX219_REG_X_ADD_STA_A_MSB, 0x02},
-	{IMX219_REG_X_ADD_STA_A_LSB, 0xa8},
-	{IMX219_REG_Y_ADD_STA_A_MSB, 0x02},
-	{IMX219_REG_Y_ADD_STA_A_LSB, 0xb4},
-	{IMX219_REG_X_ADD_END_A_MSB, 0x0a},
-	{IMX219_REG_X_ADD_END_A_LSB, 0x27},
-	{IMX219_REG_Y_ADD_END_A_MSB, 0x06},
-	{IMX219_REG_Y_ADD_END_A_LSB, 0xeb},
-	{IMX219_REG_X_OUTPUT_SIZE_MSB, 0x07},
-	{IMX219_REG_X_OUTPUT_SIZE_LSB, 0x80},
-	{IMX219_REG_Y_OUTPUT_SIZE_MSB, 0x04},
-	{IMX219_REG_Y_OUTPUT_SIZE_LSB, 0x38},
-	{IMX219_REG_TESTPATTERN_LSB, 0x00},
-	{IMX219_REG_BINNING_MODE_H, 0x00},
-	{IMX219_REG_BINNING_MODE_V, 0x00},
+	U16(0x0306, 0x0020),	/* PLL_VT_MPY */
+	{0x0301, 0x04},		/* VTPXCK_DIV */
+	U16(0x015A, 0x04ac),	/* INTEGRATION_TIME */
+	{0x0157, 0x80},		/* ANALOG_GAIN */
+	U16(0x0162, 0x0d78),	/* LINE_LENGTH_A */
+	U16(0x0160, 0x04b0),	/* FRAME_LEN */
+	U16(0x0164, 0x02a8),	/* X_ADD_STA_A */
+	U16(0x0168, 0x02b4),	/* Y_ADD_STA_A */
+	U16(0x0166, 0x0a27),	/* X_ADD_END_A */
+	U16(0x016a, 0x06eb),	/* Y_ADD_END_A */
+	U16(0x016c, 0x0780),	/* X_OUTPUT_SIZE */
+	U16(0x016e, 0x0438),	/* Y_OUTPUT_SIZE */
+	{0x0600, 0x00},		/* TESTPATTERN */
+	{0x0174, 0x00},		/* BINNING_MODE_H */
+	{0x0175, 0x00},		/* BINNING_MODE_V */
 	{0},
 };
 
@@ -249,10 +116,12 @@ static const struct video_imager_mode bggr8_1920x1080_modes[] = {
 enum {
 	BGGR8_1920x1080,
 };
+
 static const struct video_format_cap fmts[] = {
 	[BGGR8_1920x1080] = VIDEO_IMAGER_FORMAT_CAP(1920, 1080, VIDEO_PIX_FMT_BGGR8),
 	{0},
 };
+
 static const struct video_imager_mode *modes[] = {
 	[BGGR8_1920x1080] = bggr8_1920x1080_modes,
 	NULL,
@@ -277,11 +146,11 @@ static int imx219_set_ctrl(const struct device *dev, unsigned int cid, void *val
 
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
-		return imx219_write16(data->i2c, IMX219_REG_INTEGRATION_TIME_MSB, (int)value);
+		return imx219_write16(data->i2c, IMX219_REG_INTEGRATION_TIME, (int)value);
 	case VIDEO_CID_GAIN:
 		return imx219_write8(data->i2c, IMX219_REG_ANALOG_GAIN, (int)value);
 	case VIDEO_CID_TEST_PATTERN:
-		return imx219_write16(data->i2c, IMX219_REG_TESTPATTERN_MSB, (int)value);
+		return imx219_write16(data->i2c, IMX219_REG_TESTPATTERN, (int)value);
 	default:
 		LOG_WRN("Control not supported");
 		return -ENOTSUP;
@@ -299,7 +168,7 @@ static int imx219_get_ctrl(const struct device *dev, unsigned int cid, void *val
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
 		/* Values for normal frame rate, different range for low frame rate mode */
-		ret = imx219_read16(data->i2c, IMX219_REG_INTEGRATION_TIME_MSB, &u16);
+		ret = imx219_read16(data->i2c, IMX219_REG_INTEGRATION_TIME, &u16);
 		*u32 = u16;
 		return ret;
 	case VIDEO_CID_GAIN:
@@ -340,7 +209,7 @@ static int imx219_init(const struct device *dev)
 	k_sleep(K_MSEC(10));
 
 	/* Software reset */
-	ret = imx219_write8(data->i2c, IMX219_REG_SOFTWARE_RESET, IMX219_SOFTWARE_RESET);
+	ret = imx219_write8(data->i2c, IMX219_REG_SOFTWARE_RESET, 1);
 	if (ret != 0) {
 		LOG_ERR("Unable to perform software reset");
 		return -EIO;
@@ -349,13 +218,13 @@ static int imx219_init(const struct device *dev)
 	k_sleep(K_MSEC(5));
 
 	/* Check sensor chip id */
-	ret = imx219_read16(data->i2c, CHIP_ID_REG, &chip_id);
+	ret = imx219_read16(data->i2c, IMX219_REG_CHIP_ID, &chip_id);
 	if (ret != 0) {
 		LOG_ERR("Unable to read sensor chip ID, ret = %d", ret);
 		return -ENODEV;
 	}
-	if (chip_id != CHIP_ID_VAL) {
-		LOG_ERR("Wrong chip ID: %04x (expected %04x)", chip_id, CHIP_ID_VAL);
+	if (chip_id != 0x0219) {
+		LOG_ERR("Wrong chip ID %04x", chip_id);
 		return -ENODEV;
 	}
 
