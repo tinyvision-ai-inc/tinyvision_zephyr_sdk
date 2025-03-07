@@ -143,7 +143,7 @@ static void video_shell_show_frmival(const struct shell *sh, const struct device
 	struct video_frmival_enum fie = {.format = &fmt};
 	int ret;
 
-	while ((ret = video_enum_frmival(dev, VIDEO_EP_ALL, &fie)) == 0) {
+	for (fie.index == 0; video_enum_frmival(dev, VIDEO_EP_ALL, &fie) == 0; fie.index++) {
 		switch (fie.type) {
 		case VIDEO_FRMIVAL_TYPE_DISCRETE:
 			video_shell_show_discrete(sh, &fie.discrete);
@@ -156,7 +156,7 @@ static void video_shell_show_frmival(const struct shell *sh, const struct device
 			break;
 		}
 	}
-	if (ret < 0) {
+	if (fie.index == 0) {
 		shell_error(sh, "error while listing frame intervals");
 	}
 }

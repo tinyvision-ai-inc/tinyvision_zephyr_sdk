@@ -32,6 +32,8 @@ LOG_MODULE_REGISTER(debayer, CONFIG_VIDEO_LOG_LEVEL);
 #define DEBAYER_HIST_1			0x0038
 #define DEBAYER_HIST_2			0x003C
 
+#define DEBAYER_PIX_FMT VIDEO_PIX_FMT_GBRG8
+
 struct debayer_config {
 	uintptr_t base;
 	const struct device *source_dev;
@@ -83,7 +85,7 @@ static int debayer_set_format(const struct device *dev, enum video_endpoint_id e
 	/* Apply the conversion done by hardware to the format */
 	source_fmt.width += 2;
 	source_fmt.height += 2;
-	source_fmt.pixelformat = VIDEO_PIX_FMT_BGGR8;
+	source_fmt.pixelformat = DEBAYER_PIX_FMT;
 
 	LOG_DBG("setting %s to %ux%u", source_dev->name, source_fmt.width, source_fmt.height);
 
@@ -150,7 +152,7 @@ static int debayer_enum_frmival(const struct device *dev, enum video_endpoint_id
 
 	fmt.width += 2;
 	fmt.height += 2;
-	fmt.pixelformat = VIDEO_PIX_FMT_BGGR8,
+	fmt.pixelformat = DEBAYER_PIX_FMT,
 
 	fie->format = &fmt;
 	ret = video_enum_frmival(cfg->source_dev, ep, fie);

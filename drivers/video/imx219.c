@@ -206,23 +206,23 @@ static int imx219_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	k_sleep(K_MSEC(10));
+	k_sleep(K_MSEC(1));
 
-	/* Software reset */
 	ret = imx219_write8(data->i2c, IMX219_REG_SOFTWARE_RESET, 1);
 	if (ret != 0) {
 		LOG_ERR("Unable to perform software reset");
 		return -EIO;
 	}
 
-	k_sleep(K_MSEC(5));
+	/* Initializing time of silicon (t5): 32000 clock cycles, 5.3 msec for 6 MHz */
+	k_sleep(K_MSEC(6));
 
-	/* Check sensor chip id */
 	ret = imx219_read16(data->i2c, IMX219_REG_CHIP_ID, &chip_id);
 	if (ret != 0) {
 		LOG_ERR("Unable to read sensor chip ID, ret = %d", ret);
 		return -ENODEV;
 	}
+
 	if (chip_id != 0x0219) {
 		LOG_ERR("Wrong chip ID %04x", chip_id);
 		return -ENODEV;
