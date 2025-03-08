@@ -58,8 +58,8 @@ static const struct video_imager_reg16 init_regs[] = {
 	U8(0x0301, 5),			/* VTPXCK_DIV */
 	U8(0x0303, 1),			/* VTSYCK_DIV */
 	U8(0x030b, 1),			/* OPSYCK_DIV */
-	U16(0x0306, 32),		/* PLL_VT_MPY */
-	U16(0x030c, 50),		/* PLL_OP_MPY */
+	U16(0x0306, 32),		/* PLL_VT_MPY: Pixel/Sys clock multiplier */
+	U16(0x030c, 50),		/* PLL_OP_MPY: Output clock multiplier */
 
 	/* Undocumented registers */
 	U8(0x455E, 0x00),
@@ -97,7 +97,7 @@ static const struct video_imager_reg16 size_640x480[] = {
 	X_ADD_END_A(640), Y_ADD_END_A(480),
 	U16(0x016c, 640),		/* X_OUTPUT_SIZE */
 	U16(0x016e, 480),		/* Y_OUTPUT_SIZE */
-	U16(0x0160, 480 + 120),		/* FRAME_LEN */
+	U16(0x0160, 480 + 120),		/* FRM_LENGTH_A */
 	{0},
 };
 
@@ -106,17 +106,7 @@ static const struct video_imager_reg16 size_1920x1080[] = {
 	X_ADD_END_A(1920), Y_ADD_END_A(1080),
 	U16(0x016c, 1920),		/* X_OUTPUT_SIZE */
 	U16(0x016e, 1080),		/* Y_OUTPUT_SIZE */
-	U16(0x0160, 1080 + 120),	/* FRAME_LEN */
-	{0},
-};
-
-static const struct video_imager_reg16 size_1300x1500[] = {
-	X_ADD_STA_A(1300), Y_ADD_STA_A(1500),
-	X_ADD_END_A(1300), Y_ADD_END_A(1500),
-	U16(0x016c, 1300),		/* X_OUTPUT_SIZE */
-	U16(0x016e, 1500),		/* Y_OUTPUT_SIZE */
-	U16(0x0160, 1500 + 120),	/* FRAME_LEN */
-	U16(0x0306, 57),		/* PLL_VT_MPY */
+	U16(0x0160, 1080 + 120),	/* FRM_LENGTH_A */
 	{0},
 };
 
@@ -125,7 +115,7 @@ static const struct video_imager_reg16 size_2560x1440[] = {
 	X_ADD_END_A(2560), Y_ADD_END_A(1440),
 	U16(0x016c, 2560),		/* X_OUTPUT_SIZE */
 	U16(0x016e, 1440),		/* Y_OUTPUT_SIZE */
-	U16(0x0160, 1440 + 120),	/* FRAME_LEN */
+	U16(0x0160, 1440 + 120),	/* FRM_LENGTH_A */
 	{0},
 };
 
@@ -134,7 +124,7 @@ static const struct video_imager_reg16 size_3280x2464[] = {
 	X_ADD_END_A(3280), Y_ADD_END_A(2464),
 	U16(0x016c, 3280),		/* X_OUTPUT_SIZE */
 	U16(0x016e, 2464),		/* Y_OUTPUT_SIZE */
-	U16(0x0160, 2464 + 120),	/* FRAME_LEN */
+	U16(0x0160, 2464 + 120),	/* FRM_LENGTH_A */
 	{0},
 };
 
@@ -145,11 +135,6 @@ static const struct video_imager_mode modes_640x480[] = {
 
 static const struct video_imager_mode modes_1920x1080[] = {
 	{.fps = 30, .regs = {size_1920x1080}},
-	{0},
-};
-
-static const struct video_imager_mode modes_1300x1500[] = {
-	{.fps = 30, .regs = {size_1300x1500}},
 	{0},
 };
 
@@ -165,7 +150,6 @@ static const struct video_imager_mode modes_3280x2464[] = {
 
 static const struct video_imager_mode *modes[] = {
 //	modes_640x480,
-//	modes_1300x1500,
 	modes_1920x1080,
 //	modes_2560x1440,
 //	modes_3280x2464,
@@ -174,7 +158,6 @@ static const struct video_imager_mode *modes[] = {
 
 static const struct video_format_cap fmts[] = {
 //	VIDEO_IMAGER_FORMAT_CAP(640, 480, VIDEO_PIX_FMT_BGGR8),
-//	VIDEO_IMAGER_FORMAT_CAP(1300, 1500, VIDEO_PIX_FMT_BGGR8),
 	VIDEO_IMAGER_FORMAT_CAP(1920, 1080, VIDEO_PIX_FMT_BGGR8),
 //	VIDEO_IMAGER_FORMAT_CAP(2560, 1440, VIDEO_PIX_FMT_BGGR8),
 //	VIDEO_IMAGER_FORMAT_CAP(3280, 2464, VIDEO_PIX_FMT_BGGR8),
