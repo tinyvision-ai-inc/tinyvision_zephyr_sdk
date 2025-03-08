@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#error THIS DRIVER IS NOT FUNCTIONAL YET
+
 #define DT_DRV_COMPAT sony_imx296
 
 #include <zephyr/device.h>
@@ -69,13 +71,45 @@ static const struct video_imager_reg16 init_regs[] = {
 	{0},
 };
 
+static const struct video_imager_reg16 clk_37_125_mhz[] __unused = {
+	{0x3089, 0x80},		/* INCKSEL0 */
+	{0x308a, 0x0b},		/* INCKSEL1 */
+	{0x308b, 0x80},		/* INCKSEL2 */
+	{0x308c, 0x08},		/* INCKSEL3 */
+	{0x418c, 0x74},		/* INCK */
+	{0},
+};
+
+/*
+ * Like on the Raspberry Pi GS module.
+ */
+static const struct video_imager_reg16 clk_54_000_mhz[] __unused = {
+	{0x3089, 0xb0},		/* INCKSEL0 */
+	{0x308a, 0x0f},		/* INCKSEL1 */
+	{0x308b, 0xb0},		/* INCKSEL2 */
+	{0x308c, 0x0c},		/* INCKSEL3 */
+	{0x418c, 0xa8},		/* INCK */
+	{0},
+};
+
+static const struct video_imager_reg16 clk_74_250_mhz[] __unused = {
+	{0x3089, 0x80},		/* INCKSEL0 */
+	{0x308a, 0x0f},		/* INCKSEL1 */
+	{0x308b, 0x80},		/* INCKSEL2 */
+	{0x308c, 0x0c},		/* INCKSEL3 */
+	{0x418c, 0xe8},		/* INCK */
+	{0},
+};
+
 static const struct video_imager_reg16 gbrg8_1440x1080[] = {
 	U16(0x3300, 0x00),	/* FID0_ROIH1ON=0, FID0_ROIV1ON=0 */
+	U16(0x3014, 1100),	/* HMAX: horizontal blanking time in 74.25 MHz clock ticks */
+	U16(0x3014, 1080 + 64),	/* VMAX: vertical blanking time in number of lines */
 	{0},
 };
 
 static const struct video_imager_mode gbrg8_1440x1080_modes[] = {
-	{.fps = 30, .regs = {gbrg8_1440x1080, NULL}},
+	{.fps = 30, .regs = {gbrg8_1440x1080, clk_54_000_mhz}},
 	{0},
 };
 
