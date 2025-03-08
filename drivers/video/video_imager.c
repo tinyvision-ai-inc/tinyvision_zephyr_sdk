@@ -18,29 +18,37 @@
 
 LOG_MODULE_REGISTER(video_imager, CONFIG_VIDEO_LOG_LEVEL);
 
-int video_imager_reg16_write8(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint8_t reg_value)
+int video_imager_reg16_write8(const struct device *dev, uint16_t reg_addr, uint8_t reg_value)
 {
+	struct video_imager_data *data = dev->data;
+	struct i2c_dt_spec *i2c = data->i2c;
 	uint8_t buf[] = {reg_addr >> 8, reg_addr & 0xff, reg_value};
 
 	return i2c_write_dt(i2c, buf, sizeof(buf));
 }
 
-int video_imager_reg16_write16(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint16_t reg_value)
+int video_imager_reg16_write16(const struct device *dev, uint16_t reg_addr, uint16_t reg_value)
 {
+	struct video_imager_data *data = dev->data;
+	struct i2c_dt_spec *i2c = data->i2c;
 	uint8_t buf[] = {reg_addr >> 8, reg_addr & 0xff, reg_value >> 8, reg_value & 0xff};
 
 	return i2c_write_dt(i2c, buf, sizeof(buf));
 }
 
-int video_imager_reg16_read8(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint8_t *reg_value)
+int video_imager_reg16_read8(const struct device *dev, uint16_t reg_addr, uint8_t *reg_value)
 {
+	struct video_imager_data *data = dev->data;
+	struct i2c_dt_spec *i2c = data->i2c;
 	uint8_t buf[] = {reg_addr >> 8, reg_addr & 0xff};
 
 	return i2c_write_read_dt(i2c, buf, sizeof(buf), reg_value, sizeof(*reg_value));
 }
 
-int video_imager_reg16_read16(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint16_t *reg_value)
+int video_imager_reg16_read16(const struct device *dev, uint16_t reg_addr, uint16_t *reg_value)
 {
+	struct video_imager_data *data = dev->data;
+	struct i2c_dt_spec *i2c = data->i2c;
 	uint8_t buf[] = {reg_addr >> 8, reg_addr & 0xff};
 	int ret;
 
@@ -49,13 +57,13 @@ int video_imager_reg16_read16(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint16
 	return ret;
 }
 
-int video_imager_reg16_write8_multi(struct i2c_dt_spec *i2c, const void *regs_in)
+int video_imager_reg16_write8_multi(const struct device *dev, const void *regs_in)
 {
 	const struct video_imager_reg16 *regs = regs_in;
 	int ret;
 
 	for (int i = 0; regs[i].addr != 0; i++) {
-		ret = video_imager_reg16_write8(i2c, regs[i].addr, regs[i].value);
+		ret = video_imager_reg16_write8(dev, regs[i].addr, regs[i].value);
 		if (ret != 0) {
 			LOG_ERR("Failed to write 0x%04x to register 0x%02x",
 				regs[i].value, regs[i].addr);
@@ -69,7 +77,6 @@ int video_imager_reg16_write8_multi(struct i2c_dt_spec *i2c, const void *regs_in
 int video_imager_set_mode(const struct device *dev, const struct video_imager_mode *mode)
 {
 	struct video_imager_data *data = dev->data;
-	struct i2c_dt_spec *i2c = data->i2c;
 	int ret;
 
 	if (data->mode == mode) {
@@ -82,7 +89,7 @@ int video_imager_set_mode(const struct device *dev, const struct video_imager_mo
 	LOG_DBG("Applying %s mode %p at %d FPS", dev->name, mode, mode->fps);
 
 	for (int i = 0; mode->regs[i] != NULL && i < ARRAY_SIZE(mode->regs); i++) {
-		ret = data->write_multi_fn(i2c, mode->regs[i]);
+		ret = data->write_multi_fn(dev, mode->regs[i]);
 		if (ret != 0) {
 			goto err;
 		}
@@ -226,7 +233,7 @@ int video_imager_get_caps(const struct device *dev, enum video_endpoint_id ep,
 	return 0;
 }
 
-int video_imager_init(const struct device *dev, const void *init_regs, int default_fmt)
+int video_imager_init(const struct device *dev, const void *init_regs)
 {
 	struct video_imager_data *data = dev->data;
 	struct video_format fmt;
@@ -244,16 +251,16 @@ int video_imager_init(const struct device *dev, const void *init_regs, int defau
 	}
 
 	if (init_regs != NULL) {
-		ret = data->write_multi_fn(data->i2c, init_regs);
+		ret = data->write_multi_fn(dev, init_regs);
 		if (ret != 0) {
 			LOG_ERR("Could not set %s initial registers", dev->name);
 			return ret;
 		}
 	}
 
-	fmt.pixelformat = data->fmts[default_fmt].pixelformat;
-	fmt.width = data->fmts[default_fmt].width_min;
-	fmt.height = data->fmts[default_fmt].height_min;
+	fmt.pixelformat = data->fmts[0].pixelformat;
+	fmt.width = data->fmts[0].width_min;
+	fmt.height = data->fmts[0].height_min;
 	fmt.pitch = fmt.width * 2;
 
 	ret = video_set_format(dev, VIDEO_EP_OUT, &fmt);

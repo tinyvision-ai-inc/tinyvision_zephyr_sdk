@@ -32,7 +32,7 @@ LOG_MODULE_REGISTER(debayer, CONFIG_VIDEO_LOG_LEVEL);
 #define DEBAYER_HIST_1			0x0038
 #define DEBAYER_HIST_2			0x003C
 
-#define DEBAYER_PIX_FMT VIDEO_PIX_FMT_GBRG8
+#define DEBAYER_PIX_FMT VIDEO_PIX_FMT_BGGR8
 
 struct debayer_config {
 	uintptr_t base;

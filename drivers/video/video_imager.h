@@ -10,6 +10,10 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/video.h>
 
+/* Used by register tables */
+#define U8(addr, reg)	{(addr), (reg)}
+#define U16(addr, reg)	{(addr), (reg) >> 8}, {(addr) + 1, (reg)}
+
 /*
  * Entry for an "imaging mode", as a combination of framereate, resolution, and pixel format.
  */
@@ -39,7 +43,7 @@ struct video_imager_data {
 	/* I2C device to write the registers to */
 	struct i2c_dt_spec *i2c;
 	/* Function in charge of writing a table of register to the sensor */
-	int (*write_multi_fn)(struct i2c_dt_spec *i2c, const void *register_table);
+	int (*write_multi_fn)(const struct device *dev, const void *register_table);
 };
 
 /*
@@ -72,11 +76,11 @@ struct video_imager_reg8 {
  * Functions to write a table of I2C values, with several variants to support the different sizes
  * of address and values.
  */
-int video_imager_reg16_read8(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint8_t *reg_value);
-int video_imager_reg16_read16(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint16_t *reg_value);
-int video_imager_reg16_write8(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint8_t reg_value);
-int video_imager_reg16_write16(struct i2c_dt_spec *i2c, uint16_t reg_addr, uint16_t reg_value);
-int video_imager_reg16_write8_multi(struct i2c_dt_spec *i2c, const void *regs);
+int video_imager_reg16_read8(const struct device *dev, uint16_t reg_addr, uint8_t *reg_value);
+int video_imager_reg16_read16(const struct device *dev, uint16_t reg_addr, uint16_t *reg_value);
+int video_imager_reg16_write8(const struct device *dev, uint16_t reg_addr, uint8_t reg_value);
+int video_imager_reg16_write16(const struct device *dev, uint16_t reg_addr, uint16_t reg_value);
+int video_imager_reg16_write8_multi(const struct device *dev, const void *regs);
 
 /*
  * Function which will set the operating mode (as defined above) of the imager.
@@ -103,8 +107,8 @@ int video_imager_get_caps(const struct device *dev, enum video_endpoint_id ep,
 
 /*
  * Initialize an imager and its associated data structure, loading init_regs onto the device,
- * and then initializing default_fmt.
+ * and then initializing the format at position 0.
  */
-int video_imager_init(const struct device *dev, const void *init_regs, int default_fmt);
+int video_imager_init(const struct device *dev, const void *init_regs);
 
 #endif /* ZEPHYR_INCLUDE_DRIVERS_VIDEO_IMAGER_H */
