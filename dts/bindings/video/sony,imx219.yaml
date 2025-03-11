@@ -4,3 +4,6 @@ compatible: "sony,imx219"
 
 include: i2c-device.yaml
 
+child-binding:
+  child-binding:
+    include: video-interfaces.yaml

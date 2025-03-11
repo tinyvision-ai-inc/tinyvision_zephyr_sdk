@@ -18,62 +18,6 @@
 
 LOG_MODULE_REGISTER(video_imager, CONFIG_VIDEO_LOG_LEVEL);
 
-int video_imager_reg16_write8(const struct device *dev, uint16_t reg_addr, uint8_t reg_value)
-{
-	struct video_imager_data *data = dev->data;
-	struct i2c_dt_spec *i2c = data->i2c;
-	uint8_t buf[] = {reg_addr >> 8, reg_addr & 0xff, reg_value};
-
-	return i2c_write_dt(i2c, buf, sizeof(buf));
-}
-
-int video_imager_reg16_write16(const struct device *dev, uint16_t reg_addr, uint16_t reg_value)
-{
-	struct video_imager_data *data = dev->data;
-	struct i2c_dt_spec *i2c = data->i2c;
-	uint8_t buf[] = {reg_addr >> 8, reg_addr & 0xff, reg_value >> 8, reg_value & 0xff};
-
-	return i2c_write_dt(i2c, buf, sizeof(buf));
-}
-
-int video_imager_reg16_read8(const struct device *dev, uint16_t reg_addr, uint8_t *reg_value)
-{
-	struct video_imager_data *data = dev->data;
-	struct i2c_dt_spec *i2c = data->i2c;
-	uint8_t buf[] = {reg_addr >> 8, reg_addr & 0xff};
-
-	return i2c_write_read_dt(i2c, buf, sizeof(buf), reg_value, sizeof(*reg_value));
-}
-
-int video_imager_reg16_read16(const struct device *dev, uint16_t reg_addr, uint16_t *reg_value)
-{
-	struct video_imager_data *data = dev->data;
-	struct i2c_dt_spec *i2c = data->i2c;
-	uint8_t buf[] = {reg_addr >> 8, reg_addr & 0xff};
-	int ret;
-
-	ret = i2c_write_read_dt(i2c, buf, sizeof(buf), reg_value, sizeof(*reg_value));
-	*reg_value = sys_be16_to_cpu(*reg_value);
-	return ret;
-}
-
-int video_imager_reg16_write8_multi(const struct device *dev, const void *regs_in)
-{
-	const struct video_imager_reg16 *regs = regs_in;
-	int ret;
-
-	for (int i = 0; regs[i].addr != 0; i++) {
-		ret = video_imager_reg16_write8(dev, regs[i].addr, regs[i].value);
-		if (ret != 0) {
-			LOG_ERR("Failed to write 0x%04x to register 0x%02x",
-				regs[i].value, regs[i].addr);
-			return ret;
-		}
-	}
-
-	return 0;
-}
-
 int video_imager_set_mode(const struct device *dev, const struct video_imager_mode *mode)
 {
 	struct video_imager_data *data = dev->data;
@@ -84,24 +28,20 @@ int video_imager_set_mode(const struct device *dev, const struct video_imager_mo
 		return 0;
 	}
 
-	__ASSERT_NO_MSG(data->write_multi_fn != NULL);
-
 	LOG_DBG("Applying %s mode %p at %d FPS", dev->name, mode, mode->fps);
 
-	for (int i = 0; mode->regs[i] != NULL && i < ARRAY_SIZE(mode->regs); i++) {
-		ret = data->write_multi_fn(dev, mode->regs[i]);
+	/* Write each register table to the device */
+	for (int i = 0; i < ARRAY_SIZE(mode->regs) && mode->regs[i] != NULL; i++) {
+		ret = video_write_multi(data->i2c, mode->regs[i]);
 		if (ret != 0) {
-			goto err;
+			LOG_ERR("Could not apply %s mode %p (%u FPS)", dev->name, mode, mode->fps);
+			return ret;
 		}
 	}
 
 	data->mode = mode;
 
 	return 0;
-err:
-	LOG_ERR("Could not apply %s mode %p (%u FPS)", dev->name, mode, mode->fps);
-
-	return ret;
 }
 
 int video_imager_set_frmival(const struct device *dev, enum video_endpoint_id ep,
@@ -233,13 +173,13 @@ int video_imager_get_caps(const struct device *dev, enum video_endpoint_id ep,
 	return 0;
 }
 
-int video_imager_init(const struct device *dev, const void *init_regs)
+int video_imager_init(const struct device *dev, const struct video_reg *init_regs,
+		      int default_fmt_idx)
 {
 	struct video_imager_data *data = dev->data;
 	struct video_format fmt;
 	int ret;
 
-	__ASSERT_NO_MSG(data->write_multi_fn != NULL);
 	__ASSERT_NO_MSG(data->i2c != NULL);
 	__ASSERT_NO_MSG(data->i2c->bus != NULL);
 	__ASSERT_NO_MSG(data->modes != NULL);
@@ -251,22 +191,96 @@ int video_imager_init(const struct device *dev, const void *init_regs)
 	}
 
 	if (init_regs != NULL) {
-		ret = data->write_multi_fn(dev, init_regs);
+		ret = video_write_multi(data->i2c, init_regs);
 		if (ret != 0) {
 			LOG_ERR("Could not set %s initial registers", dev->name);
 			return ret;
 		}
 	}
 
-	fmt.pixelformat = data->fmts[0].pixelformat;
-	fmt.width = data->fmts[0].width_min;
-	fmt.height = data->fmts[0].height_min;
-	fmt.pitch = fmt.width * 2;
+	fmt.pixelformat = data->fmts[default_fmt_idx].pixelformat;
+	fmt.width = data->fmts[default_fmt_idx].width_max;
+	fmt.height = data->fmts[default_fmt_idx].height_max;
+	fmt.pitch = fmt.width * video_bits_per_pixel(fmt.pixelformat) / BITS_PER_BYTE;
 
 	ret = video_set_format(dev, VIDEO_EP_OUT, &fmt);
 	if (ret != 0) {
-		LOG_ERR("Failed to set %s to default format %x %ux%u", dev->name, fmt.pixelformat,
-			fmt.width, fmt.height);
+		LOG_ERR("Failed to set %s to default format %x %ux%u",
+			dev->name, fmt.pixelformat, fmt.width, fmt.height);
+	}
+
+	return 0;
+}
+
+int video_read_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t *data)
+{
+	size_t addr_size = FIELD_GET(VIDEO_REG_ADDR_SIZE_MASK, addr);
+	size_t data_size = FIELD_GET(VIDEO_REG_DATA_SIZE_MASK, addr);
+	uint8_t *data_ptr = (uint8_t *)data + sizeof(uint32_t) - data_size;
+	uint8_t buf_w[sizeof(uint16_t)] = {0};
+	int ret;
+
+	*data = 0;
+
+	for (int i = 0; i < data_size; i++, addr += 1) {
+		if (addr_size == 1) {
+			buf_w[0] = addr;
+		} else {
+			sys_put_be16(addr, &buf_w[0]);
+		}
+
+		ret = i2c_write_read_dt(i2c, buf_w, addr_size, &data_ptr[i], 1);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	*data = sys_be32_to_cpu(*data);
+
+	return 0;
+}
+
+int video_write_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t data)
+{
+	size_t addr_size = FIELD_GET(VIDEO_REG_ADDR_SIZE_MASK, addr);
+	size_t data_size = FIELD_GET(VIDEO_REG_DATA_SIZE_MASK, addr);
+	uint8_t *data_ptr = (uint8_t *)&data + sizeof(uint32_t) - data_size;
+	uint8_t buf_w[sizeof(uint16_t) + sizeof(uint32_t)] = {0};
+	int ret;
+
+	data = sys_cpu_to_be32(data);
+
+	for (int i = 0; i < data_size; i++, addr += 1) {
+		if (addr_size == 1) {
+			buf_w[0] = addr;
+		} else {
+			sys_put_be16(addr, &buf_w[0]);
+		}
+
+		buf_w[addr_size] = data_ptr[i];
+
+		LOG_HEXDUMP_DBG(buf_w, addr_size + 1, "");
+
+		ret = i2c_write_dt(i2c, buf_w, addr_size + 1);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+int video_write_multi(struct i2c_dt_spec *i2c, const struct video_reg *regs)
+{
+	int ret;
+
+	for (int i = 0; regs[i].addr != 0; i++) {
+		ret = video_write_reg(i2c, regs[i].addr, regs[i].data);
+		if (ret != 0) {
+			LOG_ERR("Failed to write 0x%04x to register 0x%02x",
+				regs[i].data, regs[i].addr);
+			return ret;
+		}
 	}
 
 	return 0;

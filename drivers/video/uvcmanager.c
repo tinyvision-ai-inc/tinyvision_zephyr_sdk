@@ -46,8 +46,6 @@ uint32_t dwc3_get_trb_addr(const struct device *dev, uint8_t ep_addr)
 {
 	struct dwc3_ep_data *ep_data = (void *)udc_get_ep_cfg(dev, ep_addr);
 
-	LOG_WRN("%p", ep_data->trb_buf);
-
 	return (uint32_t)ep_data->trb_buf;
 }
 

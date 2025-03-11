@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#error THIS DRIVER IS NOT FUNCTIONAL YET
-
 #define DT_DRV_COMPAT sony_imx296
 
 #include <zephyr/device.h>
@@ -25,82 +23,99 @@ LOG_MODULE_REGISTER(imx296, CONFIG_VIDEO_LOG_LEVEL);
 
 static const struct video_imager_reg16 init_regs[] = {
 	/* Undocumented registers */
-	U8(0x3005, 0xf0),
-	U8(0x309e, 0x04),
-	U8(0x30a0, 0x04),
-	U8(0x30a1, 0x3c),
-	U8(0x30a4, 0x5f),
-	U8(0x30a8, 0x91),
-	U8(0x30ac, 0x28),
-	U8(0x30af, 0x09),
-	U8(0x30df, 0x00),
-	U8(0x3165, 0x00),
-	U8(0x3169, 0x10),
-	U8(0x316a, 0x02),
-	U8(0x31c8, 0xf3),
-	U8(0x31d0, 0xf4),
-	U8(0x321a, 0x00),
-	U8(0x3226, 0x02),
-	U8(0x3256, 0x01),
-	U8(0x3541, 0x72),
-	U8(0x3516, 0x77),
-	U8(0x350b, 0x7f),
-	U8(0x3758, 0xa3),
-	U8(0x3759, 0x00),
-	U8(0x375a, 0x85),
-	U8(0x375b, 0x00),
-	U8(0x3832, 0xf5),
-	U8(0x3833, 0x00),
-	U8(0x38a2, 0xf6),
-	U8(0x38a3, 0x00),
-	U8(0x3a00, 0x80),
-	U8(0x3d48, 0xa3),
-	U8(0x3d49, 0x00),
-	U8(0x3d4a, 0x85),
-	U8(0x3d4b, 0x00),
-	U8(0x400e, 0x58),
-	U8(0x4014, 0x1c),
-	U8(0x4041, 0x2a),
-	U8(0x40a2, 0x06),
-	U8(0x40c1, 0xf6),
-	U8(0x40c7, 0x0f),
-	U8(0x40c8, 0x00),
-	U8(0x4174, 0x00),
+	{0x3005, 8, 0xf0},
+	{0x309e, 8, 0x04},
+	{0x30a0, 8, 0x04},
+	{0x30a1, 8, 0x3c},
+	{0x30a4, 8, 0x5f},
+	{0x30a8, 8, 0x91},
+	{0x30ac, 8, 0x28},
+	{0x30af, 8, 0x09},
+	{0x30df, 8, 0x00},
+	{0x3165, 8, 0x00},
+	{0x3169, 8, 0x10},
+	{0x316a, 8, 0x02},
+	{0x31c8, 8, 0xf3},
+	{0x31d0, 8, 0xf4},
+	{0x321a, 8, 0x00},
+	{0x3226, 8, 0x02},
+	{0x3256, 8, 0x01},
+	{0x3541, 8, 0x72},
+	{0x3516, 8, 0x77},
+	{0x350b, 8, 0x7f},
+	{0x3758, 8, 0xa3},
+	{0x3759, 8, 0x00},
+	{0x375a, 8, 0x85},
+	{0x375b, 8, 0x00},
+	{0x3832, 8, 0xf5},
+	{0x3833, 8, 0x00},
+	{0x38a2, 8, 0xf6},
+	{0x38a3, 8, 0x00},
+	{0x3a00, 8, 0x80},
+	{0x3d48, 8, 0xa3},
+	{0x3d49, 8, 0x00},
+	{0x3d4a, 8, 0x85},
+	{0x3d4b, 8, 0x00},
+	{0x400e, 8, 0x58},
+	{0x4014, 8, 0x1c},
+	{0x4041, 8, 0x2a},
+	{0x40a2, 8, 0x06},
+	{0x40c1, 8, 0xf6},
+	{0x40c7, 8, 0x0f},
+	{0x40c8, 8, 0x00},
+	{0x4174, 8, 0x00},
 	{0},
 };
 
 static const struct video_imager_reg16 clk_37_125_mhz[] __unused = {
-	U8(0x3089, 0x80),		/* INCKSEL0 */
-	U8(0x308a, 0x0b),		/* INCKSEL1 */
-	U8(0x308b, 0x80),		/* INCKSEL2 */
-	U8(0x308c, 0x08),		/* INCKSEL3 */
-	U8(0x418c, 0x74),		/* INCK */
+	{0x3089, 8, 0x80},		/* INCKSEL0 */
+	{0x308a, 8, 0x0b},		/* INCKSEL1 */
+	{0x308b, 8, 0x80},		/* INCKSEL2 */
+	{0x308c, 8, 0x08},		/* INCKSEL3 */
+	{0x418c, 8, 0x74},		/* INCK */
 	{0},
 };
 
 /* This is the clock frequency present on the Raspberry Pi GS module. */
 static const struct video_imager_reg16 clk_54_000_mhz[] __unused = {
-	U8(0x3089, 0xb0),		/* INCKSEL0 */
-	U8(0x308a, 0x0f),		/* INCKSEL1 */
-	U8(0x308b, 0xb0),		/* INCKSEL2 */
-	U8(0x308c, 0x0c),		/* INCKSEL3 */
-	U8(0x418c, 0xa8),		/* INCK */
+	{0x3089, 8, 0xb0},		/* INCKSEL0 */
+	{0x308a, 8, 0x0f},		/* INCKSEL1 */
+	{0x308b, 8, 0xb0},		/* INCKSEL2 */
+	{0x308c, 8, 0x0c},		/* INCKSEL3 */
+	{0x418c, 8, 0xa8},		/* INCK */
 	{0},
 };
 
 static const struct video_imager_reg16 clk_74_250_mhz[] __unused = {
-	U8(0x3089, 0x80),		/* INCKSEL0 */
-	U8(0x308a, 0x0f),		/* INCKSEL1 */
-	U8(0x308b, 0x80),		/* INCKSEL2 */
-	U8(0x308c, 0x0c),		/* INCKSEL3 */
-	U8(0x418c, 0xe8),		/* INCK */
+	{0x3089, 8, 0x80},		/* INCKSEL0 */
+	{0x308a, 8, 0x0f},		/* INCKSEL1 */
+	{0x308b, 8, 0x80},		/* INCKSEL2 */
+	{0x308c, 8, 0x0c},		/* INCKSEL3 */
+	{0x418c, 8, 0xe8},		/* INCK */
 	{0},
 };
 
+#if 0
+ = {
+	{0x3239, 16, 8},		/* PGHPOS */
+	{0x323c, 16, 8},		/* PGVPOS */
+	{0x323e, 8, 8},			/* PGHPSTEP */
+	{0x323f, 8, 8},			/* PGVPSTEP */
+	{0x3240, 8, 100},		/* PGHPNUM */
+	{0x3241, 8, 100},		/* PGVPNUM */
+	{0x3244, 16, 0x300},		/* PGDATA1 */
+	{0x3246, 16, 0x100},		/* PGDATA2 */
+	{0x3249, 8, 0},			/* PGHGSTEP */
+	{0x3254, 16, 0},		/* BLKLEVEL */
+	{0x3022, 16, 0xf0},		/* BLKLEVELAUTO: off */
+	{PGCTRL, 16, IMX296_PGCTRL_REGEN | IMX296_PGCTRL_CLKEN | IMX296_PGCTRL_MODE(ctrl->val - 1}),
+};
+#endif
+
 static const struct video_imager_reg16 size_1440x1080[] = {
-	U16(0x3300, 0x00),		/* FID0_ROIH1ON=0, FID0_ROIV1ON=0 */
-	U16(0x3014, 1080),		/* HMAX: horizontal blanking time in 74.25 MHz clock ticks */
-	U16(0x3014, 1080 + 64),		/* VMAX: vertical blanking time in number of lines */
+	{0x3300, 16, 0x00},		/* FID0_ROIH1ON=0, FID0_ROIV1ON=0 */
+	{0x3014, 16, 1080},		/* HMAX: horizontal blanking time in 74.25 MHz clock ticks */
+	{0x3014, 16, 1080 + 64},	/* VMAX: vertical blanking time in number of lines */
 	{0},
 };
 
@@ -109,14 +124,14 @@ static const struct video_imager_mode modes_1440x1080[] = {
 	{0},
 };
 
+static const struct video_imager_mode *modes[] = {
+	modes_1440x1080,
+	NULL,
+};
+
 static const struct video_format_cap fmts[] = {
 	VIDEO_IMAGER_FORMAT_CAP(1440, 1080, VIDEO_PIX_FMT_GBRG8),
 	{0},
-};
-
-static const struct video_imager_mode *modes[] = {
-	[GBRG8_1440x1080] = modes_1440x1080,
-	NULL,
 };
 
 #define imx296_write8 video_imager_reg16_write8
@@ -127,24 +142,24 @@ static int imx296_set_stream(const struct device *dev, bool on)
 	int ret;
 
 	if (on) {
-		ret = imx296_write8(data->i2c, IMX296_REG_STANDBY, 0x00);
+		ret = imx296_write8(dev, IMX296_REG_STANDBY, 0x00);
 		if (ret != 0) {
 			return ret;
 		}
 
 		k_sleep(K_MSEC(2));
 
-		ret = imx296_write8(data->i2c, IMX296_REG_XMSTA, 0x00);
+		ret = imx296_write8(dev, IMX296_REG_XMSTA, 0x00);
 		if (ret != 0) {
 			return ret;
 		}
 	} else {
-		ret = imx296_write8(data->i2c, IMX296_REG_XMSTA, 0x01);
+		ret = imx296_write8(dev, IMX296_REG_XMSTA, 0x01);
 		if (ret != 0) {
 			return ret;
 		}
 
-		return imx296_write8(data->i2c, IMX296_REG_STANDBY, 0x01);
+		return imx296_write8(dev, IMX296_REG_STANDBY, 0x01);
 		if (ret != 0) {
 			return ret;
 		}
@@ -167,7 +182,7 @@ static const DEVICE_API(video, imx296_driver_api) = {
 
 static int imx296_init(const struct device *dev)
 {
-	return video_imager_init(dev, init_regs, GBRG8_1440x1080);
+	return video_imager_init(dev, init_regs);
 }
 
 #define IMX296_INIT(n)                                                                             \
