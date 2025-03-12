@@ -88,11 +88,8 @@ int video_imager_enum_frmival(const struct device *dev, enum video_endpoint_id e
 
 	ret = video_format_caps_index(data->fmts, fie->format, &fmt_id);
 	if (ret != 0) {
-		LOG_ERR("Format '%c%c%c%c' %ux%u not found for %s",
-			(fie->format->pixelformat >> 24) & 0xff,
-			(fie->format->pixelformat >> 16) & 0xff,
-			(fie->format->pixelformat >> 8) & 0xff,
-			(fie->format->pixelformat >> 0) & 0xff,
+		LOG_ERR("Format '%s' %ux%u not found for %s",
+			VIDEO_FOURCC_TO_STR(fie->format->pixelformat),
 			fie->format->width, fie->format->height, dev->name);
 		return ret;
 	}

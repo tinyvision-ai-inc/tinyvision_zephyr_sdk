@@ -758,10 +758,8 @@ static int uvc_set_vs_commit(const struct device *dev, const struct net_buf *buf
 		return ret;
 	}
 
-	LOG_INF("Ready to transfer, setting source format to %c%c%c%c %ux%u",
-		fmt->pixelformat >> 0 & 0xff, fmt->pixelformat >> 8 & 0xff,
-		fmt->pixelformat >> 16 & 0xff, fmt->pixelformat >> 24 & 0xff,
-		fmt->width, fmt->height);
+	LOG_INF("Ready to transfer, setting source format to %s %ux%u",
+		VIDEO_FOURCC_TO_STR(fmt->pixelformat),  fmt->width, fmt->height);
 
 	ret = video_set_format(data->video_dev, VIDEO_EP_OUT, fmt);
 	if (ret != 0) {
