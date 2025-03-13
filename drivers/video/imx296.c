@@ -18,6 +18,13 @@
 
 LOG_MODULE_REGISTER(imx296, CONFIG_VIDEO_LOG_LEVEL);
 
+#define IMX296_FULL_WIDTH		1440
+#define IMX296_FULL_HEIGHT		1080
+
+/* TODO for debug only, remove me */
+#define WIDTH 640
+#define HEIGHT 480
+
 /* Register flags definition */
 #define IMX296_REG8(addr)		((addr) | VIDEO_CCI_ADDR16_DATA8)
 #define IMX296_REG16(addr)		((addr) | VIDEO_CCI_ADDR16_DATA16_LE)
@@ -124,49 +131,34 @@ static const struct video_cci_reg clk_74_250_mhz[] __unused = {
 	{0},
 };
 
-#if 0
-	{IMX296_REG_PGHPOS, 8},
-	{IMX296_REG_PGVPOS, 8},
-	{IMX296_REG_PGHPSTEP, 8},
-	{IMX296_REG_PGVPSTEP, 8},
-	{IMX296_REG_PGHPNUM, 100},
-	{IMX296_REG_PGVPNUM, 100},
-	{IMX296_REG_PGDATA1, 0x300},
-	{IMX296_REG_PGDATA2, 0x100},
-	{IMX296_REG_PGHGSTEP, 0},
-	{IMX296_REG_BLKLEVEL, 0},
-	{IMX296_REG_BLKLEVELAUTO, 0xf0}, /* off */
-	{IMX296_REG_PGCTRL, IMX296_PGCTRL_REGEN | IMX296_PGCTRL_CLKEN | IMX296_PGCTRL_MODE(ctrl->val - 1}),
-#endif
-
-static const struct video_cci_reg size_1440x1080[] = {
+static const struct video_cci_reg size_WIDTHxHEIGHT[] = {
 	/* Enable vertical and horizontal ROI selection */
 	{IMX296_REG_FID0_ROI_ON, BIT(0) | BIT(1)},
 	/* Set crop start to (0, 0) */
 	{IMX296_REG_FID0_ROIPH1, 0x00},
 	{IMX296_REG_FID0_ROIPV1, 0x00},
 	/* Set crop end to (W, H) */
-	{IMX296_REG_FID0_ROIWH1, 1440},
-	{IMX296_REG_FID0_ROIWV1, 1080},
+	{IMX296_REG_FID0_ROIWH1, WIDTH},
+	{IMX296_REG_FID0_ROIWV1, HEIGHT},
 	/* horizontal blanking time (74.25 MHz clock ticks) */
-	{IMX296_REG_HMAX, 1440},
-	/* horizontal blanking time (number of lines) */
-	{IMX296_REG_VMAX, 1080 + 64},
+	{IMX296_REG_HMAX, WIDTH + 32},
+	/* vertical blanking time (number of lines) */
+	{IMX296_REG_VMAX, HEIGHT + 64},
 	{0},
 };
 
-static const struct video_imager_mode modes_1440x1080[] = {
-	{.fps = 30, .regs = {size_1440x1080, clk_54_000_mhz}},
+static const struct video_imager_mode modes_WIDTHxHEIGHT[] = {
+	{.fps = 30, .regs = {size_WIDTHxHEIGHT, clk_54_000_mhz}},
 	{0},
 };
 
 static const struct video_imager_mode *modes[] = {
-	modes_1440x1080,
+	modes_WIDTHxHEIGHT,
 	NULL,
 };
 
 static const struct video_format_cap fmts[] = {
-	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_GBRG8, 1440, 1080),
+	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_GBRG8, WIDTH, HEIGHT),
 	{0},
 };
 
