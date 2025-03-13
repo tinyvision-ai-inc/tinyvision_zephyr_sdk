@@ -32,7 +32,7 @@ int video_imager_set_mode(const struct device *dev, const struct video_imager_mo
 
 	/* Write each register table to the device */
 	for (int i = 0; i < ARRAY_SIZE(mode->regs) && mode->regs[i] != NULL; i++) {
-		ret = video_write_multi(data->i2c, mode->regs[i]);
+		ret = video_cci_write_multi(&data->i2c, mode->regs[i]);
 		if (ret != 0) {
 			LOG_ERR("Could not apply %s mode %p (%u FPS)", dev->name, mode, mode->fps);
 			return ret;
@@ -170,25 +170,24 @@ int video_imager_get_caps(const struct device *dev, enum video_endpoint_id ep,
 	return 0;
 }
 
-int video_imager_init(const struct device *dev, const struct video_reg *init_regs,
+int video_imager_init(const struct device *dev, const struct video_cci_reg *init_regs,
 		      int default_fmt_idx)
 {
 	struct video_imager_data *data = dev->data;
 	struct video_format fmt;
 	int ret;
 
-	__ASSERT_NO_MSG(data->i2c != NULL);
-	__ASSERT_NO_MSG(data->i2c->bus != NULL);
+	__ASSERT_NO_MSG(&data->i2c.bus != NULL);
 	__ASSERT_NO_MSG(data->modes != NULL);
 	__ASSERT_NO_MSG(data->fmts != NULL);
 
-	if (!device_is_ready(data->i2c->bus)) {
-		LOG_ERR("I2C bus device %s is not ready", data->i2c->bus->name);
+	if (!device_is_ready(data->i2c.bus)) {
+		LOG_ERR("I2C bus device %s is not ready", data->i2c.bus->name);
 		return -ENODEV;
 	}
 
 	if (init_regs != NULL) {
-		ret = video_write_multi(data->i2c, init_regs);
+		ret = video_cci_write_multi(&data->i2c, init_regs);
 		if (ret != 0) {
 			LOG_ERR("Could not set %s initial registers", dev->name);
 			return ret;
@@ -209,13 +208,18 @@ int video_imager_init(const struct device *dev, const struct video_reg *init_reg
 	return 0;
 }
 
-int video_read_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t *data)
+int video_cci_read_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t *data)
 {
-	size_t addr_size = FIELD_GET(VIDEO_REG_ADDR_SIZE_MASK, addr);
-	size_t data_size = FIELD_GET(VIDEO_REG_DATA_SIZE_MASK, addr);
-	uint8_t *data_ptr = (uint8_t *)data + sizeof(uint32_t) - data_size;
+	size_t addr_size = FIELD_GET(VIDEO_CCI_ADDR_SIZE_MASK, addr);
+	size_t data_size = FIELD_GET(VIDEO_CCI_DATA_SIZE_MASK, addr);
+	bool big_endian = addr & VIDEO_CCI_ENDIANNESS_MASK;
+	uint8_t *data_ptr = (uint8_t *)data;
 	uint8_t buf_w[sizeof(uint16_t)] = {0};
 	int ret;
+
+	if (big_endian) {
+		data_ptr += sizeof(uint32_t) - data_size;
+	}
 
 	*data = 0;
 
@@ -232,20 +236,25 @@ int video_read_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t *data)
 		}
 	}
 
-	*data = sys_be32_to_cpu(*data);
+	*data = big_endian ? sys_be32_to_cpu(*data) : sys_le32_to_cpu(*data);
 
 	return 0;
 }
 
-int video_write_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t data)
+int video_cci_write_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t data)
 {
-	size_t addr_size = FIELD_GET(VIDEO_REG_ADDR_SIZE_MASK, addr);
-	size_t data_size = FIELD_GET(VIDEO_REG_DATA_SIZE_MASK, addr);
-	uint8_t *data_ptr = (uint8_t *)&data + sizeof(uint32_t) - data_size;
+	size_t addr_size = FIELD_GET(VIDEO_CCI_ADDR_SIZE_MASK, addr);
+	size_t data_size = FIELD_GET(VIDEO_CCI_DATA_SIZE_MASK, addr);
+	bool big_endian = addr & VIDEO_CCI_ENDIANNESS_MASK;
+	uint8_t *data_ptr = (uint8_t *)&data;
 	uint8_t buf_w[sizeof(uint16_t) + sizeof(uint32_t)] = {0};
 	int ret;
 
-	data = sys_cpu_to_be32(data);
+	if (big_endian) {
+		data_ptr += sizeof(uint32_t) - data_size;
+	}
+
+	data = big_endian ? sys_be32_to_cpu(data) : sys_le32_to_cpu(data);
 
 	for (int i = 0; i < data_size; i++, addr += 1) {
 		if (addr_size == 1) {
@@ -267,12 +276,12 @@ int video_write_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t data)
 	return 0;
 }
 
-int video_write_multi(struct i2c_dt_spec *i2c, const struct video_reg *regs)
+int video_cci_write_multi(struct i2c_dt_spec *i2c, const struct video_cci_reg *regs)
 {
 	int ret;
 
 	for (int i = 0; regs[i].addr != 0; i++) {
-		ret = video_write_reg(i2c, regs[i].addr, regs[i].data);
+		ret = video_cci_write_reg(i2c, regs[i].addr, regs[i].data);
 		if (ret != 0) {
 			LOG_ERR("Failed to write 0x%04x to register 0x%02x",
 				regs[i].data, regs[i].addr);
