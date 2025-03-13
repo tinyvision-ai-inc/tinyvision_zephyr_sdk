@@ -1,0 +1,6 @@
+description: AR0144 CMOS image sensor
+
+compatible: "onnn,ar0144"
+
+include: i2c-device.yaml
+
