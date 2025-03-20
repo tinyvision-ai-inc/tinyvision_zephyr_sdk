@@ -14,9 +14,83 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/logging/log.h>
 
-#include "video_imager.h"
+#include "video_common.h"
 
-LOG_MODULE_REGISTER(video_imager, CONFIG_VIDEO_LOG_LEVEL);
+LOG_MODULE_REGISTER(video_common, CONFIG_VIDEO_LOG_LEVEL);
+
+int video_read_cci_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t *data)
+{
+	size_t addr_size = FIELD_GET(VIDEO_REG_ADDR_SIZE_MASK, addr);
+	size_t data_size = FIELD_GET(VIDEO_REG_DATA_SIZE_MASK, addr);
+	uint8_t *data_ptr = (uint8_t *)data + sizeof(uint32_t) - data_size;
+	uint8_t buf_w[sizeof(uint16_t)] = {0};
+	int ret;
+
+	*data = 0;
+
+	for (int i = 0; i < data_size; i++, addr += 1) {
+		if (addr_size == 1) {
+			buf_w[0] = addr;
+		} else {
+			sys_put_be16(addr, &buf_w[0]);
+		}
+
+		ret = i2c_write_read_dt(i2c, buf_w, addr_size, &data_ptr[i], 1);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	*data = sys_be32_to_cpu(*data);
+
+	return 0;
+}
+
+int video_write_cci_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t data)
+{
+	size_t addr_size = FIELD_GET(VIDEO_REG_ADDR_SIZE_MASK, addr);
+	size_t data_size = FIELD_GET(VIDEO_REG_DATA_SIZE_MASK, addr);
+	uint8_t *data_ptr = (uint8_t *)&data + sizeof(uint32_t) - data_size;
+	uint8_t buf_w[sizeof(uint16_t) + sizeof(uint32_t)] = {0};
+	int ret;
+
+	data = sys_cpu_to_be32(data);
+
+	for (int i = 0; i < data_size; i++, addr += 1) {
+		if (addr_size == 1) {
+			buf_w[0] = addr;
+		} else {
+			sys_put_be16(addr, &buf_w[0]);
+		}
+
+		buf_w[addr_size] = data_ptr[i];
+
+		ret = i2c_write_dt(i2c, buf_w, addr_size + 1);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+int video_write_cci_multi(struct i2c_dt_spec *i2c, const struct video_reg *regs)
+{
+	int ret;
+
+	for (int i = 0; regs[i].addr != 0; i++) {
+		ret = video_write_cci_reg(i2c, regs[i].addr, regs[i].data);
+		if (ret != 0) {
+			LOG_ERR("Failed to write 0x%04x to register 0x%02x",
+				regs[i].data, regs[i].addr);
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+/* Common implementation for imagers (a.k.a. image sensor) drivers */
 
 int video_imager_set_mode(const struct device *dev, const struct video_imager_mode *mode)
 {
@@ -28,13 +102,11 @@ int video_imager_set_mode(const struct device *dev, const struct video_imager_mo
 		return 0;
 	}
 
-	LOG_DBG("Applying %s mode %p at %d FPS", dev->name, mode, mode->fps);
-
 	/* Write each register table to the device */
 	for (int i = 0; i < ARRAY_SIZE(mode->regs) && mode->regs[i] != NULL; i++) {
-		ret = video_write_multi(data->i2c, mode->regs[i]);
+		ret = video_write_cci_multi(&data->i2c, mode->regs[i]);
 		if (ret != 0) {
-			LOG_ERR("Could not apply %s mode %p (%u FPS)", dev->name, mode, mode->fps);
+			LOG_ERR("Could not set %s to mode %p, %u FPS", dev->name, mode, mode->fps);
 			return ret;
 		}
 	}
@@ -126,8 +198,8 @@ int video_imager_set_fmt(const struct device *const dev, enum video_endpoint_id 
 
 	ret = video_format_caps_index(data->fmts, fmt, &fmt_id);
 	if (ret != 0) {
-		LOG_ERR("Format %x %ux%u not found for %s", fmt->pixelformat, fmt->width,
-			fmt->height, dev->name);
+		LOG_ERR("Format '%s' %ux%u not found for device %s",
+			VIDEO_FOURCC_TO_STR(fmt->pixelformat), fmt->width, fmt->height, dev->name);
 		return ret;
 	}
 
@@ -177,18 +249,16 @@ int video_imager_init(const struct device *dev, const struct video_reg *init_reg
 	struct video_format fmt;
 	int ret;
 
-	__ASSERT_NO_MSG(data->i2c != NULL);
-	__ASSERT_NO_MSG(data->i2c->bus != NULL);
 	__ASSERT_NO_MSG(data->modes != NULL);
 	__ASSERT_NO_MSG(data->fmts != NULL);
 
-	if (!device_is_ready(data->i2c->bus)) {
-		LOG_ERR("I2C bus device %s is not ready", data->i2c->bus->name);
+	if (!device_is_ready(data->i2c.bus)) {
+		LOG_ERR("I2C bus device %s is not ready", data->i2c.bus->name);
 		return -ENODEV;
 	}
 
 	if (init_regs != NULL) {
-		ret = video_write_multi(data->i2c, init_regs);
+		ret = video_write_cci_multi(&data->i2c, init_regs);
 		if (ret != 0) {
 			LOG_ERR("Could not set %s initial registers", dev->name);
 			return ret;
@@ -202,82 +272,9 @@ int video_imager_init(const struct device *dev, const struct video_reg *init_reg
 
 	ret = video_set_format(dev, VIDEO_EP_OUT, &fmt);
 	if (ret != 0) {
-		LOG_ERR("Failed to set %s to default format %x %ux%u",
-			dev->name, fmt.pixelformat, fmt.width, fmt.height);
-	}
-
-	return 0;
-}
-
-int video_read_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t *data)
-{
-	size_t addr_size = FIELD_GET(VIDEO_REG_ADDR_SIZE_MASK, addr);
-	size_t data_size = FIELD_GET(VIDEO_REG_DATA_SIZE_MASK, addr);
-	uint8_t *data_ptr = (uint8_t *)data + sizeof(uint32_t) - data_size;
-	uint8_t buf_w[sizeof(uint16_t)] = {0};
-	int ret;
-
-	*data = 0;
-
-	for (int i = 0; i < data_size; i++, addr += 1) {
-		if (addr_size == 1) {
-			buf_w[0] = addr;
-		} else {
-			sys_put_be16(addr, &buf_w[0]);
-		}
-
-		ret = i2c_write_read_dt(i2c, buf_w, addr_size, &data_ptr[i], 1);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-
-	*data = sys_be32_to_cpu(*data);
-
-	return 0;
-}
-
-int video_write_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t data)
-{
-	size_t addr_size = FIELD_GET(VIDEO_REG_ADDR_SIZE_MASK, addr);
-	size_t data_size = FIELD_GET(VIDEO_REG_DATA_SIZE_MASK, addr);
-	uint8_t *data_ptr = (uint8_t *)&data + sizeof(uint32_t) - data_size;
-	uint8_t buf_w[sizeof(uint16_t) + sizeof(uint32_t)] = {0};
-	int ret;
-
-	data = sys_cpu_to_be32(data);
-
-	for (int i = 0; i < data_size; i++, addr += 1) {
-		if (addr_size == 1) {
-			buf_w[0] = addr;
-		} else {
-			sys_put_be16(addr, &buf_w[0]);
-		}
-
-		buf_w[addr_size] = data_ptr[i];
-
-		LOG_HEXDUMP_DBG(buf_w, addr_size + 1, "");
-
-		ret = i2c_write_dt(i2c, buf_w, addr_size + 1);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-
-	return 0;
-}
-
-int video_write_multi(struct i2c_dt_spec *i2c, const struct video_reg *regs)
-{
-	int ret;
-
-	for (int i = 0; regs[i].addr != 0; i++) {
-		ret = video_write_reg(i2c, regs[i].addr, regs[i].data);
-		if (ret != 0) {
-			LOG_ERR("Failed to write 0x%04x to register 0x%02x",
-				regs[i].data, regs[i].addr);
-			return ret;
-		}
+		LOG_ERR("Failed to set %s to default format '%s' %ux%u",
+			dev->name, VIDEO_FOURCC_TO_STR(fmt.pixelformat), fmt.width, fmt.height);
+		return ret;
 	}
 
 	return 0;

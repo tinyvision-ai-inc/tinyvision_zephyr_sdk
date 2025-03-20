@@ -14,47 +14,51 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
 
-#include "video_imager.h"
+#include "video_common.h"
 
 LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
 
 #define IMX219_FULL_WIDTH		3280
 #define IMX219_FULL_HEIGHT		2464
 
-#define IMX219_REG_CHIP_ID		VIDEO_REG(0x0000, 2, 2)
-#define IMX219_REG_SOFTWARE_RESET	VIDEO_REG(0x0103, 2, 1)
-#define IMX219_REG_MODE_SELECT		VIDEO_REG(0x0100, 2, 1)
-#define IMX219_REG_ANALOG_GAIN		VIDEO_REG(0x0157, 2, 1)
-#define IMX219_REG_DIGITAL_GAIN		VIDEO_REG(0x0158, 2, 2)
-#define IMX219_REG_INTEGRATION_TIME	VIDEO_REG(0x015A, 2, 2)
-#define IMX219_REG_TESTPATTERN		VIDEO_REG(0x0600, 2, 2)
-#define IMX219_REG_MODE_SELECT		VIDEO_REG(0x0100, 2, 1)
-#define IMX219_REG_CSI_LANE_MODE	VIDEO_REG(0x0114, 2, 1)
-#define IMX219_REG_DPHY_CTRL		VIDEO_REG(0x0128, 2, 1)
-#define IMX219_REG_EXCK_FREQ		VIDEO_REG(0x012a, 2, 2)
-#define IMX219_REG_PREPLLCK_VT_DIV	VIDEO_REG(0x0304, 2, 1)
-#define IMX219_REG_PREPLLCK_OP_DIV	VIDEO_REG(0x0305, 2, 1)
-#define IMX219_REG_OPPXCK_DIV		VIDEO_REG(0x0309, 2, 1)
-#define IMX219_REG_VTPXCK_DIV		VIDEO_REG(0x0301, 2, 1)
-#define IMX219_REG_VTSYCK_DIV		VIDEO_REG(0x0303, 2, 1)
-#define IMX219_REG_OPSYCK_DIV		VIDEO_REG(0x030b, 2, 1)
-#define IMX219_REG_PLL_VT_MPY		VIDEO_REG(0x0306, 2, 2)
-#define IMX219_REG_PLL_OP_MPY		VIDEO_REG(0x030c, 2, 2)
-#define IMX219_REG_LINE_LENGTH_A	VIDEO_REG(0x0162, 2, 2)
-#define IMX219_REG_CSI_DATA_FORMAT_A	VIDEO_REG(0x018c, 2, 2)
-#define IMX219_REG_BINNING_MODE_H	VIDEO_REG(0x0174, 2, 1)
-#define IMX219_REG_BINNING_MODE_V	VIDEO_REG(0x0175, 2, 1)
-#define IMX219_REG_ORIENTATION		VIDEO_REG(0x0172, 2, 1)
-#define IMX219_REG_FRM_LENGTH_A		VIDEO_REG(0x0160, 2, 2)
-#define IMX219_REG_FRM_LENGTH_A		VIDEO_REG(0x0160, 2, 2)
-#define IMX219_REG_X_ADD_STA_A		VIDEO_REG(0x0164, 2, 2)
-#define IMX219_REG_X_ADD_END_A		VIDEO_REG(0x0166, 2, 2)
-#define IMX219_REG_Y_ADD_STA_A		VIDEO_REG(0x0168, 2, 2)
-#define IMX219_REG_Y_ADD_END_A		VIDEO_REG(0x016a, 2, 2)
-#define IMX219_REG_X_OUTPUT_SIZE	VIDEO_REG(0x016c, 2, 2)
-#define IMX219_REG_Y_OUTPUT_SIZE	VIDEO_REG(0x016e, 2, 2)
-#define IMX219_REG_X_ODD_INC_A		VIDEO_REG(0x0170, 2, 1)
-#define IMX219_REG_Y_ODD_INC_A		VIDEO_REG(0x0171, 2, 1)
+#define IMX219_REG8(addr)		((addr) | VIDEO_REG_ADDR16_DATA8)
+#define IMX219_REG16(addr)		((addr) | VIDEO_REG_ADDR16_DATA16_LE)
+#define IMX219_REG24(addr)		((addr) | VIDEO_REG_ADDR16_DATA24_LE)
+
+#define IMX219_REG_CHIP_ID		IMX219_REG16(0x0000)
+#define IMX219_REG_SOFTWARE_RESET	IMX219_REG8(0x0103)
+#define IMX219_REG_MODE_SELECT		IMX219_REG8(0x0100)
+#define IMX219_REG_ANALOG_GAIN		IMX219_REG8(0x0157)
+#define IMX219_REG_DIGITAL_GAIN		IMX219_REG16(0x0158)
+#define IMX219_REG_INTEGRATION_TIME	IMX219_REG16(0x015A)
+#define IMX219_REG_TESTPATTERN		IMX219_REG16(0x0600)
+#define IMX219_REG_MODE_SELECT		IMX219_REG8(0x0100)
+#define IMX219_REG_CSI_LANE_MODE	IMX219_REG8(0x0114)
+#define IMX219_REG_DPHY_CTRL		IMX219_REG8(0x0128)
+#define IMX219_REG_EXCK_FREQ		IMX219_REG16(0x012a)
+#define IMX219_REG_PREPLLCK_VT_DIV	IMX219_REG8(0x0304)
+#define IMX219_REG_PREPLLCK_OP_DIV	IMX219_REG8(0x0305)
+#define IMX219_REG_OPPXCK_DIV		IMX219_REG8(0x0309)
+#define IMX219_REG_VTPXCK_DIV		IMX219_REG8(0x0301)
+#define IMX219_REG_VTSYCK_DIV		IMX219_REG8(0x0303)
+#define IMX219_REG_OPSYCK_DIV		IMX219_REG8(0x030b)
+#define IMX219_REG_PLL_VT_MPY		IMX219_REG16(0x0306)
+#define IMX219_REG_PLL_OP_MPY		IMX219_REG16(0x030c)
+#define IMX219_REG_LINE_LENGTH_A	IMX219_REG16(0x0162)
+#define IMX219_REG_CSI_DATA_FORMAT_A	IMX219_REG16(0x018c)
+#define IMX219_REG_BINNING_MODE_H	IMX219_REG8(0x0174)
+#define IMX219_REG_BINNING_MODE_V	IMX219_REG8(0x0175)
+#define IMX219_REG_ORIENTATION		IMX219_REG8(0x0172)
+#define IMX219_REG_FRM_LENGTH_A		IMX219_REG16(0x0160)
+#define IMX219_REG_FRM_LENGTH_A		IMX219_REG16(0x0160)
+#define IMX219_REG_X_ADD_STA_A		IMX219_REG16(0x0164)
+#define IMX219_REG_X_ADD_END_A		IMX219_REG16(0x0166)
+#define IMX219_REG_Y_ADD_STA_A		IMX219_REG16(0x0168)
+#define IMX219_REG_Y_ADD_END_A		IMX219_REG16(0x016a)
+#define IMX219_REG_X_OUTPUT_SIZE	IMX219_REG16(0x016c)
+#define IMX219_REG_Y_OUTPUT_SIZE	IMX219_REG16(0x016e)
+#define IMX219_REG_X_ODD_INC_A		IMX219_REG8(0x0170)
+#define IMX219_REG_Y_ODD_INC_A		IMX219_REG8(0x0171)
 
 /* Registers to crop down a resolution to a centered width and height */
 #define IMX219_REGS_CROP(width, height)                                                            \
@@ -67,12 +71,12 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_MODE_SELECT, 0x00},		/* Standby */
 
 	/* Enable access to registers from 0x3000 to 0x5fff */
-	{VIDEO_REG(0x30eb, 2, 1), 0x05},
-	{VIDEO_REG(0x30eb, 2, 1), 0x0c},
-	{VIDEO_REG(0x300a, 2, 1), 0xff},
-	{VIDEO_REG(0x300b, 2, 1), 0xff},
-	{VIDEO_REG(0x30eb, 2, 1), 0x05},
-	{VIDEO_REG(0x30eb, 2, 1), 0x09},
+	{IMX219_REG8(0x30eb), 0x05},
+	{IMX219_REG8(0x30eb), 0x0c},
+	{IMX219_REG8(0x300a), 0xff},
+	{IMX219_REG8(0x300b), 0xff},
+	{IMX219_REG8(0x30eb), 0x05},
+	{IMX219_REG8(0x30eb), 0x09},
 
 	/* MIPI configuration registers */
 	{IMX219_REG_CSI_LANE_MODE, 0x01},	/* 2 Lanes */
@@ -90,18 +94,18 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_PLL_OP_MPY, 50},		/* Output clock multiplier */
 
 	/* Undocumented registers */
-	{VIDEO_REG(0x455e, 2, 1), 0x00},
-	{VIDEO_REG(0x471e, 2, 1), 0x4b},
-	{VIDEO_REG(0x4767, 2, 1), 0x0f},
-	{VIDEO_REG(0x4750, 2, 1), 0x14},
-	{VIDEO_REG(0x4540, 2, 1), 0x00},
-	{VIDEO_REG(0x47b4, 2, 1), 0x14},
-	{VIDEO_REG(0x4713, 2, 1), 0x30},
-	{VIDEO_REG(0x478b, 2, 1), 0x10},
-	{VIDEO_REG(0x478f, 2, 1), 0x10},
-	{VIDEO_REG(0x4793, 2, 1), 0x10},
-	{VIDEO_REG(0x4797, 2, 1), 0x0e},
-	{VIDEO_REG(0x479b, 2, 1), 0x0e},
+	{IMX219_REG8(0x455e), 0x00},
+	{IMX219_REG8(0x471e), 0x4b},
+	{IMX219_REG8(0x4767), 0x0f},
+	{IMX219_REG8(0x4750), 0x14},
+	{IMX219_REG8(0x4540), 0x00},
+	{IMX219_REG8(0x47b4), 0x14},
+	{IMX219_REG8(0x4713), 0x30},
+	{IMX219_REG8(0x478b), 0x10},
+	{IMX219_REG8(0x478f), 0x10},
+	{IMX219_REG8(0x4793), 0x10},
+	{IMX219_REG8(0x4797), 0x0e},
+	{IMX219_REG8(0x479b), 0x0e},
 
 	/* Timing and format registers */
 	{IMX219_REG_LINE_LENGTH_A, 3448},
@@ -162,7 +166,7 @@ static int imx219_set_stream(const struct device *dev, bool on)
 {
 	struct video_imager_data *data = dev->data;
 
-	return video_write_reg(data->i2c, IMX219_REG_MODE_SELECT, on ? 0x01 : 0x00);
+	return video_write_cci_reg(&data->i2c, IMX219_REG_MODE_SELECT, on ? 0x01 : 0x00);
 }
 
 static int imx219_set_ctrl(const struct device *dev, unsigned int cid, void *value)
@@ -171,11 +175,11 @@ static int imx219_set_ctrl(const struct device *dev, unsigned int cid, void *val
 
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
-		return video_write_reg(data->i2c, IMX219_REG_INTEGRATION_TIME, (int)value);
+		return video_write_cci_reg(&data->i2c, IMX219_REG_INTEGRATION_TIME, (int)value);
 	case VIDEO_CID_GAIN:
-		return video_write_reg(data->i2c, IMX219_REG_ANALOG_GAIN, (int)value);
+		return video_write_cci_reg(&data->i2c, IMX219_REG_ANALOG_GAIN, (int)value);
 	case VIDEO_CID_TEST_PATTERN:
-		return video_write_reg(data->i2c, IMX219_REG_TESTPATTERN, (int)value);
+		return video_write_cci_reg(&data->i2c, IMX219_REG_TESTPATTERN, (int)value);
 	default:
 		LOG_WRN("Control not supported");
 		return -ENOTSUP;
@@ -191,11 +195,11 @@ static int imx219_get_ctrl(const struct device *dev, unsigned int cid, void *val
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
 		/* Values for normal frame rate, different range for low frame rate mode */
-		ret = video_read_reg(data->i2c, IMX219_REG_INTEGRATION_TIME, &reg);
+		ret = video_read_cci_reg(&data->i2c, IMX219_REG_INTEGRATION_TIME, &reg);
 		*(uint32_t *)value = reg;
 		return ret;
 	case VIDEO_CID_GAIN:
-		ret = video_read_reg(data->i2c, IMX219_REG_ANALOG_GAIN, &reg);
+		ret = video_read_cci_reg(&data->i2c, IMX219_REG_ANALOG_GAIN, &reg);
 		*(uint32_t *)value = reg;
 		return ret;
 	default:
@@ -224,14 +228,14 @@ static int imx219_init(const struct device *dev)
 	uint32_t reg;
 	int ret;
 
-	if (!device_is_ready(data->i2c->bus)) {
-		LOG_ERR("I2C device %s is not ready", data->i2c->bus->name);
+	if (!device_is_ready(data->i2c.bus)) {
+		LOG_ERR("I2C device %s is not ready", data->i2c.bus->name);
 		return -ENODEV;
 	}
 
 	k_sleep(K_MSEC(1));
 
-	ret = video_write_reg(data->i2c, IMX219_REG_SOFTWARE_RESET, 1);
+	ret = video_write_cci_reg(&data->i2c, IMX219_REG_SOFTWARE_RESET, 1);
 	if (ret != 0) {
 		goto err;
 	}
@@ -239,7 +243,7 @@ static int imx219_init(const struct device *dev)
 	/* Initializing time of silicon (t5): 32000 clock cycles, 5.3 msec for 6 MHz */
 	k_sleep(K_MSEC(6));
 
-	ret = video_read_reg(data->i2c, IMX219_REG_CHIP_ID, &reg);
+	ret = video_read_cci_reg(&data->i2c, IMX219_REG_CHIP_ID, &reg);
 	if (ret != 0) {
 		goto err;
 	}
@@ -257,9 +261,8 @@ err:
 }
 
 #define IMX219_INIT(n)                                                                             \
-	static struct i2c_dt_spec i2c_##n = I2C_DT_SPEC_INST_GET(n);                               \
 	static struct video_imager_data data_##n = {                                               \
-		.i2c = &i2c_##n,                                                                   \
+		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
 	};                                                                                         \
