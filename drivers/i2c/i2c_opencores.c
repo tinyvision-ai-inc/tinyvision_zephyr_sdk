@@ -333,7 +333,7 @@ finish:
 	return result;
 }
 
-static const struct i2c_driver_api opencores_i2c_api = {
+static DEVICE_API(i2c, opencores_i2c_api) = {
 	.configure = opencores_i2c_configure,
 	.get_config = opencores_i2c_get_config,
 	.transfer = opencores_i2c_transfer,

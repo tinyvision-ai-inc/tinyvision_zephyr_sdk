@@ -1,0 +1,9 @@
+description: IMX477 12.3 Mega-Pixel CMOS Image Sensor
+
+compatible: "sony,imx477"
+
+include: i2c-device.yaml
+
+child-binding:
+  child-binding:
+    include: video-interfaces.yaml
