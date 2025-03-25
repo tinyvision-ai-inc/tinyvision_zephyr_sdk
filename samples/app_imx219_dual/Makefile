@@ -1,5 +1,5 @@
 TTY = /dev/ttyUSB1
-BOARD = tinyclunx33@rev2/rtl_1_0_2
+BOARD = tinyclunx33@rev2/rtl_1_0
 SHIELD = tinyclunx33_devkit_rev2
 UVCMANAGER = $$(readlink -f ../../../zephyr_internal/uvcmanager.c)
 
