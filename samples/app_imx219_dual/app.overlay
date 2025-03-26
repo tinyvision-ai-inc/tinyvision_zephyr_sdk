@@ -1,0 +1,106 @@
+/*
+ * Copyright (c) 2025 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* USB interfaces */
+
+&zephyr_udc0 {
+	num-in-endpoints = <3>;
+	num-out-endpoints = <1>;
+	status = "okay";
+
+	uvc0: uvc0 {
+		compatible = "zephyr,uvc-device";
+	};
+
+	uvc1: uvc1 {
+		compatible = "zephyr,uvc-device";
+	};
+};
+
+/* I2C multiplexer */
+
+&i2c0 {
+	status = "okay";
+
+	pca9542a@71 {
+		compatible = "nxp,pca9542a";
+		reg = <0x71>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		i2c0ch0: ch@0 {
+			compatible = "nxp,pca9542a-channel";
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		i2c0ch1: ch@1 {
+			compatible = "nxp,pca9542a-channel";
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+};
+
+/* Stream 0 config */
+
+&uvcmanager0 {
+	/* From UVC's "bEndpointAddress" in "lsusb -v -d 1209:0001" output */
+	usb-endpoint = <0x81>;
+	status = "okay";
+};
+
+&debayer0 {
+	status = "okay";
+};
+
+&debayer0_ep_in {
+	remote-endpoint-label = "imx219ch0_ep_out";
+};
+
+&i2c0ch0 {
+	imx219ch0@10 {
+		compatible = "sony,imx219";
+		reg = <0x10>;
+
+		port {
+			imx219ch0_ep_out: endpoint {
+				remote-endpoint-label = "debayer0_ep_in";
+			};
+		};
+	};
+};
+
+/* Stream 1 config */
+
+&uvcmanager1 {
+	/* From UVC's "bEndpointAddress" in "lsusb -v -d 1209:0001" output */
+	usb-endpoint = <0x82>;
+	status = "okay";
+};
+
+&debayer1 {
+	status = "okay";
+};
+
+&debayer1_ep_in {
+	remote-endpoint-label = "imx219ch1_ep_out";
+};
+
+&i2c0ch1 {
+	imx219ch1@10 {
+		compatible = "sony,imx219";
+		reg = <0x10>;
+
+		port {
+			imx219ch1_ep_out: endpoint {
+				remote-endpoint-label = "debayer1_ep_in";
+			};
+		};
+	};
+};
