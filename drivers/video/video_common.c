@@ -104,7 +104,7 @@ int video_imager_set_mode(const struct device *dev, const struct video_imager_mo
 
 	/* Write each register table to the device */
 	for (int i = 0; i < ARRAY_SIZE(mode->regs) && mode->regs[i] != NULL; i++) {
-		ret = video_write_cci_multi(&data->i2c, mode->regs[i]);
+		ret = data->write_multi(&data->i2c, mode->regs[i]);
 		if (ret != 0) {
 			LOG_ERR("Could not set %s to mode %p, %u FPS", dev->name, mode, mode->fps);
 			return ret;
@@ -258,7 +258,7 @@ int video_imager_init(const struct device *dev, const struct video_reg *init_reg
 	}
 
 	if (init_regs != NULL) {
-		ret = video_write_cci_multi(&data->i2c, init_regs);
+		ret = data->write_multi(&data->i2c, init_regs);
 		if (ret != 0) {
 			LOG_ERR("Could not set %s initial registers", dev->name);
 			return ret;

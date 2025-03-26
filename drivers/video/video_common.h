@@ -55,6 +55,8 @@ struct video_imager_data {
 	const struct video_imager_mode **modes;
 	/* I2C device to write the registers to */
 	struct i2c_dt_spec i2c;
+	/* Write a table of registers onto the device */
+	int (*write_multi)(struct i2c_dt_spec *i2c, const struct video_reg *regs);
 };
 
 /*

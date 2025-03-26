@@ -186,6 +186,7 @@ static int imx296_init(const struct device *dev)
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
+		.write_multi = &video_write_cci_multi,                                             \
 	};                                                                                         \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(n, &imx296_init, NULL, &data_##n, NULL, POST_KERNEL,                 \
