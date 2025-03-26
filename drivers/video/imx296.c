@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#warning The IMX296 driver not functional yet
-
 #define DT_DRV_COMPAT sony_imx296
 
 #include <zephyr/device.h>
@@ -16,17 +14,50 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
 
-#include "video_common.h"
+#include "video_imager.h"
 
 LOG_MODULE_REGISTER(imx296, CONFIG_VIDEO_LOG_LEVEL);
 
-#define IMX296_REG8(addr)	((addr) | VIDEO_REG_ADDR16_DATA8)
-#define IMX296_REG16(addr)	((addr) | VIDEO_REG_ADDR16_DATA16_BE)
+#define IMX296_FULL_WIDTH		1440
+#define IMX296_FULL_HEIGHT		1080
 
-#define IMX296_REG_STANDBY	IMX296_REG8(0x3000)
-#define IMX296_REG_XMSTA	IMX296_REG8(0x300a)
+/* TODO for debug only, remove me */
+#define WIDTH 640
+#define HEIGHT 480
 
-static const struct video_reg init_regs[] = {
+/* Register flags definition */
+#define IMX296_REG8(addr)		((addr) | VIDEO_REG_ADDR16_DATA8)
+#define IMX296_REG16(addr)		((addr) | VIDEO_REG_ADDR16_DATA16_LE)
+#define IMX296_REG24(addr)		((addr) | VIDEO_REG_ADDR16_DATA24_LE)
+
+/* Register address definition */
+#define IMX296_REG_STANDBY		IMX296_REG8(0x3000)
+#define IMX296_REG_XMSTA		IMX296_REG8(0x300a)
+#define IMX296_REG_INCKSEL0		IMX296_REG8(0x3089)
+#define IMX296_REG_INCKSEL1		IMX296_REG8(0x308a)
+#define IMX296_REG_INCKSEL2		IMX296_REG8(0x308b)
+#define IMX296_REG_INCKSEL3		IMX296_REG8(0x308c)
+#define IMX296_REG_INCK			IMX296_REG8(0x418c)
+#define IMX296_REG_PGHPOS		IMX296_REG16(0x3239)
+#define IMX296_REG_PGVPOS		IMX296_REG16(0x323c)
+#define IMX296_REG_PGHPSTEP		IMX296_REG8(0x323e)
+#define IMX296_REG_PGVPSTEP		IMX296_REG8(0x323f)
+#define IMX296_REG_PGHPNUM		IMX296_REG8(0x3240)
+#define IMX296_REG_PGVPNUM		IMX296_REG8(0x3241)
+#define IMX296_REG_PGDATA1		IMX296_REG16(0x3244)
+#define IMX296_REG_PGDATA2		IMX296_REG16(0x3246)
+#define IMX296_REG_PGHGSTEP		IMX296_REG8(0x3249)
+#define IMX296_REG_BLKLEVEL		IMX296_REG16(0x3254)
+#define IMX296_REG_BLKLEVELAUTO		IMX296_REG16(0x3022)
+#define IMX296_REG_FID0_ROI_ON		IMX296_REG16(0x3300)
+#define IMX296_REG_FID0_ROIPH1		IMX296_REG16(0x3310)
+#define IMX296_REG_FID0_ROIPV1		IMX296_REG16(0x3312)
+#define IMX296_REG_FID0_ROIWV1		IMX296_REG16(0x3314)
+#define IMX296_REG_FID0_ROIWH1		IMX296_REG16(0x3316)
+#define IMX296_REG_VMAX			IMX296_REG24(0x3010)
+#define IMX296_REG_HMAX			IMX296_REG16(0x3014)
+
+static const struct video_cci_reg init_regs[] = {
 	/* Undocumented registers */
 	{IMX296_REG8(0x3005), 0xf0},
 	{IMX296_REG8(0x309e), 0x04},
@@ -72,70 +103,62 @@ static const struct video_reg init_regs[] = {
 	{0},
 };
 
-static const struct video_reg clk_37_125_mhz[] __unused = {
-	{IMX296_REG8(0x3089), 0x80},		/* INCKSEL0 */
-	{IMX296_REG8(0x308a), 0x0b},		/* INCKSEL1 */
-	{IMX296_REG8(0x308b), 0x80},		/* INCKSEL2 */
-	{IMX296_REG8(0x308c), 0x08},		/* INCKSEL3 */
-	{IMX296_REG8(0x418c), 0x74},		/* INCK */
+static const struct video_cci_reg clk_37_125_mhz[] __unused = {
+	{IMX296_REG_INCKSEL0, 0x80},
+	{IMX296_REG_INCKSEL1, 0x0b},
+	{IMX296_REG_INCKSEL2, 0x80},
+	{IMX296_REG_INCKSEL3, 0x08},
+	{IMX296_REG_INCK, 0x74},
 	{0},
 };
 
 /* This is the clock frequency present on the Raspberry Pi GS module. */
-static const struct video_reg clk_54_000_mhz[] __unused = {
-	{IMX296_REG8(0x3089), 0xb0},		/* INCKSEL0 */
-	{IMX296_REG8(0x308a), 0x0f},		/* INCKSEL1 */
-	{IMX296_REG8(0x308b), 0xb0},		/* INCKSEL2 */
-	{IMX296_REG8(0x308c), 0x0c},		/* INCKSEL3 */
-	{IMX296_REG8(0x418c), 0xa8},		/* INCK */
+static const struct video_cci_reg clk_54_000_mhz[] __unused = {
+	{IMX296_REG_INCKSEL0, 0xb0},
+	{IMX296_REG_INCKSEL1, 0x0f},
+	{IMX296_REG_INCKSEL2, 0xb0},
+	{IMX296_REG_INCKSEL3, 0x0c},
+	{IMX296_REG_INCK, 0xa8},
 	{0},
 };
 
-static const struct video_reg clk_74_250_mhz[] __unused = {
-	{IMX296_REG8(0x3089), 0x80},		/* INCKSEL0 */
-	{IMX296_REG8(0x308a), 0x0f},		/* INCKSEL1 */
-	{IMX296_REG8(0x308b), 0x80},		/* INCKSEL2 */
-	{IMX296_REG8(0x308c), 0x0c},		/* INCKSEL3 */
-	{IMX296_REG8(0x418c), 0xe8},		/* INCK */
+static const struct video_cci_reg clk_74_250_mhz[] __unused = {
+	{IMX296_REG_INCKSEL0, 0x80},
+	{IMX296_REG_INCKSEL1, 0x0f},
+	{IMX296_REG_INCKSEL2, 0x80},
+	{IMX296_REG_INCKSEL3, 0x0c},
+	{IMX296_REG_INCK, 0xe8},
 	{0},
 };
 
-#if 0
- = {
-	{IMX296_REG16(0x3239), 8},		/* PGHPOS */
-	{IMX296_REG16(0x323c), 8},		/* PGVPOS */
-	{IMX296_REG8(0x323e), 8},		/* PGHPSTEP */
-	{IMX296_REG8(0x323f), 8},		/* PGVPSTEP */
-	{IMX296_REG8(0x3240), 100},		/* PGHPNUM */
-	{IMX296_REG8(0x3241), 100},		/* PGVPNUM */
-	{IMX296_REG16(0x3244), 0x300},		/* PGDATA1 */
-	{IMX296_REG16(0x3246), 0x100},		/* PGDATA2 */
-	{IMX296_REG8(0x3249), 0},		/* PGHGSTEP */
-	{IMX296_REG16(0x3254), 0},		/* BLKLEVEL */
-	{IMX296_REG16(0x3022), 0xf0},		/* BLKLEVELAUTO: off */
-	{IMX296_REG_PGCTRL, 16, IMX296_PGCTRL_REGEN | IMX296_PGCTRL_CLKEN | IMX296_PGCTRL_MODE(ctrl->val - 1}),
-};
-#endif
-
-static const struct video_reg size_1440x1080[] = {
-	{IMX296_REG16(0x3300), 0x00},		/* FID0_ROIH1ON=0, FID0_ROIV1ON=0 */
-	{IMX296_REG16(0x3014), 1080},		/* HMAX: horizontal blanking time in 74.25 MHz clock ticks */
-	{IMX296_REG16(0x3014), 1080 + 64},	/* VMAX: vertical blanking time in number of lines */
+static const struct video_cci_reg size_WIDTHxHEIGHT[] = {
+	/* Enable vertical and horizontal ROI selection */
+	{IMX296_REG_FID0_ROI_ON, BIT(0) | BIT(1)},
+	/* Set crop start to (0, 0) */
+	{IMX296_REG_FID0_ROIPH1, 0x00},
+	{IMX296_REG_FID0_ROIPV1, 0x00},
+	/* Set crop end to (W, H) */
+	{IMX296_REG_FID0_ROIWH1, WIDTH},
+	{IMX296_REG_FID0_ROIWV1, HEIGHT},
+	/* horizontal blanking time (74.25 MHz clock ticks) */
+	{IMX296_REG_HMAX, WIDTH + 32},
+	/* vertical blanking time (number of lines) */
+	{IMX296_REG_VMAX, HEIGHT + 64},
 	{0},
 };
 
-static const struct video_imager_mode modes_1440x1080[] = {
-	{.fps = 30, .regs = {size_1440x1080, clk_54_000_mhz}},
+static const struct video_imager_mode modes_WIDTHxHEIGHT[] = {
+	{.fps = 30, .regs = {size_WIDTHxHEIGHT, clk_54_000_mhz}},
 	{0},
 };
 
 static const struct video_imager_mode *modes[] = {
-	modes_1440x1080,
+	modes_WIDTHxHEIGHT,
 	NULL,
 };
 
 static const struct video_format_cap fmts[] = {
-	VIDEO_IMAGER_FORMAT_CAP(1440, 1080, VIDEO_PIX_FMT_GBRG8),
+	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_GBRG8, WIDTH, HEIGHT),
 	{0},
 };
 
@@ -145,23 +168,30 @@ static int imx296_set_stream(const struct device *dev, bool on)
 	int ret;
 
 	if (on) {
-		ret = video_write_cci_reg(&data->i2c, IMX296_REG_STANDBY, 0x00);
+		ret = video_cci_write_reg(&data->i2c, IMX296_REG_STANDBY, 0x00);
 		if (ret != 0) {
 			return ret;
 		}
 
 		k_sleep(K_MSEC(2));
 
-		return video_write_cci_reg(&data->i2c, IMX296_REG_XMSTA, 0x00);
+		ret = video_cci_write_reg(&data->i2c, IMX296_REG_XMSTA, 0x00);
+		if (ret != 0) {
+			return ret;
+		}
 	} else {
-		ret = video_write_cci_reg(&data->i2c, IMX296_REG_XMSTA, 0x01);
+		ret = video_cci_write_reg(&data->i2c, IMX296_REG_XMSTA, 0x01);
 		if (ret != 0) {
 			return ret;
 		}
 
-		return video_write_cci_reg(&data->i2c, IMX296_REG_STANDBY, 0x01);
+		return video_cci_write_reg(&data->i2c, IMX296_REG_STANDBY, 0x01);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
+	return 0;
 }
 
 static const DEVICE_API(video, imx296_driver_api) = {
@@ -172,7 +202,7 @@ static const DEVICE_API(video, imx296_driver_api) = {
 	.set_frmival = video_imager_set_frmival,
 	.get_frmival = video_imager_get_frmival,
 	.enum_frmival = video_imager_enum_frmival,
-	/* Implementation specific o this sensor */
+	/* Implementation specific to this sensor */
 	.set_stream = imx296_set_stream,
 };
 

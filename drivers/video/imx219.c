@@ -216,7 +216,7 @@ static const DEVICE_API(video, imx219_driver_api) = {
 	.set_frmival = video_imager_set_frmival,
 	.get_frmival = video_imager_get_frmival,
 	.enum_frmival = video_imager_enum_frmival,
-	/* Implementation specific o this sensor */
+	/* Implementation specific to this sensor */
 	.set_stream = imx219_set_stream,
 	.set_ctrl = imx219_set_ctrl,
 	.get_ctrl = imx219_get_ctrl,
