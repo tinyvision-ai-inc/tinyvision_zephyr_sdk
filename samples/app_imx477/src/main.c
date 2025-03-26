@@ -24,14 +24,6 @@ int main(void)
 		return ret;
 	}
 
-	LOG_INF("Started USB, configuring video stream default values");
-
-	ret = video_set_ctrl(uvcmanager0_dev, VIDEO_CID_GAIN, (void *)555);
-	if (ret != 0) {
-		LOG_ERR("Cannot set the default gain for %s", uvcmanager0_dev->name);
-		return ret;
-	}
-
 	LOG_INF("Done, exiting main() and letting the USB stack run");
 
 	return 0;

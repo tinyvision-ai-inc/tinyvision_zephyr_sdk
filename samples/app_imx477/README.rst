@@ -1,4 +1,8 @@
 USB IMX477 Example
 ##################
 
-This is not functional yet!
+.. code-block:: console
+
+   . ./env.sh
+   west build
+   west flash

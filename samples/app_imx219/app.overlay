@@ -40,7 +40,7 @@
 
 &uvcmanager0 {
 	/* From UVC's "bEndpointAddress" in "lsusb -v -d 1209:0001" output */
-	usb-endpoint = <0x83>;
+	usb-endpoint = <0x81>;
 	status = "okay";
 };
 
@@ -49,16 +49,16 @@
 };
 
 &debayer0_ep_in {
-	remote-endpoint-label = "imx296ch0_ep_out";
+	remote-endpoint-label = "imx219ch0_ep_out";
 };
 
 &i2c0ch0 {
-	imx296ch0@36 {
-		compatible = "sony,imx296";
-		reg = <0x36>;
+	imx219ch0@10 {
+		compatible = "sony,imx219";
+		reg = <0x10>;
 
 		port {
-			imx296ch0_ep_out: endpoint {
+			imx219ch0_ep_out: endpoint {
 				remote-endpoint-label = "debayer0_ep_in";
 			};
 		};

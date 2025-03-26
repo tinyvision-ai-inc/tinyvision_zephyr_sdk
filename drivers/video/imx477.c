@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#warning The IMX477 driver not functional yet
+
 #define DT_DRV_COMPAT sony_imx477
 
 #include <zephyr/device.h>
