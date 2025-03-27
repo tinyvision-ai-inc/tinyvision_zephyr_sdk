@@ -20,6 +20,16 @@
 	};
 };
 
+&uvcmanager0 {
+	usb-endpoint = <0x81>;
+	status = "okay";
+};
+
+&uvcmanager1 {
+	usb-endpoint = <0x82>;
+	status = "okay";
+};
+
 /* I2C multiplexer */
 
 &i2c0 {
@@ -47,19 +57,17 @@
 	};
 };
 
-/* Stream 0 config */
-
-&uvcmanager0 {
-	/* From UVC's "bEndpointAddress" in "lsusb -v -d 1209:0001" output */
-	usb-endpoint = <0x81>;
-	status = "okay";
-};
+/* Camera 0 config */
 
 &debayer0 {
 	status = "okay";
 };
 
-&debayer0_ep_in {
+&csi0 {
+	status = "okay";
+};
+
+&csi0_ep_in {
 	remote-endpoint-label = "imx219ch0_ep_out";
 };
 
@@ -70,25 +78,23 @@
 
 		port {
 			imx219ch0_ep_out: endpoint {
-				remote-endpoint-label = "debayer0_ep_in";
+				remote-endpoint-label = "csi0_ep_in";
 			};
 		};
 	};
 };
 
-/* Stream 1 config */
-
-&uvcmanager1 {
-	/* From UVC's "bEndpointAddress" in "lsusb -v -d 1209:0001" output */
-	usb-endpoint = <0x82>;
-	status = "okay";
-};
+/* Camera 1 config */
 
 &debayer1 {
 	status = "okay";
 };
 
-&debayer1_ep_in {
+&csi1 {
+	status = "okay";
+};
+
+&csi1_ep_in {
 	remote-endpoint-label = "imx219ch1_ep_out";
 };
 
@@ -99,7 +105,7 @@
 
 		port {
 			imx219ch1_ep_out: endpoint {
-				remote-endpoint-label = "debayer1_ep_in";
+				remote-endpoint-label = "csi1_ep_in";
 			};
 		};
 	};

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 tinyVision.ai Inc.
+ * Copyright (c) 2024-2025 tinyVision.ai Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,9 +18,13 @@
 
 			port {
 				uvcmanager0_ep_in: endpoint {
-					remote-endpoint-label = "empty";
+					remote-endpoint-label = "debayer0_ep_out";
 				};
 			};
 		};
 	};
+};
+
+&debayer0_ep_out {
+	remote-endpoint-label = "uvcmanager0_ep_in";
 };

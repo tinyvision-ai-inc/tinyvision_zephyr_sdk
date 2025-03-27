@@ -16,6 +16,11 @@
 	};
 };
 
+&uvcmanager0 {
+	usb-endpoint = <0x81>;
+	status = "okay";
+};
+
 /* I2C multiplexer */
 
 &i2c0 {
@@ -36,30 +41,28 @@
 	};
 };
 
-/* Stream 0 config */
-
-&uvcmanager0 {
-	/* From UVC's "bEndpointAddress" in "lsusb -v -d 1209:0001" output */
-	usb-endpoint = <0x83>;
-	status = "okay";
-};
+/* Camera 0 config */
 
 &debayer0 {
 	status = "okay";
 };
 
-&debayer0_ep_in {
-	remote-endpoint-label = "imx296ch0_ep_out";
+&csi0 {
+	status = "okay";
+};
+
+&csi0_ep_in {
+	remote-endpoint-label = "imx296_ep_out";
 };
 
 &i2c0ch0 {
-	imx296ch0@36 {
+	imx296@36 {
 		compatible = "sony,imx296";
 		reg = <0x36>;
 
 		port {
-			imx296ch0_ep_out: endpoint {
-				remote-endpoint-label = "debayer0_ep_in";
+			imx296_ep_out: endpoint {
+				remote-endpoint-label = "csi0_ep_in";
 			};
 		};
 	};

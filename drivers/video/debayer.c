@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 tinyVision.ai Inc.
+ * Copyright (c) 2024-2025 tinyVision.ai Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -12,25 +12,21 @@
 #include <zephyr/drivers/video-controls.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/byteorder.h>
+#include <zephyr/shell/shell.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(debayer, CONFIG_VIDEO_LOG_LEVEL);
 
-#define DEBAYER_SCRATCH			0x0000
-#define DEBAYER_CONTROL			0x0004
-#define DEBAYER_STATUS			0x0008
-#define DEBAYER_CONFIG			0x000C
-#define DEBAYER_NUM_FRAMES		0x0010
-#define DEBAYER_IMAGE_GAIN		0x0018
-#define DEBAYER_CHAN_AVG_0		0x001C
-#define DEBAYER_CHAN_AVG_1		0x0020
-#define DEBAYER_CHAN_AVG_2		0x0024
-#define DEBAYER_CHAN_AVG_3		0x0028
-#define DEBAYER_NUM_PIXELS		0x002C
-#define DEBAYER_HIST_THRESHOLDS		0x0030
-#define DEBAYER_HIST_0			0x0034
-#define DEBAYER_HIST_1			0x0038
-#define DEBAYER_HIST_2			0x003C
+#define DEBAYER_SCRATCH    0x0000
+#define DEBAYER_CONTROL    0x0004
+#define DEBAYER_STATUS     0x0008
+#define DEBAYER_CONFIG     0x000C
+#define DEBAYER_NUM_FRAMES 0x0010
+#define DEBAYER_IMAGE_GAIN 0x0018
+#define DEBAYER_CHAN_AVG_0 0x001C
+#define DEBAYER_CHAN_AVG_1 0x0020
+#define DEBAYER_CHAN_AVG_2 0x0024
+#define DEBAYER_CHAN_AVG_3 0x0028
 
 #define DEBAYER_PIX_FMT VIDEO_PIX_FMT_BGGR8
 
@@ -70,7 +66,8 @@ static int debayer_get_caps(const struct device *dev, enum video_endpoint_id ep,
 	return 0;
 }
 
-static int debayer_set_format(const struct device *dev, enum video_endpoint_id ep, struct video_format *fmt)
+static int debayer_set_format(const struct device *dev, enum video_endpoint_id ep,
+			      struct video_format *fmt)
 {
 	const struct debayer_config *cfg = dev->config;
 	const struct device *source_dev = cfg->source_dev;
@@ -99,7 +96,7 @@ static int debayer_set_format(const struct device *dev, enum video_endpoint_id e
 }
 
 static int debayer_get_format(const struct device *dev, enum video_endpoint_id ep,
-			  struct video_format *fmt)
+			      struct video_format *fmt)
 {
 	const struct debayer_config *cfg = dev->config;
 	int ret;
@@ -274,7 +271,57 @@ static const DEVICE_API(video, debayer_driver_api) = {
 			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
 		.base = DT_INST_REG_ADDR(n),                                                       \
 	};                                                                                         \
-	DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, &debayer_cfg_##n,                               \
-			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &debayer_driver_api);
+	DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, &debayer_cfg_##n, POST_KERNEL,                  \
+			      CONFIG_VIDEO_INIT_PRIORITY, &debayer_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(DEBAYER_INIT)
+
+static bool device_is_video_and_ready(const struct device *dev)
+{
+	return device_is_ready(dev) && DEVICE_API_IS(video, dev);
+}
+
+static int cmd_debayer_show(const struct shell *sh, size_t argc, char **argv)
+{
+	const struct device *dev;
+	const struct debayer_config *cfg;
+
+	__ASSERT_NO_MSG(argc == 2);
+
+	dev = device_get_binding(argv[1]);
+	if (dev == NULL || !device_is_video_and_ready(dev)) {
+		shell_error(sh, "could not find a video device ready with that name");
+		return -ENODEV;
+	}
+
+	cfg = dev->config;
+
+	shell_print(sh, "num frames: %u", sys_read32(cfg->base + DEBAYER_NUM_FRAMES));
+	shell_print(sh, "chan 0 average: 0x%02x", sys_read32(cfg->base + DEBAYER_CHAN_AVG_0));
+	shell_print(sh, "chan 1 average: 0x%02x", sys_read32(cfg->base + DEBAYER_CHAN_AVG_1));
+	shell_print(sh, "chan 2 average: 0x%02x", sys_read32(cfg->base + DEBAYER_CHAN_AVG_2));
+	shell_print(sh, "chan 3 average: 0x%02x", sys_read32(cfg->base + DEBAYER_CHAN_AVG_3));
+
+	return 0;
+}
+
+static void device_name_get(size_t idx, struct shell_static_entry *entry)
+{
+	const struct device *dev = shell_device_filter(idx, device_is_video_and_ready);
+
+	entry->syntax = (dev != NULL) ? dev->name : NULL;
+	entry->handler = NULL;
+	entry->help = NULL;
+	entry->subcmd = NULL;
+}
+SHELL_DYNAMIC_CMD_CREATE(dsub_device_name, device_name_get);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
+	sub_debayer,
+
+	SHELL_CMD_ARG(show, &dsub_device_name, "Show a dump of the hardware registers",
+		      cmd_debayer_show, 2, 0),
+
+	SHELL_SUBCMD_SET_END);
+
+SHELL_CMD_REGISTER(debayer, &sub_debayer, "tinyVision.ai debayer and statistics", NULL);

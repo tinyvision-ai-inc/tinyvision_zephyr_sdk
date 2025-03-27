@@ -6,5 +6,8 @@
 
 #include "tinyclunx33_add_base.dtsi"
 #include "tinyclunx33_add_litex_i2c.dtsi"
-#include "tinyclunx33_add_uvcmanager0.dtsi"
+
+/* Stream 0 */
+#include "tinyclunx33_add_csi0.dtsi"
 #include "tinyclunx33_add_debayer0.dtsi"
+#include "tinyclunx33_add_uvcmanager0.dtsi"

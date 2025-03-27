@@ -16,6 +16,11 @@
 	};
 };
 
+&uvcmanager0 {
+	usb-endpoint = <0x81>;
+	status = "okay";
+};
+
 /* I2C multiplexer */
 
 &i2c0 {
@@ -36,19 +41,17 @@
 	};
 };
 
-/* Stream 0 config */
-
-&uvcmanager0 {
-	/* From UVC's "bEndpointAddress" in "lsusb -v -d 1209:0001" output */
-	usb-endpoint = <0x81>;
-	status = "okay";
-};
+/* Camera 0 config */
 
 &debayer0 {
 	status = "okay";
 };
 
-&debayer0_ep_in {
+&csi0 {
+	status = "okay";
+};
+
+&csi0_ep_in {
 	remote-endpoint-label = "imx477_ep_out";
 };
 
@@ -59,7 +62,7 @@
 
 		port {
 			imx477_ep_out: endpoint {
-				remote-endpoint-label = "debayer0_ep_in";
+				remote-endpoint-label = "csi0_ep_in";
 			};
 		};
 	};

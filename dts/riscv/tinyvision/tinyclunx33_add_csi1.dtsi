@@ -1,0 +1,30 @@
+/*
+ * Copyright (c) 2025 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	soc {
+		csi1: csi@b2000800 {
+			compatible = "lattice,dphy-rx";
+			reg = <0xb2000800 0x400>;
+			status = "disabled";
+
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				csi1_ep_in: endpoint@0 {
+					reg = <0>;
+					remote-endpoint-label = "empty";
+				};
+
+				csi1_ep_out: endpoint@1 {
+					reg = <1>;
+					remote-endpoint-label = "debayer1_ep_in";
+				};
+			};
+		};
+	};
+};

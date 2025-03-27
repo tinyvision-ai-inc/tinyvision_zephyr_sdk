@@ -99,14 +99,16 @@ static int uvcmanager_set_stream(const struct device *dev, bool on)
 	return 0;
 }
 
-static int uvcmanager_get_caps(const struct device *dev, enum video_endpoint_id ep, struct video_caps *caps)
+static int uvcmanager_get_caps(const struct device *dev, enum video_endpoint_id ep,
+			       struct video_caps *caps)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
 	return video_get_caps(cfg->source_dev, ep, caps);
 }
 
-static int uvcmanager_set_format(const struct device *dev, enum video_endpoint_id ep, struct video_format *fmt)
+static int uvcmanager_set_format(const struct device *dev, enum video_endpoint_id ep,
+				 struct video_format *fmt)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 	const struct device *source_dev = cfg->source_dev;
@@ -134,7 +136,8 @@ static int uvcmanager_set_format(const struct device *dev, enum video_endpoint_i
 	return 0;
 }
 
-static int uvcmanager_get_format(const struct device *dev, enum video_endpoint_id ep, struct video_format *fmt)
+static int uvcmanager_get_format(const struct device *dev, enum video_endpoint_id ep,
+				 struct video_format *fmt)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
@@ -172,8 +175,15 @@ static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void 
 	}
 }
 
+static int uvcmanager_get_ctrl(const struct device *dev, unsigned int cid, void *value)
+{
+	const struct uvcmanager_config *cfg = dev->config;
+
+	return video_get_ctrl(cfg->source_dev, cid, value);
+}
+
 static int uvcmanager_set_frmival(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_frmival *frmival)
+				  struct video_frmival *frmival)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
@@ -181,7 +191,7 @@ static int uvcmanager_set_frmival(const struct device *dev, enum video_endpoint_
 }
 
 static int uvcmanager_get_frmival(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_frmival *frmival)
+				  struct video_frmival *frmival)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
@@ -189,7 +199,7 @@ static int uvcmanager_get_frmival(const struct device *dev, enum video_endpoint_
 }
 
 static int uvcmanager_enum_frmival(const struct device *dev, enum video_endpoint_id ep,
-				struct video_frmival_enum *fie)
+				   struct video_frmival_enum *fie)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
@@ -291,6 +301,7 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.enum_frmival = uvcmanager_enum_frmival,
 	.set_stream = uvcmanager_set_stream,
 	.set_ctrl = uvcmanager_set_ctrl,
+	.get_ctrl = uvcmanager_get_ctrl,
 	.enqueue = uvcmanager_enqueue,
 	.dequeue = uvcmanager_dequeue,
 };
