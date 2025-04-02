@@ -137,6 +137,8 @@ struct uvc_config {
 	struct usb_desc_header **fs_desc;
 	struct usb_desc_header **hs_desc;
 	struct usb_desc_header **ss_desc;
+	/* String descriptor that will be added as a name for one UVC instance */
+	struct usbd_desc_node *iface_str_desc_nd;
 };
 
 /* Specialized version of UDC net_buf metadata with extra fields */
@@ -1438,6 +1440,7 @@ static uint32_t uvc_get_mask(const struct device *video_dev, const struct uvc_co
 static int uvc_init(struct usbd_class_data *const c_data)
 {
 	const struct device *dev = usbd_class_get_private(c_data);
+	struct usbd_context *uds_ctx = usbd_class_get_ctx(c_data);
 	const struct uvc_config *cfg = dev->config;
 	struct uvc_data *data = dev->data;
 	struct uvc_format_descriptor *format_desc = NULL;
@@ -1453,6 +1456,13 @@ static int uvc_init(struct usbd_class_data *const c_data)
 		return 0;
 	}
 
+	if (usbd_add_descriptor(uds_ctx, cfg->iface_str_desc_nd) != 0) {
+		LOG_WRN("Failed to add UVC interface string descriptor");
+	} else {
+		cfg->desc->iad.iFunction = usbd_str_desc_get_idx(cfg->iface_str_desc_nd);
+		cfg->desc->if0.iInterface = usbd_str_desc_get_idx(cfg->iface_str_desc_nd);
+		cfg->desc->if1.iInterface = usbd_str_desc_get_idx(cfg->iface_str_desc_nd);
+	}
 
 	/* Generating VideoControl descriptors (interface 0) */
 
@@ -2110,15 +2120,22 @@ struct usb_desc_header *uvc_ss_desc_##n[UVC_MAX_SS_DESC] = {			\
 	(struct usb_desc_header *) NULL,					\
 };
 
+#define UVC_INST_NAME(n)							\
+	DT_INST_PROP_OR(n, label, DT_NODE_FULL_NAME(DT_DRV_INST(n)))
+
 #define USBD_VIDEO_DT_DEVICE_DEFINE(n)						\
 	UVC_DEFINE_DESCRIPTOR(n)						\
 										\
 	USBD_DEFINE_CLASS(uvc_c_data_##n, &uvc_class_api,			\
 			  (void *)DEVICE_DT_INST_GET(n), NULL);			\
 										\
+	USBD_DESC_STRING_DEFINE(iface_str_desc_nd_##n, UVC_INST_NAME(n),	\
+				USBD_DUT_STRING_INTERFACE);			\
+										\
 	const struct uvc_config uvc_cfg_##n = {					\
 		.c_data = &uvc_c_data_##n,					\
 		.desc = &uvc_desc_##n,						\
+		.iface_str_desc_nd = &iface_str_desc_nd_##n,			\
 		.fs_desc = uvc_fs_desc_##n,					\
 		.hs_desc = uvc_hs_desc_##n,					\
 		.ss_desc = uvc_ss_desc_##n,					\

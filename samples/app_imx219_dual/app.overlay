@@ -13,10 +13,12 @@
 
 	uvc0: uvc0 {
 		compatible = "zephyr,uvc-device";
+		label = "tinyCLUNX33 IMX219 demo (top)";
 	};
 
 	uvc1: uvc1 {
 		compatible = "zephyr,uvc-device";
+		label = "tinyCLUNX33 IMX219 demo (bottom)";
 	};
 };
 
