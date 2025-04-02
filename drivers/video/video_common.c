@@ -97,6 +97,9 @@ int video_imager_set_mode(const struct device *dev, const struct video_imager_mo
 	struct video_imager_data *data = dev->data;
 	int ret;
 
+	__ASSERT(data->modes != NULL, "To be provided at build time");
+	__ASSERT(data->write_multi != NULL, "To be provided at build time");
+
 	if (data->mode == mode) {
 		LOG_DBG("%s is arlready in the mode requested", dev->name);
 		return 0;
@@ -122,6 +125,8 @@ int video_imager_set_frmival(const struct device *dev, enum video_endpoint_id ep
 	struct video_imager_data *data = dev->data;
 	struct video_frmival_enum fie = {.format = &data->fmt, .discrete = *frmival};
 
+	__ASSERT(data->modes != NULL, "To be provided at build time");
+
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
 	}
@@ -135,6 +140,8 @@ int video_imager_get_frmival(const struct device *dev, enum video_endpoint_id ep
 			     struct video_frmival *frmival)
 {
 	struct video_imager_data *data = dev->data;
+
+	__ASSERT(data->mode != NULL, "To be provided at build time");
 
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
@@ -153,6 +160,9 @@ int video_imager_enum_frmival(const struct device *dev, enum video_endpoint_id e
 	const struct video_imager_mode *modes;
 	size_t fmt_id = 0;
 	int ret;
+
+	__ASSERT(data->modes != NULL, "To be provided at build time");
+	__ASSERT(data->fmts != NULL, "To be provided at build time");
 
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
@@ -190,6 +200,9 @@ int video_imager_set_fmt(const struct device *const dev, enum video_endpoint_id 
 	struct video_imager_data *data = dev->data;
 	size_t fmt_id;
 	int ret;
+
+	__ASSERT(data->fmts != NULL, "To be provided at build time");
+	__ASSERT(data->modes != NULL, "To be provided at build time");
 
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		LOG_ERR("Only the output endpoint is supported for %s", dev->name);
@@ -233,6 +246,8 @@ int video_imager_get_caps(const struct device *dev, enum video_endpoint_id ep,
 {
 	struct video_imager_data *data = dev->data;
 
+	__ASSERT(data->fmts != NULL, "To be provided at build time");
+
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
 	}
@@ -249,8 +264,9 @@ int video_imager_init(const struct device *dev, const struct video_reg *init_reg
 	struct video_format fmt;
 	int ret;
 
-	__ASSERT_NO_MSG(data->modes != NULL);
-	__ASSERT_NO_MSG(data->fmts != NULL);
+	__ASSERT(data->modes != NULL, "To be provided at build time");
+	__ASSERT(data->fmts != NULL, "To be provided at build time");
+	__ASSERT(data->write_multi != NULL, "To be provided at build time");
 
 	if (!device_is_ready(data->i2c.bus)) {
 		LOG_ERR("I2C bus device %s is not ready", data->i2c.bus->name);
