@@ -2,4 +2,10 @@
 #
 #	mpremote run mpremote_power_cycle.py
 
-import machine
+import machine, time
+
+pin = machine.Pin(22, machine.Pin.OUT)
+
+pin.value(0)
+time.sleep(0.5)
+pin.value(1)
