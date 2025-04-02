@@ -2,4 +2,4 @@
 set -eu
 
 # Reboot the board in the foreground
-sh "${0%/*}/do_power_cycle.sh"
+mpremote run "${0%/*}/mpremote_power_cycle.py"
