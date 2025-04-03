@@ -83,10 +83,10 @@ struct video_imager_data {
  * @{
  */
 
-#define VIDEO_REG_ENDIANNESS_MASK		GENMASK(24, 24)
-#define VIDEO_REG_ADDR_SIZE_MASK		GENMASK(23, 20)
-#define VIDEO_REG_DATA_SIZE_MASK		GENMASK(19, 16)
-#define VIDEO_REG_ADDR_MASK			GENMASK(15, 0)
+#define VIDEO_REG_ENDIANNESS_MASK		((uint32_t)GENMASK(24, 24))
+#define VIDEO_REG_ADDR_SIZE_MASK		((uint32_t)GENMASK(23, 20))
+#define VIDEO_REG_DATA_SIZE_MASK		((uint32_t)GENMASK(19, 16))
+#define VIDEO_REG_ADDR_MASK			((uint32_t)GENMASK(15, 0))
 
 /**
  * @brief Encode the size of the register into the unused bits of the address.

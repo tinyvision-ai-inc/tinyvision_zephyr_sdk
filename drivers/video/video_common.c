@@ -65,8 +65,11 @@ int video_write_cci_reg(struct i2c_dt_spec *i2c, uint32_t addr, uint32_t data)
 
 		buf_w[addr_size] = data_ptr[i];
 
+		LOG_HEXDUMP_DBG(buf_w, addr_size + 1, "data sent to the i2c device");
+
 		ret = i2c_write_dt(i2c, buf_w, addr_size + 1);
 		if (ret != 0) {
+			LOG_ERR("Failed to write to register 0x%x", addr & VIDEO_REG_ADDR_MASK);
 			return ret;
 		}
 	}
@@ -81,8 +84,6 @@ int video_write_cci_multi(struct i2c_dt_spec *i2c, const struct video_reg *regs)
 	for (int i = 0; regs[i].addr != 0; i++) {
 		ret = video_write_cci_reg(i2c, regs[i].addr, regs[i].data);
 		if (ret != 0) {
-			LOG_ERR("Failed to write 0x%04x to register 0x%02x",
-				regs[i].data, regs[i].addr);
 			return ret;
 		}
 	}
