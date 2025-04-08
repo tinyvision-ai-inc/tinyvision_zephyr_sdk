@@ -498,6 +498,7 @@ static const struct video_reg clk_450_mhz[] = {
 	{0x030F, 0x96},
 };
 
+#if 0
 static const struct video_reg clk_453_mhz[] = {
 	{0x030E, 0x00},
 	{0x030F, 0x97},
@@ -522,9 +523,10 @@ static const struct video_reg clk_498_mhz[] = {
 	{0x030E, 0x00},
 	{0x030F, 0xa6},
 };
+#endif
 
 static const struct video_imager_mode modes_1332x990[] = {
-	{.fps = 30, .regs = {size_1332x990, clk_450_mhz}},
+	{.fps = 30, .regs = {size_1332x990}},
 	{0},
 };
 
@@ -540,9 +542,9 @@ static const struct video_format_cap fmts[] = {
 
 static int imx477_set_stream(const struct device *dev, bool on)
 {
-	struct video_imager_data *data = dev->data;
+	const struct video_imager_config *cfg = dev->config;
 
-	return video_write_cci_reg(&data->i2c, IMX477_REG_MODE_SELECT, on ? 0x01 : 0x00);
+	return video_write_cci_reg(&cfg->i2c, IMX477_REG_MODE_SELECT, on ? 0x01 : 0x00);
 }
 
 static const DEVICE_API(video, imx477_driver_api) = {
@@ -559,16 +561,16 @@ static const DEVICE_API(video, imx477_driver_api) = {
 
 static int imx477_init(const struct device *dev)
 {
-	struct video_imager_data *data = dev->data;
+	const struct video_imager_config *cfg = dev->config;
 	uint32_t reg;
 	int ret;
 
-	if (!device_is_ready(data->i2c.bus)) {
-		LOG_ERR("I2C device %s is not ready", data->i2c.bus->name);
+	if (!device_is_ready(cfg->i2c.bus)) {
+		LOG_ERR("I2C device %s is not ready", cfg->i2c.bus->name);
 		return -ENODEV;
 	}
 
-	ret = video_read_cci_reg(&data->i2c, IMX477_REG_CHIP_ID, &reg);
+	ret = video_read_cci_reg(&cfg->i2c, IMX477_REG_CHIP_ID, &reg);
 	if (ret != 0) {
 		LOG_ERR("Error during %s initialization: %s", dev->name, strerror(-ret));
 		return ret;
@@ -579,18 +581,23 @@ static int imx477_init(const struct device *dev)
 		return -ENODEV;
 	}
 
+	ret = video_write_cci_multi(&cfg->i2c, clk_450_mhz);
+	if (ret != 0) {
+		return ret;
+	}
+
 	return video_imager_init(dev, init_regs, 0);
 }
 
 #define IMX477_INIT(n)                                                                             \
-	static struct video_imager_data data_##n = {                                               \
+	static struct video_imager_config imx477_cfg_##n = {                                       \
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
 		.write_multi = &video_write_cci_multi,                                             \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(n, &imx477_init, NULL, &data_##n, NULL, POST_KERNEL,                 \
+	DEVICE_DT_INST_DEFINE(n, &imx477_init, NULL, NULL, &imx477_cfg_##n, POST_KERNEL,           \
 			      CONFIG_VIDEO_INIT_PRIORITY, &imx477_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(IMX477_INIT)

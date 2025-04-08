@@ -14,7 +14,7 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
 
-#include "video_imager.h"
+#include "video_common.h"
 
 LOG_MODULE_REGISTER(imx296, CONFIG_VIDEO_LOG_LEVEL);
 
@@ -57,7 +57,7 @@ LOG_MODULE_REGISTER(imx296, CONFIG_VIDEO_LOG_LEVEL);
 #define IMX296_REG_VMAX			IMX296_REG24(0x3010)
 #define IMX296_REG_HMAX			IMX296_REG16(0x3014)
 
-static const struct video_cci_reg init_regs[] = {
+static const struct video_reg init_regs[] = {
 	/* Undocumented registers */
 	{IMX296_REG8(0x3005), 0xf0},
 	{IMX296_REG8(0x309e), 0x04},
@@ -103,7 +103,7 @@ static const struct video_cci_reg init_regs[] = {
 	{0},
 };
 
-static const struct video_cci_reg clk_37_125_mhz[] __unused = {
+static const struct video_reg clk_37_125_mhz[] __unused = {
 	{IMX296_REG_INCKSEL0, 0x80},
 	{IMX296_REG_INCKSEL1, 0x0b},
 	{IMX296_REG_INCKSEL2, 0x80},
@@ -113,7 +113,7 @@ static const struct video_cci_reg clk_37_125_mhz[] __unused = {
 };
 
 /* This is the clock frequency present on the Raspberry Pi GS module. */
-static const struct video_cci_reg clk_54_000_mhz[] __unused = {
+static const struct video_reg clk_54_000_mhz[] __unused = {
 	{IMX296_REG_INCKSEL0, 0xb0},
 	{IMX296_REG_INCKSEL1, 0x0f},
 	{IMX296_REG_INCKSEL2, 0xb0},
@@ -122,7 +122,7 @@ static const struct video_cci_reg clk_54_000_mhz[] __unused = {
 	{0},
 };
 
-static const struct video_cci_reg clk_74_250_mhz[] __unused = {
+static const struct video_reg clk_74_250_mhz[] __unused = {
 	{IMX296_REG_INCKSEL0, 0x80},
 	{IMX296_REG_INCKSEL1, 0x0f},
 	{IMX296_REG_INCKSEL2, 0x80},
@@ -131,7 +131,7 @@ static const struct video_cci_reg clk_74_250_mhz[] __unused = {
 	{0},
 };
 
-static const struct video_cci_reg size_WIDTHxHEIGHT[] = {
+static const struct video_reg size_WIDTHxHEIGHT[] = {
 	/* Enable vertical and horizontal ROI selection */
 	{IMX296_REG_FID0_ROI_ON, BIT(0) | BIT(1)},
 	/* Set crop start to (0, 0) */
@@ -164,28 +164,28 @@ static const struct video_format_cap fmts[] = {
 
 static int imx296_set_stream(const struct device *dev, bool on)
 {
-	struct video_imager_data *data = dev->data;
+	const struct video_imager_config *cfg = dev->config;
 	int ret;
 
 	if (on) {
-		ret = video_cci_write_reg(&data->i2c, IMX296_REG_STANDBY, 0x00);
+		ret = video_write_cci_reg(&cfg->i2c, IMX296_REG_STANDBY, 0x00);
 		if (ret != 0) {
 			return ret;
 		}
 
 		k_sleep(K_MSEC(2));
 
-		ret = video_cci_write_reg(&data->i2c, IMX296_REG_XMSTA, 0x00);
+		ret = video_write_cci_reg(&cfg->i2c, IMX296_REG_XMSTA, 0x00);
 		if (ret != 0) {
 			return ret;
 		}
 	} else {
-		ret = video_cci_write_reg(&data->i2c, IMX296_REG_XMSTA, 0x01);
+		ret = video_write_cci_reg(&cfg->i2c, IMX296_REG_XMSTA, 0x01);
 		if (ret != 0) {
 			return ret;
 		}
 
-		return video_cci_write_reg(&data->i2c, IMX296_REG_STANDBY, 0x01);
+		return video_write_cci_reg(&cfg->i2c, IMX296_REG_STANDBY, 0x01);
 		if (ret != 0) {
 			return ret;
 		}
@@ -212,14 +212,14 @@ static int imx296_init(const struct device *dev)
 }
 
 #define IMX296_INIT(n)                                                                             \
-	static struct video_imager_data data_##n = {                                               \
+	static struct video_imager_config imx296_cfg_##n = {                                       \
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
 		.write_multi = &video_write_cci_multi,                                             \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(n, &imx296_init, NULL, &data_##n, NULL, POST_KERNEL,                 \
+	DEVICE_DT_INST_DEFINE(n, &imx296_init, NULL, NULL, &imx296_cfg_##n, POST_KERNEL,           \
 			      CONFIG_VIDEO_INIT_PRIORITY, &imx296_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(IMX296_INIT)
