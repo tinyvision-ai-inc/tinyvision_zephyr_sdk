@@ -7,4 +7,4 @@ build:
     soc_root: .
 
 runners:
-  - file: scripts/ecpprog_hook.py
+  - file: scripts/ecpprog_mpremote.py
