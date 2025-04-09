@@ -22,6 +22,8 @@ LOG_MODULE_REGISTER(debayer, CONFIG_VIDEO_LOG_LEVEL);
 #define DEBAYER_STATUS     0x0008
 #define DEBAYER_CONFIG     0x000C
 #define DEBAYER_NUM_FRAMES 0x0010
+#define DEBAYER_HEIGHT     0x0014
+#define DEBAYER_WIDTH      0x0016
 #define DEBAYER_IMAGE_GAIN 0x0018
 #define DEBAYER_CHAN_AVG_0 0x001C
 #define DEBAYER_CHAN_AVG_1 0x0020
@@ -296,7 +298,9 @@ static int cmd_debayer_show(const struct shell *sh, size_t argc, char **argv)
 
 	cfg = dev->config;
 
-	shell_print(sh, "num frames: %u", sys_read32(cfg->base + DEBAYER_NUM_FRAMES));
+	shell_print(sh, "frame count: %u", sys_read32(cfg->base + DEBAYER_NUM_FRAMES));
+	shell_print(sh, "frame width: %u", sys_read16(cfg->base + DEBAYER_WIDTH));
+	shell_print(sh, "frame height: %u", sys_read16(cfg->base + DEBAYER_HEIGHT));
 	shell_print(sh, "chan 0 average: 0x%02x", sys_read32(cfg->base + DEBAYER_CHAN_AVG_0));
 	shell_print(sh, "chan 1 average: 0x%02x", sys_read32(cfg->base + DEBAYER_CHAN_AVG_1));
 	shell_print(sh, "chan 2 average: 0x%02x", sys_read32(cfg->base + DEBAYER_CHAN_AVG_2));
