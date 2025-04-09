@@ -16,5 +16,5 @@ include: base.yaml
 on-bus: usb
 
 properties:
-  description:
+  interface-name:
     type: string

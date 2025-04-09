@@ -2121,7 +2121,7 @@ struct usb_desc_header *uvc_ss_desc_##n[UVC_MAX_SS_DESC] = {			\
 };
 
 #define UVC_INST_NAME(n)							\
-	DT_INST_PROP_OR(n, label, DT_NODE_FULL_NAME(DT_DRV_INST(n)))
+	DT_INST_PROP_OR(n, interface_name, DT_NODE_FULL_NAME(DT_DRV_INST(n)))
 
 #define USBD_VIDEO_DT_DEVICE_DEFINE(n)						\
 	UVC_DEFINE_DESCRIPTOR(n)						\
