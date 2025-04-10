@@ -80,11 +80,8 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_PREPLLCK_VT_DIV, 0x03},	/* Auto */
 	{IMX219_REG_PREPLLCK_OP_DIV, 0x03},	/* Auto */
 	{IMX219_REG_OPPXCK_DIV, 10},		/* 10-bits per pixel */
-	{IMX219_REG_VTPXCK_DIV, 5},
 	{IMX219_REG_VTSYCK_DIV, 1},
 	{IMX219_REG_OPSYCK_DIV, 1},
-	{IMX219_REG_PLL_VT_MPY, 32},		/* Pixel/Sys clock multiplier */
-	{IMX219_REG_PLL_OP_MPY, 50},		/* Output clock multiplier */
 
 	/* Undocumented registers */
 	{IMX219_REG8(0x455e), 0x00},
@@ -111,7 +108,7 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_BINNING_MODE_V, 0x00},
 	{IMX219_REG_DIGITAL_GAIN, 5000},
 	{IMX219_REG_ANALOG_GAIN, 240},
-	{IMX219_REG_INTEGRATION_TIME, 1600},
+	{IMX219_REG_INTEGRATION_TIME, 1000},
 	{IMX219_REG_ORIENTATION, 0x03},
 
 	{0},
@@ -123,11 +120,18 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_Y_ADD_STA_A, (IMX219_FULL_HEIGHT - (height)) / 2},                             \
 	{IMX219_REG_Y_ADD_END_A, (IMX219_FULL_HEIGHT + (height)) / 2 - 1}
 
+static const struct video_reg fps_60[] = {
+	{IMX219_REG_VTPXCK_DIV, 5},
+	{IMX219_REG_PLL_VT_MPY, 34},		/* Pixel/Sys clock multiplier */
+	{IMX219_REG_PLL_OP_MPY, 60},		/* Output clock multiplier */
+	{0},
+};
+
 static const struct video_reg size_1920x1080[] = {
 	IMX219_REGS_CROP(1920, 1080),
 	{IMX219_REG_X_OUTPUT_SIZE, 1920},
 	{IMX219_REG_Y_OUTPUT_SIZE, 1080},
-	{IMX219_REG_FRM_LENGTH_A, 1080 + 120},
+	{IMX219_REG_FRM_LENGTH_A, 1080 + 20},
 	{0},
 };
 
@@ -140,12 +144,12 @@ static const struct video_reg size_640x480[] = {
 };
 
 static const struct video_imager_mode modes_1920x1080[] = {
-	{.fps = 30, .regs = {size_1920x1080}},
+	{.fps = 60, .regs = {size_1920x1080, fps_60}},
 	{0},
 };
 
 static const struct video_imager_mode modes_640x480[] = {
-	{.fps = 30, .regs = {size_640x480}},
+	{.fps = 30, .regs = {size_640x480, fps_60}},
 	{0},
 };
 

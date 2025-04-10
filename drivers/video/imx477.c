@@ -496,32 +496,38 @@ static const struct video_reg size_1332x990[] = {
 static const struct video_reg clk_450_mhz[] = {
 	{0x030E, 0x00},
 	{0x030F, 0x96},
+	{0},
 };
 
 #if 0
 static const struct video_reg clk_453_mhz[] = {
 	{0x030E, 0x00},
 	{0x030F, 0x97},
+	{0},
 };
 
 static const struct video_reg clk_456_mhz[] = {
 	{0x030E, 0x00},
 	{0x030F, 0x98},
+	{0},
 };
 
 static const struct video_reg clk_459_mhz[] = {
 	{0x030E, 0x00},
 	{0x030F, 0x99},
+	{0},
 };
 
 static const struct video_reg clk_462_mhz[] = {
 	{0x030E, 0x00},
 	{0x030F, 0x9a},
+	{0},
 };
 
 static const struct video_reg clk_498_mhz[] = {
 	{0x030E, 0x00},
 	{0x030F, 0xa6},
+	{0},
 };
 #endif
 
@@ -581,6 +587,8 @@ static int imx477_init(const struct device *dev)
 		return -ENODEV;
 	}
 
+	LOG_INF("Detected IMX477 on %s", cfg->i2c.bus->name);
+
 	ret = video_write_cci_multi(&cfg->i2c, clk_450_mhz);
 	if (ret != 0) {
 		return ret;
@@ -590,10 +598,13 @@ static int imx477_init(const struct device *dev)
 }
 
 #define IMX477_INIT(n)                                                                             \
+	static struct video_imager_data imx477_data_##n;                                           \
+                                                                                                   \
 	static struct video_imager_config imx477_cfg_##n = {                                       \
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
+		.data = &imx477_data_##n,                                                          \
 		.write_multi = &video_write_cci_multi,                                             \
 	};                                                                                         \
                                                                                                    \
