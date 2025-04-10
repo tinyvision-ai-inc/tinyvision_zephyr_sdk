@@ -31,6 +31,8 @@ LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
 #define IMX219_REG_DIGITAL_GAIN		IMX219_REG16(0x0158)
 #define IMX219_REG_INTEGRATION_TIME	IMX219_REG16(0x015A)
 #define IMX219_REG_TESTPATTERN		IMX219_REG16(0x0600)
+#define IMX219_REG_TP_WINDOW_WIDTH	IMX219_REG16(0x0624)
+#define IMX219_REG_TP_WINDOW_HEIGHT	IMX219_REG16(0x0626)
 #define IMX219_REG_MODE_SELECT		IMX219_REG8(0x0100)
 #define IMX219_REG_CSI_LANE_MODE	IMX219_REG8(0x0114)
 #define IMX219_REG_DPHY_CTRL		IMX219_REG8(0x0128)
@@ -44,11 +46,11 @@ LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
 #define IMX219_REG_PLL_VT_MPY		IMX219_REG16(0x0306)
 #define IMX219_REG_PLL_OP_MPY		IMX219_REG16(0x030c)
 #define IMX219_REG_LINE_LENGTH_A	IMX219_REG16(0x0162)
-#define IMX219_REG_CSI_DATA_FORMAT_A	IMX219_REG16(0x018c)
+#define IMX219_REG_CSI_DATA_FORMAT_A0	IMX219_REG8(0x018c)
+#define IMX219_REG_CSI_DATA_FORMAT_A1	IMX219_REG8(0x018d)
 #define IMX219_REG_BINNING_MODE_H	IMX219_REG8(0x0174)
 #define IMX219_REG_BINNING_MODE_V	IMX219_REG8(0x0175)
 #define IMX219_REG_ORIENTATION		IMX219_REG8(0x0172)
-#define IMX219_REG_FRM_LENGTH_A		IMX219_REG16(0x0160)
 #define IMX219_REG_FRM_LENGTH_A		IMX219_REG16(0x0160)
 #define IMX219_REG_X_ADD_STA_A		IMX219_REG16(0x0164)
 #define IMX219_REG_X_ADD_END_A		IMX219_REG16(0x0166)
@@ -77,11 +79,6 @@ static const struct video_reg init_regs[] = {
 
 	/* Clock configuration registers */
 	{IMX219_REG_EXCK_FREQ, 24 << 8},	/* 24 MHz */
-	{IMX219_REG_PREPLLCK_VT_DIV, 0x03},	/* Auto */
-	{IMX219_REG_PREPLLCK_OP_DIV, 0x03},	/* Auto */
-	{IMX219_REG_OPPXCK_DIV, 10},		/* 10-bits per pixel */
-	{IMX219_REG_VTSYCK_DIV, 1},
-	{IMX219_REG_OPSYCK_DIV, 1},
 
 	/* Undocumented registers */
 	{IMX219_REG8(0x455e), 0x00},
@@ -101,14 +98,13 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_LINE_LENGTH_A, 3448},
 	{IMX219_REG_X_ODD_INC_A, 1},
 	{IMX219_REG_Y_ODD_INC_A, 1},
-	{IMX219_REG_CSI_DATA_FORMAT_A, (10 << 8) | 10}, /* 10-bits per pixels */
 
 	/* Custom defaults */
-	{IMX219_REG_BINNING_MODE_H, 0x00},
-	{IMX219_REG_BINNING_MODE_V, 0x00},
+	{IMX219_REG_BINNING_MODE_H, 0x00},	/* No binning */
+	{IMX219_REG_BINNING_MODE_V, 0x00}	/* No binning */,
 	{IMX219_REG_DIGITAL_GAIN, 5000},
 	{IMX219_REG_ANALOG_GAIN, 240},
-	{IMX219_REG_INTEGRATION_TIME, 1000},
+	{IMX219_REG_INTEGRATION_TIME, 500},
 	{IMX219_REG_ORIENTATION, 0x03},
 
 	{0},
@@ -120,9 +116,34 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_Y_ADD_STA_A, (IMX219_FULL_HEIGHT - (height)) / 2},                             \
 	{IMX219_REG_Y_ADD_END_A, (IMX219_FULL_HEIGHT + (height)) / 2 - 1}
 
-static const struct video_reg fps_60[] = {
-	{IMX219_REG_VTPXCK_DIV, 4},
-	{IMX219_REG_PLL_VT_MPY, 34},		/* Pixel/Sys clock multiplier */
+
+static const struct video_reg fmt_raw10[] = {
+	{IMX219_REG_CSI_DATA_FORMAT_A0, 10},
+	{IMX219_REG_CSI_DATA_FORMAT_A1, 10},
+	{IMX219_REG_OPPXCK_DIV, 10},
+	{0},
+};
+
+static const struct video_reg fps_30[] = {
+	{IMX219_REG_PREPLLCK_VT_DIV, 0x03},	/* Auto */
+	{IMX219_REG_PREPLLCK_OP_DIV, 0x03},	/* Auto */
+	{IMX219_REG_VTPXCK_DIV, 4},		/* Video Timing clock multiplier */
+	{IMX219_REG_VTSYCK_DIV, 1},
+	{IMX219_REG_OPPXCK_DIV, 10},		/* Output pixel clock divider */
+	{IMX219_REG_OPSYCK_DIV, 1},
+	{IMX219_REG_PLL_VT_MPY, 30},		/* Video Timing clock multiplier */
+	{IMX219_REG_PLL_OP_MPY, 50},		/* Output clock multiplier */
+	{0},
+};
+
+static const struct video_reg fps_15[] = {
+	{IMX219_REG_PREPLLCK_VT_DIV, 0x03},	/* Auto */
+	{IMX219_REG_PREPLLCK_OP_DIV, 0x03},	/* Auto */
+	{IMX219_REG_VTPXCK_DIV, 4},		/* Video Timing clock multiplier */
+	{IMX219_REG_VTSYCK_DIV, 1},
+	{IMX219_REG_OPPXCK_DIV, 10},		/* Output pixel clock divider */
+	{IMX219_REG_OPSYCK_DIV, 1},
+	{IMX219_REG_PLL_VT_MPY, 15},		/* Video Timing clock multiplier */
 	{IMX219_REG_PLL_OP_MPY, 50},		/* Output clock multiplier */
 	{0},
 };
@@ -132,36 +153,25 @@ static const struct video_reg size_1920x1080[] = {
 	{IMX219_REG_X_OUTPUT_SIZE, 1920},
 	{IMX219_REG_Y_OUTPUT_SIZE, 1080},
 	{IMX219_REG_FRM_LENGTH_A, 1080 + 20},
-	{0},
-};
-
-static const struct video_reg size_640x480[] = {
-	IMX219_REGS_CROP(640, 480),
-	{IMX219_REG_X_OUTPUT_SIZE, 640},
-	{IMX219_REG_Y_OUTPUT_SIZE, 480},
-	{IMX219_REG_FRM_LENGTH_A, 480 + 120},
+	/* Test pattern size */
+	{IMX219_REG_TP_WINDOW_WIDTH, 1920},
+	{IMX219_REG_TP_WINDOW_HEIGHT, 1080},
 	{0},
 };
 
 static const struct video_imager_mode modes_1920x1080[] = {
-	{.fps = 60, .regs = {size_1920x1080, fps_60}},
-	{0},
-};
-
-static const struct video_imager_mode modes_640x480[] = {
-	{.fps = 30, .regs = {size_640x480, fps_60}},
+	{.fps = 30, .regs = {fmt_raw10, size_1920x1080, fps_30}},
+	{.fps = 15, .regs = {fmt_raw10, size_1920x1080, fps_15}},
 	{0},
 };
 
 static const struct video_imager_mode *modes[] = {
 	modes_1920x1080,
-	modes_640x480,
 	NULL,
 };
 
 static const struct video_format_cap fmts[] = {
 	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1920, 1080),
-	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 640, 480),
 	{0},
 };
 
