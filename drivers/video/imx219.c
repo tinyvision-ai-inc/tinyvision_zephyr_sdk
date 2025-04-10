@@ -121,9 +121,9 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_Y_ADD_END_A, (IMX219_FULL_HEIGHT + (height)) / 2 - 1}
 
 static const struct video_reg fps_60[] = {
-	{IMX219_REG_VTPXCK_DIV, 5},
+	{IMX219_REG_VTPXCK_DIV, 4},
 	{IMX219_REG_PLL_VT_MPY, 34},		/* Pixel/Sys clock multiplier */
-	{IMX219_REG_PLL_OP_MPY, 60},		/* Output clock multiplier */
+	{IMX219_REG_PLL_OP_MPY, 50},		/* Output clock multiplier */
 	{0},
 };
 
