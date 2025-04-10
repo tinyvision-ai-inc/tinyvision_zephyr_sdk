@@ -29,18 +29,11 @@ LOG_MODULE_REGISTER(imx477, CONFIG_VIDEO_LOG_LEVEL);
 
 #define IMX477_REG_CHIP_ID		IMX477_REG16(0x0016)
 #define IMX477_REG_MODE_SELECT		IMX477_REG8(0x0100)
+#define IMX477_REG_SOFT_RESET		IMX477_REG8(0x0103)
 #define IMX477_REG_FRAME_LENGTH		IMX477_REG16(0x0340)
-#define IMX477_MAX_FRAME_LENGTH		0xffdc
 #define IMX477_REG_LONG_EXP_SHIFT	IMX477_REG8(0x3100)
-#define IMX477_MAX_LONG_EXP_SHIFT	7
 #define IMX477_REG_LINE_LENGTH		IMX477_REG16(0x0342)
-#define IMX477_MAX_LINE_LENGTH		0xfff0
 #define IMX477_REG_TEST_PATTERN		IMX477_REG16(0x0600)
-#define IMX477_TEST_PATTERN_DISABLE	0
-#define IMX477_TEST_PATTERN_SOLID_COLOR	1
-#define IMX477_TEST_PATTERN_COLOR_BARS	2
-#define IMX477_TEST_PATTERN_GREY_COLOR	3
-#define IMX477_TEST_PATTERN_PN9		4
 #define IMX477_REG_MC_MODE		IMX477_REG8(0x3f0b)
 #define IMX477_REG_MS_SEL		IMX477_REG8(0x3041)
 #define IMX477_REG_XVS_IO_CTRL		IMX477_REG8(0x3040)
@@ -49,10 +42,9 @@ LOG_MODULE_REGISTER(imx477, CONFIG_VIDEO_LOG_LEVEL);
 static const struct video_reg init_regs[] = {
 	{IMX477_REG8(0x0136), 0x18},
 	{IMX477_REG8(0x0137), 0x00},
-	{IMX477_REG8(0x0138), 0x01},
-	{IMX477_REG8(0xe000), 0x00},
-	{IMX477_REG8(0xe07a), 0x01},
 	{IMX477_REG8(0x0808), 0x02},
+	{IMX477_REG8(0xe07a), 0x01},
+	{IMX477_REG8(0xe000), 0x00},
 	{IMX477_REG8(0x4ae9), 0x18},
 	{IMX477_REG8(0x4aea), 0x08},
 	{IMX477_REG8(0xf61c), 0x04},
@@ -63,6 +55,7 @@ static const struct video_reg init_regs[] = {
 	{IMX477_REG8(0x38a9), 0xff},
 	{IMX477_REG8(0x38aa), 0x1f},
 	{IMX477_REG8(0x38ab), 0xff},
+	{IMX477_REG8(0x420b), 0x01},
 	{IMX477_REG8(0x55d4), 0x00},
 	{IMX477_REG8(0x55d5), 0x00},
 	{IMX477_REG8(0x55d6), 0x07},
@@ -102,11 +95,6 @@ static const struct video_reg init_regs[] = {
 	{IMX477_REG8(0x5d37), 0x5a},
 	{IMX477_REG8(0x5d38), 0x5a},
 	{IMX477_REG8(0x5d77), 0x7f},
-	{IMX477_REG8(0x7b75), 0x0e},
-	{IMX477_REG8(0x7b76), 0x0b},
-	{IMX477_REG8(0x7b77), 0x08},
-	{IMX477_REG8(0x7b78), 0x0a},
-	{IMX477_REG8(0x7b79), 0x47},
 	{IMX477_REG8(0x7b7c), 0x00},
 	{IMX477_REG8(0x7b7d), 0x00},
 	{IMX477_REG8(0x8d1f), 0x00},
@@ -121,20 +109,25 @@ static const struct video_reg init_regs[] = {
 	{IMX477_REG8(0x9371), 0x6a},
 	{IMX477_REG8(0x9373), 0x6a},
 	{IMX477_REG8(0x9375), 0x64},
-	{IMX477_REG8(0x991a), 0x00},
-	{IMX477_REG8(0x996b), 0x8c},
-	{IMX477_REG8(0x996c), 0x64},
-	{IMX477_REG8(0x996d), 0x50},
-	{IMX477_REG8(0x9a4c), 0x0d},
-	{IMX477_REG8(0x9a4d), 0x0d},
+	{IMX477_REG8(0x990c), 0x00},
+	{IMX477_REG8(0x990d), 0x08},
+	{IMX477_REG8(0x9956), 0x8c},
+	{IMX477_REG8(0x9957), 0x64},
+	{IMX477_REG8(0x9958), 0x50},
+	{IMX477_REG8(0x9a48), 0x06},
+	{IMX477_REG8(0x9a49), 0x06},
+	{IMX477_REG8(0x9a4a), 0x06},
+	{IMX477_REG8(0x9a4b), 0x06},
+	{IMX477_REG8(0x9a4c), 0x06},
+	{IMX477_REG8(0x9a4d), 0x06},
 	{IMX477_REG8(0xa001), 0x0a},
 	{IMX477_REG8(0xa003), 0x0a},
 	{IMX477_REG8(0xa005), 0x0a},
 	{IMX477_REG8(0xa006), 0x01},
 	{IMX477_REG8(0xa007), 0xc0},
 	{IMX477_REG8(0xa009), 0xc0},
+	{IMX477_REG8(0x4bd5), 0x16},
 	{IMX477_REG8(0x3d8a), 0x01},
-	{IMX477_REG8(0x4421), 0x04},
 	{IMX477_REG8(0x7b3b), 0x01},
 	{IMX477_REG8(0x7b4c), 0x00},
 	{IMX477_REG8(0x9905), 0x00},
@@ -350,50 +343,76 @@ static const struct video_reg init_regs[] = {
 	{IMX477_REG8(0xb21f), 0x04},
 	{IMX477_REG8(0xb35c), 0x00},
 	{IMX477_REG8(0xb35e), 0x08},
-	{IMX477_REG8(0x0112), 0x0c},
-	{IMX477_REG8(0x0113), 0x0c},
-	{IMX477_REG8(0x0114), 0x01},
-	{IMX477_REG8(0x0350), 0x00},
-	{IMX477_REG8(0xbcf1), 0x02},
-	{IMX477_REG8(0x3ff9), 0x01},
+
+	/* VSYNC trigger mode: stand-alone */
+	{IMX477_REG_MC_MODE, false},
+	{IMX477_REG_MS_SEL, true},
+	{IMX477_REG_XVS_IO_CTRL, false},
+	{IMX477_REG_EXTOUT_EN, false},
+
+	{0}
+};
+
+static const struct video_reg clk_450_mhz[] = {
+	{IMX477_REG8(0x030e), 0x00},
+	{IMX477_REG8(0x030f), 0x96},
 	{0},
 };
 
-static const struct video_reg size_1332x990[] = {
-	{IMX477_REG8(0x420b), 0x01},
-	{IMX477_REG8(0x990c), 0x00},
-	{IMX477_REG8(0x990d), 0x08},
-	{IMX477_REG8(0x9956), 0x8c},
-	{IMX477_REG8(0x9957), 0x64},
-	{IMX477_REG8(0x9958), 0x50},
-	{IMX477_REG8(0x9a48), 0x06},
-	{IMX477_REG8(0x9a49), 0x06},
-	{IMX477_REG8(0x9a4a), 0x06},
-	{IMX477_REG8(0x9a4b), 0x06},
-	{IMX477_REG8(0x9a4c), 0x06},
-	{IMX477_REG8(0x9a4d), 0x06},
+#if 0
+static const struct video_reg clk_453_mhz[] = {
+	{IMX477_REG8(0x030e), 0x00},
+	{IMX477_REG8(0x030f), 0x97},
+	{0},
+};
+
+static const struct video_reg clk_456_mhz[] = {
+	{IMX477_REG8(0x030e), 0x00},
+	{IMX477_REG8(0x030f), 0x98},
+	{0},
+};
+
+static const struct video_reg clk_459_mhz[] = {
+	{IMX477_REG8(0x030e), 0x00},
+	{IMX477_REG8(0x030f), 0x99},
+	{0},
+};
+
+static const struct video_reg clk_462_mhz[] = {
+	{IMX477_REG8(0x030e), 0x00},
+	{IMX477_REG8(0x030f), 0x9a},
+	{0},
+};
+
+static const struct video_reg clk_498_mhz[] = {
+	{IMX477_REG8(0x030e), 0x00},
+	{IMX477_REG8(0x030f), 0xa6},
+	{0},
+};
+#endif
+
+static const struct video_reg mode_1920x1080_60fps[] = {
 	{IMX477_REG8(0x0112), 0x0a},
 	{IMX477_REG8(0x0113), 0x0a},
 	{IMX477_REG8(0x0114), 0x01},
-	{IMX477_REG8(0x0342), 0x1a},
-	{IMX477_REG8(0x0343), 0x08},
-	{IMX477_REG8(0x0340), 0x04},
-	{IMX477_REG8(0x0341), 0x1a},
+	{IMX477_REG8(0x0342), 0x1b},
+	{IMX477_REG8(0x0343), 0x58},
+	{IMX477_REG8(0x0340), 0x07},
+	{IMX477_REG8(0x0341), 0xd0},
 	{IMX477_REG8(0x0344), 0x00},
 	{IMX477_REG8(0x0345), 0x00},
-	{IMX477_REG8(0x0346), 0x02},
-	{IMX477_REG8(0x0347), 0x10},
+	{IMX477_REG8(0x0346), 0x01},
+	{IMX477_REG8(0x0347), 0xb8},
 	{IMX477_REG8(0x0348), 0x0f},
 	{IMX477_REG8(0x0349), 0xd7},
-	{IMX477_REG8(0x034a), 0x09},
-	{IMX477_REG8(0x034b), 0xcf},
+	{IMX477_REG8(0x034a), 0x0a},
+	{IMX477_REG8(0x034b), 0x27},
 	{IMX477_REG8(0x00e3), 0x00},
 	{IMX477_REG8(0x00e4), 0x00},
 	{IMX477_REG8(0x00fc), 0x0a},
 	{IMX477_REG8(0x00fd), 0x0a},
 	{IMX477_REG8(0x00fe), 0x0a},
 	{IMX477_REG8(0x00ff), 0x0a},
-	{IMX477_REG8(0xe013), 0x00},
 	{IMX477_REG8(0x0220), 0x00},
 	{IMX477_REG8(0x0221), 0x11},
 	{IMX477_REG8(0x0381), 0x01},
@@ -434,117 +453,94 @@ static const struct video_reg size_1332x990[] = {
 	{IMX477_REG8(0x0401), 0x00},
 	{IMX477_REG8(0x0404), 0x00},
 	{IMX477_REG8(0x0405), 0x10},
-	{IMX477_REG8(0x0408), 0x01},
-	{IMX477_REG8(0x0409), 0x5c},
+	{IMX477_REG8(0x0408), 0x00},
+	{IMX477_REG8(0x0409), 0x36},
 	{IMX477_REG8(0x040a), 0x00},
 	{IMX477_REG8(0x040b), 0x00},
-	{IMX477_REG8(0x040c), 0x05},
-	{IMX477_REG8(0x040d), 0x34},
-	{IMX477_REG8(0x040e), 0x03},
-	{IMX477_REG8(0x040f), 0xde},
-	{IMX477_REG8(0x034c), 0x05},
-	{IMX477_REG8(0x034d), 0x34},
-	{IMX477_REG8(0x034e), 0x03},
-	{IMX477_REG8(0x034f), 0xde},
+	{IMX477_REG8(0x040c), 0x07},
+	{IMX477_REG8(0x040d), 0x80},
+	{IMX477_REG8(0x040e), 0x04},
+	{IMX477_REG8(0x040f), 0x38},
+	{IMX477_REG8(0x034c), 0x07},
+	{IMX477_REG8(0x034d), 0x80},
+	{IMX477_REG8(0x034e), 0x04},
+	{IMX477_REG8(0x034f), 0x38},
 	{IMX477_REG8(0x0301), 0x05},
 	{IMX477_REG8(0x0303), 0x02},
 	{IMX477_REG8(0x0305), 0x02},
 	{IMX477_REG8(0x0306), 0x00},
 	{IMX477_REG8(0x0307), 0xaf},
 	{IMX477_REG8(0x0309), 0x0a},
-	{IMX477_REG8(0x030b), 0x02},
+	{IMX477_REG8(0x030b), 0x01},
 	{IMX477_REG8(0x030d), 0x02},
+	{IMX477_REG8(0x030e), 0x00},
+	{IMX477_REG8(0x030f), 0x7d},
 	{IMX477_REG8(0x0310), 0x01},
-	{IMX477_REG8(0x0820), 0x07},
-	{IMX477_REG8(0x0821), 0x08},
+	{IMX477_REG8(0x0820), 0x0b},
+	{IMX477_REG8(0x0821), 0xb8},
 	{IMX477_REG8(0x0822), 0x00},
 	{IMX477_REG8(0x0823), 0x00},
 	{IMX477_REG8(0x080a), 0x00},
-	{IMX477_REG8(0x080b), 0x7f},
+	{IMX477_REG8(0x080b), 0x97},
 	{IMX477_REG8(0x080c), 0x00},
-	{IMX477_REG8(0x080d), 0x4f},
+	{IMX477_REG8(0x080d), 0x5f},
 	{IMX477_REG8(0x080e), 0x00},
-	{IMX477_REG8(0x080f), 0x77},
+	{IMX477_REG8(0x080f), 0x9f},
 	{IMX477_REG8(0x0810), 0x00},
-	{IMX477_REG8(0x0811), 0x5f},
+	{IMX477_REG8(0x0811), 0x6f},
 	{IMX477_REG8(0x0812), 0x00},
-	{IMX477_REG8(0x0813), 0x57},
+	{IMX477_REG8(0x0813), 0x6f},
 	{IMX477_REG8(0x0814), 0x00},
-	{IMX477_REG8(0x0815), 0x4f},
+	{IMX477_REG8(0x0815), 0x57},
 	{IMX477_REG8(0x0816), 0x01},
-	{IMX477_REG8(0x0817), 0x27},
+	{IMX477_REG8(0x0817), 0x87},
 	{IMX477_REG8(0x0818), 0x00},
-	{IMX477_REG8(0x0819), 0x3f},
+	{IMX477_REG8(0x0819), 0x4f},
 	{IMX477_REG8(0xe04c), 0x00},
-	{IMX477_REG8(0xe04d), 0x5f},
+	{IMX477_REG8(0xe04d), 0x9f},
 	{IMX477_REG8(0xe04e), 0x00},
 	{IMX477_REG8(0xe04f), 0x1f},
 	{IMX477_REG8(0x3e20), 0x01},
 	{IMX477_REG8(0x3e37), 0x00},
 	{IMX477_REG8(0x3f50), 0x00},
 	{IMX477_REG8(0x3f56), 0x00},
-	{IMX477_REG8(0x3f57), 0xbf},
+	{IMX477_REG8(0x3f57), 0xc8},
+	{IMX477_REG8(0x3ff9), 0x01},
 
-	{IMX477_REG_FRAME_LENGTH,	4000},
-	{IMX477_REG_LINE_LENGTH,	2000},
-	{IMX477_REG_LONG_EXP_SHIFT,	4},
-	{IMX477_REG_XVS_IO_CTRL,	false},
-	{IMX477_REG_TEST_PATTERN,	IMX477_TEST_PATTERN_COLOR_BARS},
-	{0},
+	//{VIDEO_REG_WAIT_MS, 1},
+	{IMX477_REG_LINE_LENGTH, 1920 + 16 + 8},
+	{IMX477_REG_FRAME_LENGTH, 1080 + 128 + 8 + 8},
+	//{IMX477_REG_LONG_EXP_SHIFT, 2},
+	{IMX477_REG_TEST_PATTERN, 0},
+	{0}
 };
 
-static const struct video_reg clk_450_mhz[] = {
-	{0x030E, 0x00},
-	{0x030F, 0x96},
-	{0},
-};
-
-#if 0
-static const struct video_reg clk_453_mhz[] = {
-	{0x030E, 0x00},
-	{0x030F, 0x97},
-	{0},
-};
-
-static const struct video_reg clk_456_mhz[] = {
-	{0x030E, 0x00},
-	{0x030F, 0x98},
-	{0},
-};
-
-static const struct video_reg clk_459_mhz[] = {
-	{0x030E, 0x00},
-	{0x030F, 0x99},
-	{0},
-};
-
-static const struct video_reg clk_462_mhz[] = {
-	{0x030E, 0x00},
-	{0x030F, 0x9a},
-	{0},
-};
-
-static const struct video_reg clk_498_mhz[] = {
-	{0x030E, 0x00},
-	{0x030F, 0xa6},
-	{0},
-};
-#endif
-
-static const struct video_imager_mode modes_1332x990[] = {
-	{.fps = 30, .regs = {size_1332x990}},
+static const struct video_imager_mode modes_1920x1080[] = {
+	{.fps = 60, .regs = {mode_1920x1080_60fps}},
 	{0},
 };
 
 static const struct video_imager_mode *modes[] = {
-	modes_1332x990,
+	modes_1920x1080,
 	NULL,
 };
 
 static const struct video_format_cap fmts[] = {
-	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1332, 990),
+	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1920, 1080),
 	{0},
 };
+
+static int imx477_set_ctrl(const struct device *dev, unsigned int cid, void *val)
+{
+	const struct video_imager_config *cfg = dev->config;
+
+	switch (cid) {
+	case VIDEO_CID_TEST_PATTERN:
+		return video_write_cci_reg(&cfg->i2c, IMX477_REG_TEST_PATTERN, (int)val);
+	default:
+		return -ENOTSUP;
+	}
+}
 
 static int imx477_set_stream(const struct device *dev, bool on)
 {
@@ -563,6 +559,7 @@ static const DEVICE_API(video, imx477_driver_api) = {
 	.enum_frmival = video_imager_enum_frmival,
 	/* Implementation specific to this sensor */
 	.set_stream = imx477_set_stream,
+	.set_ctrl = imx477_set_ctrl,
 };
 
 static int imx477_init(const struct device *dev)
@@ -589,12 +586,24 @@ static int imx477_init(const struct device *dev)
 
 	LOG_INF("Detected IMX477 on %s", cfg->i2c.bus->name);
 
+	ret = video_imager_init(dev, init_regs, 0);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = video_write_cci_reg(&cfg->i2c, IMX477_REG_SOFT_RESET, 0x01);
+	if (ret != 0) {
+		return ret;
+	}
+
+	k_sleep(K_MSEC(10));
+
 	ret = video_write_cci_multi(&cfg->i2c, clk_450_mhz);
 	if (ret != 0) {
 		return ret;
 	}
 
-	return video_imager_init(dev, init_regs, 0);
+	return 0;
 }
 
 #define IMX477_INIT(n)                                                                             \
