@@ -148,6 +148,16 @@ static const struct video_reg fps_15[] = {
 	{0},
 };
 
+static const struct video_reg stop[] = {
+	{IMX219_REG_MODE_SELECT, 0x00},
+	{0},
+};
+
+static const struct video_reg start[] = {
+	{IMX219_REG_MODE_SELECT, 0x01},
+	{0},
+};
+
 static const struct video_reg size_1920x1080[] = {
 	IMX219_REGS_CROP(1920, 1080),
 	{IMX219_REG_X_OUTPUT_SIZE, 1920},
@@ -160,8 +170,8 @@ static const struct video_reg size_1920x1080[] = {
 };
 
 static const struct video_imager_mode modes_1920x1080[] = {
-	{.fps = 30, .regs = {fmt_raw10, size_1920x1080, fps_30}},
-	{.fps = 15, .regs = {fmt_raw10, size_1920x1080, fps_15}},
+	{.fps = 30, .regs = {stop, fmt_raw10, size_1920x1080, fps_30, start}},
+	{.fps = 15, .regs = {stop, fmt_raw10, size_1920x1080, fps_15, start}},
 	{0},
 };
 

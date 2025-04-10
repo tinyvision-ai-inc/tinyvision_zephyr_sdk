@@ -163,7 +163,7 @@ struct video_imager_mode {
 	/* FPS for this mode */
 	uint16_t fps;
 	/* Multiple lists of registers to allow sharing common sets of registers across modes. */
-	const struct video_reg *regs[3];
+	const struct video_reg *regs[8];
 };
 
 /**
