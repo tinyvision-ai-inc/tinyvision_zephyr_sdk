@@ -506,12 +506,7 @@ static const struct video_reg mode_1920x1080_60fps[] = {
 	{IMX477_REG8(0x3f56), 0x00},
 	{IMX477_REG8(0x3f57), 0xc8},
 	{IMX477_REG8(0x3ff9), 0x01},
-
 	//{VIDEO_REG_WAIT_MS, 1},
-	{IMX477_REG_LINE_LENGTH, 1920 + 16 + 8},
-	{IMX477_REG_FRAME_LENGTH, 1080 + 128 + 8 + 8},
-	//{IMX477_REG_LONG_EXP_SHIFT, 2},
-	{IMX477_REG_TEST_PATTERN, 0},
 	{0}
 };
 
