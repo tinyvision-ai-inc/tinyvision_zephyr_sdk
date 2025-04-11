@@ -147,13 +147,17 @@ static const struct video_reg size_WIDTHxHEIGHT[] = {
 	{0},
 };
 
+enum {
+	SIZE_WIDTHxHEIGHT,
+};
+
 static const struct video_imager_mode modes_WIDTHxHEIGHT[] = {
-	{.fps = 30, .regs = {size_WIDTHxHEIGHT, clk_54_000_mhz}},
+	[SIZE_WIDTHxHEIGHT] = {.fps = 30, .regs = {size_WIDTHxHEIGHT, clk_54_000_mhz}},
 	{0},
 };
 
 static const struct video_imager_mode *modes[] = {
-	modes_WIDTHxHEIGHT,
+	[SIZE_WIDTHxHEIGHT] = modes_WIDTHxHEIGHT,
 	NULL,
 };
 
@@ -208,7 +212,7 @@ static const DEVICE_API(video, imx296_driver_api) = {
 
 static int imx296_init(const struct device *dev)
 {
-	return video_imager_init(dev, init_regs, 0);
+	return video_imager_init(dev, init_regs, SIZE_WIDTHxHEIGHT);
 }
 
 #define IMX296_INIT(n)                                                                             \

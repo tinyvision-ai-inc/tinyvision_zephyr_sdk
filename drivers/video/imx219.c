@@ -175,13 +175,17 @@ static const struct video_imager_mode modes_1920x1080[] = {
 	{0},
 };
 
+enum {
+	SIZE_1920x1080,
+};
+
 static const struct video_imager_mode *modes[] = {
-	modes_1920x1080,
+	[SIZE_1920x1080] = modes_1920x1080,
 	NULL,
 };
 
 static const struct video_format_cap fmts[] = {
-	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1920, 1080),
+	[SIZE_1920x1080] = VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1920, 1080),
 	{0},
 };
 
@@ -277,7 +281,7 @@ static int imx219_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	return video_imager_init(dev, init_regs, 0);
+	return video_imager_init(dev, init_regs, SIZE_1920x1080);
 err:
 	LOG_ERR("Error during %s initialization: %s", dev->name, strerror(-ret));
 	return ret;
