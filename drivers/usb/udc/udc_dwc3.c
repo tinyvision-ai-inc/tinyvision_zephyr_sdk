@@ -1033,7 +1033,7 @@ int dwc3_api_ep_enqueue(const struct device *dev, struct udc_ep_config *ep_cfg,
 		/* Submit the buffer to the queue */
 		udc_buf_put(ep_cfg, buf);
 
-		/* Process this buffer along with other waiting */
+		/* If not stopped, process this buffer along with other waiting */
 		if (sys_read32(cfg->base + DWC3_DCTL) & DWC3_DCTL_RUNSTOP) {
 			LOG_DBG("submitting to EP 0x%02x", ep_data->cfg.addr);
 			k_work_submit(&ep_data->work);
@@ -1329,23 +1329,8 @@ static void dwc3_ep_worker(struct k_work *work)
 
 #define NORMAL_EP(n, fn) fn(n + 2)
 
-static void dwc3_event_worker(struct k_work *work)
+static void dwc3_process_one_event(const struct device *dev, uint32_t evt)
 {
-	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
-	struct dwc3_data *priv = CONTAINER_OF(dwork, struct dwc3_data, dwork);
-	const struct device *dev = priv->dev;
-	const struct dwc3_config *cfg = dev->config;
-	uint32_t evt;
-
-	if (sys_read32(cfg->base + DWC3_GEVNTCOUNT(0)) == 0) {
-		/* In the meantime that IRQs are enabled, schedule the event handler again */
-		k_work_schedule(&priv->dwork, K_MSEC(CONFIG_UDC_DWC3_EVENTS_POLL_MS));
-		return;
-	}
-
-	/* Cache the current event and release the resource */
-	evt = cfg->evt_buf[priv->evt_next];
-
 	switch (evt & DWC3_EVT_MASK) {
 	case DWC3_DEPEVT_XFERCOMPLETE(0):
 		LOG_DBG("--- DEPEVT_XFERCOMPLETE(0) ---");
@@ -1405,11 +1390,39 @@ static void dwc3_event_worker(struct k_work *work)
 		CODE_UNREACHABLE;
 	}
 
-	sys_write32(sizeof(evt), cfg->base + DWC3_GEVNTCOUNT(0));
-	dwc3_ring_inc(&priv->evt_next, CONFIG_UDC_DWC3_EVENTS_NUM);
-
 	LOG_DBG("--- * ---");
-	k_work_reschedule(&priv->dwork, K_NO_WAIT);
+}
+
+/*
+ * This process any event that might be present.
+ */
+static void dwc3_process_all_events(const struct device *dev)
+{
+	const struct dwc3_config *cfg = dev->config;
+	struct dwc3_data *priv = udc_get_private(dev);
+	uint32_t evt;
+
+	while (sys_read32(cfg->base + DWC3_GEVNTCOUNT(0)) > 0) {
+		/* Cache the current event and release the resource */
+		evt = cfg->evt_buf[priv->evt_next];
+		sys_write32(sizeof(evt), cfg->base + DWC3_GEVNTCOUNT(0));
+		dwc3_ring_inc(&priv->evt_next, CONFIG_UDC_DWC3_EVENTS_NUM);
+
+		/* Process this event and shift to the next */
+		dwc3_process_one_event(dev, evt);
+	}
+}
+
+static void dwc3_event_worker(struct k_work *work)
+{
+	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+	struct dwc3_data *priv = CONTAINER_OF(dwork, struct dwc3_data, dwork);
+	const struct device *dev = priv->dev;
+
+	dwc3_process_all_events(dev);
+
+	/* In the meantime that IRQs are enabled, schedule the event handler again */
+	k_work_schedule(&priv->dwork, K_MSEC(CONFIG_UDC_DWC3_EVENTS_POLL_MS));
 }
 
 /*
