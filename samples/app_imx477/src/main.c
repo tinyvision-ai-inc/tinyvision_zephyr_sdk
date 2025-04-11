@@ -14,8 +14,6 @@ int main(void)
 {
 	int ret;
 
-	LOG_INF("Hello World");
-
 	uvc_set_video_dev(uvc0_dev, uvcmanager0_dev);
 
 	LOG_INF("Initializing USB and associated USB classes");

@@ -516,24 +516,16 @@ static const struct video_imager_mode modes_1920x1080[] = {
 };
 
 enum {
-	SIZE_1332x990,
+	SIZE_1920x1080,
 };
 
 static const struct video_imager_mode *modes[] = {
-<<<<<<< HEAD
-	modes_1920x1080,
-=======
-	[SIZE_1332x990] = modes_1332x990,
->>>>>>> 628a27c98dc (drivers: video: imx*: avoid a config pitfall)
+	[SIZE_1920x1080] = modes_1920x1080,
 	NULL,
 };
 
 static const struct video_format_cap fmts[] = {
-<<<<<<< HEAD
-	VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1920, 1080),
-=======
-	[SIZE_1332x990] = VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1332, 990),
->>>>>>> 628a27c98dc (drivers: video: imx*: avoid a config pitfall)
+	[SIZE_1920x1080] = VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1920, 1080),
 	{0},
 };
 
