@@ -65,7 +65,7 @@ class EcpprogHookBinaryRunner(ZephyrBinaryRunner):
         command.extend(('.local/bin/mpremote', 'run', '/dev/stdin'))
 
         for script in self.script:
-            self.logger.debug(' '.join(command) + '<' + script)
+            self.logger.info(' '.join(command) + ' <' + script)
             fd = os.open(script , os.O_RDONLY)
             os.dup2(fd, 0)
             self.check_call(command)
@@ -76,7 +76,7 @@ class EcpprogHookBinaryRunner(ZephyrBinaryRunner):
         load_offset = build_conf.get('CONFIG_FLASH_LOAD_OFFSET', 0)
         command.extend(('ecpprog', '-o', hex(load_offset), '-'))
 
-        self.logger.debug(' '.join(command))
+        self.logger.info(' '.join(command) + ' <' + self.cfg.bin_file)
         fd = os.open(self.cfg.bin_file , os.O_RDONLY)
         os.dup2(fd, 0)
         self.check_call(command)
