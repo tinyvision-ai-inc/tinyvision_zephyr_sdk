@@ -564,11 +564,8 @@ struct dwc3_ep_data {
 	/* Endpoint number (physical address): the logical address is on ep_cfg */
 	int epn;
 
-	/* A work queue entry to process the buffers to submit on that endpoint */
-	struct k_work work;
-
-	/* Point back to the device for work queues */
-	const struct device *dev;
+	/* Flags to prevent concurrent access and pass information accross contexts */
+	atomic_t flags;
 
 	/* Buffer of pointers to net_buf, with index matching the position in the TRB buffers */
 	struct net_buf *net_buf[CONFIG_UDC_DWC3_TRB_NUM];
@@ -620,3 +617,6 @@ enum {
 	DWC3_SPEED_IDX_HIGH_SPEED = 2,
 	DWC3_SPEED_IDX_SUPER_SPEED = 3,
 };
+
+#define DWC3_EP_FLAG_BUSY        BIT(0)
+#define DWC3_EP_FLAG_EXTRA_CHECK BIT(1)

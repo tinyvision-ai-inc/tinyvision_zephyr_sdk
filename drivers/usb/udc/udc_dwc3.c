@@ -22,6 +22,8 @@
 
 LOG_MODULE_REGISTER(dwc3, CONFIG_UDC_DRIVER_LOG_LEVEL);
 
+static void dwc3_flush_buffer_queue(const struct device *dev, struct dwc3_ep_data *ep_data);
+
 /*
  * Shut down the controller completely
  */
@@ -980,7 +982,7 @@ static void dwc3_on_xfer_done_norm(const struct device *dev, uint32_t evt)
 	__ASSERT_NO_MSG(ret == 0);
 
 	/* We just made some room for a new buffer, check if something more to enqueue */
-	k_work_submit(&ep_data->work);
+	dwc3_flush_buffer_queue(dev, ep_data);
 }
 
 void dwc3_irq_handler(void *ptr)
@@ -1036,7 +1038,7 @@ int dwc3_api_ep_enqueue(const struct device *dev, struct udc_ep_config *ep_cfg,
 		/* If not stopped, process this buffer along with other waiting */
 		if (sys_read32(cfg->base + DWC3_DCTL) & DWC3_DCTL_RUNSTOP) {
 			LOG_DBG("submitting to EP 0x%02x", ep_data->cfg.addr);
-			k_work_submit(&ep_data->work);
+			dwc3_flush_buffer_queue(dev, ep_data);
 		}
 	}
 
@@ -1218,7 +1220,7 @@ int dwc3_api_ep_enable(const struct device *dev, struct udc_ep_config *const ep_
 	sys_set_bits(cfg->base + DWC3_DALEPENA, DWC3_DALEPENA_USBACTEP(ep_data->epn));
 
 	/* Walk through the list of buffer to enqueue we might have blocked */
-	k_work_submit(&ep_data->work);
+	dwc3_flush_buffer_queue(dev, ep_data);
 
 	return 0;
 }
@@ -1298,10 +1300,8 @@ static const struct udc_api dwc3_api = {
 	.ep_dequeue = dwc3_api_ep_dequeue,
 };
 
-static void dwc3_ep_worker(struct k_work *work)
+static void dwc3_flush_buffer_queue(const struct device *dev, struct dwc3_ep_data *ep_data)
 {
-	struct dwc3_ep_data *ep_data = CONTAINER_OF(work, struct dwc3_ep_data, work);
-	const struct device *dev = ep_data->dev;
 	struct net_buf *buf;
 	int ret;
 
@@ -1312,18 +1312,38 @@ static void dwc3_ep_worker(struct k_work *work)
 		return;
 	}
 
-	while ((buf = udc_buf_peek(dev, ep_data->cfg.addr)) != NULL) {
-		LOG_INF("Processing buffer %p from queue", buf);
+	/* Guarantees EXTRA_CHECK to always be requested if reaching the critical section. */
+	atomic_set_bit(&ep_data->flags, DWC3_EP_FLAG_EXTRA_CHECK);
 
-		ret = dwc3_trb_bulk(dev, ep_data, buf);
-		if (ret < 0) {
-			LOG_DBG("queue: abort: No more room for buffer");
-			break;
+	do {
+		/* Prevent multiple contexts to reach the critical section. */
+		if (atomic_test_and_set_bit(&ep_data->flags, DWC3_EP_FLAG_BUSY)) {
+			LOG_DBG("queue: endpoint is already busy");
+			return;
 		}
 
-		LOG_DBG("queue: success: Buffer enqueued");
-		udc_buf_get(dev, ep_data->cfg.addr);
-	}
+		/* BEGIN CRITICAL SECTION */
+		while ((buf = udc_buf_peek(dev, ep_data->cfg.addr)) != NULL) {
+			LOG_INF("Processing buffer %p from queue", buf);
+
+			ret = dwc3_trb_bulk(dev, ep_data, buf);
+			if (ret < 0) {
+				LOG_DBG("queue: abort: No more room for buffer");
+				break;
+			}
+
+			LOG_DBG("queue: success: Buffer enqueued");
+			udc_buf_get(dev, ep_data->cfg.addr);
+		}
+		/* END CRITICAL SECTION */
+
+		atomic_clear_bit(&ep_data->flags, DWC3_EP_FLAG_BUSY);
+
+		/* If another context was refused from accessing the critical section,
+		 * we need to take care of any buffer it would have left for us.
+		 */
+	} while (atomic_test_and_clear_bit(&ep_data->flags, DWC3_EP_FLAG_EXTRA_CHECK));
+
 	LOG_DBG("queue: Done");
 }
 
@@ -1467,8 +1487,6 @@ int dwc3_driver_preinit(const struct device *dev)
 
 	/* Control IN endpoint */
 	ep_data = &cfg->ep_data_in[0];
-	k_work_init(&ep_data->work, dwc3_ep_worker);
-	ep_data->dev = dev;
 	ep_data->cfg.addr = USB_CONTROL_EP_IN;
 	ep_data->cfg.caps.in = 1;
 	ep_data->cfg.caps.control = 1;
@@ -1483,8 +1501,6 @@ int dwc3_driver_preinit(const struct device *dev)
 
 	/* Control OUT endpoint */
 	ep_data = &cfg->ep_data_out[0];
-	k_work_init(&ep_data->work, dwc3_ep_worker);
-	ep_data->dev = dev;
 	ep_data->cfg.addr = USB_CONTROL_EP_OUT;
 	ep_data->cfg.caps.out = 1;
 	ep_data->cfg.caps.control = 1;
@@ -1501,8 +1517,6 @@ int dwc3_driver_preinit(const struct device *dev)
 	for (int i = 1; i < cfg->num_in_eps; i++) {
 		LOG_DBG("Preinit endpoint 0x%02x", USB_EP_DIR_IN | i);
 		ep_data = &cfg->ep_data_in[i];
-		k_work_init(&ep_data->work, dwc3_ep_worker);
-		ep_data->dev = dev;
 		ep_data->cfg.addr = USB_EP_DIR_IN | i;
 		ep_data->cfg.caps.in = true;
 		ep_data->cfg.caps.bulk = true;
@@ -1522,8 +1536,6 @@ int dwc3_driver_preinit(const struct device *dev)
 	for (int i = 1; i < cfg->num_out_eps; i++) {
 		LOG_DBG("Preinit endpoint 0x%02x", USB_EP_DIR_OUT | i);
 		ep_data = &cfg->ep_data_out[i];
-		k_work_init(&ep_data->work, dwc3_ep_worker);
-		ep_data->dev = dev;
 		ep_data->cfg.addr = USB_EP_DIR_OUT | i;
 		ep_data->cfg.caps.out = true;
 		ep_data->cfg.caps.bulk = true;

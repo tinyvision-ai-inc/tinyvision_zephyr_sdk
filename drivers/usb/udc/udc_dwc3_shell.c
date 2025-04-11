@@ -278,7 +278,7 @@ void dwc3_dump_each(const struct device *dev,
 		struct dwc3_ep_data *ep_data = &cfg->ep_data_in[i];
 		uint8_t addr = ep_data->cfg.addr;
 
-		if (ep_data->dev == NULL) {
+		if (ep_data->trb_buf == NULL) {
 			continue;
 		}
 
@@ -291,7 +291,7 @@ void dwc3_dump_each(const struct device *dev,
 		struct dwc3_ep_data *ep_data = &cfg->ep_data_out[i];
 		uint8_t addr = ep_data->cfg.addr;
 
-		if (ep_data->dev == NULL) {
+		if (ep_data->trb_buf == NULL) {
 			continue;
 		}
 
