@@ -10,6 +10,10 @@
 #include <riscv/tinyvision/from_csi0_to_debayer0.dtsi>
 #include <riscv/tinyvision/from_debayer0_to_uvcmanager0.dtsi>
 
+#include <riscv/tinyvision/from_csi1_to_stats1.dtsi>
+#include <riscv/tinyvision/from_csi1_to_debayer1.dtsi>
+#include <riscv/tinyvision/from_debayer1_to_uvcmanager1.dtsi>
+
 /* Devkit hardware */
 
 #include <riscv/tinyvision/add_i2c0_pll.dtsi>
