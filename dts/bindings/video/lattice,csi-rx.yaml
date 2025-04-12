@@ -3,7 +3,7 @@
 
 description: CSI-2 D-PHY Receiver FPGA soft-core distributed by Lattice
 
-compatible: "lattice,dphy-rx"
+compatible: "lattice,csi-rx"
 
 include: base.yaml
 

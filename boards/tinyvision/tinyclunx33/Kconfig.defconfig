@@ -35,3 +35,15 @@ config I2C_PCA9542A_CHANNEL_INIT_PRIO
 
 config XIP
 	default y
+
+config SERIAL
+	default y
+
+config CONSOLE
+	default y
+
+config UART_CONSOLE
+	default y
+
+config UART_LINE_CTRL
+	default y

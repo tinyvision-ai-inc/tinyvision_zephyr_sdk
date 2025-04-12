@@ -1,0 +1,16 @@
+/*
+ * Copyright (c) 2025 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <riscv/tinyvision/add_debayer0.dtsi>
+#include <riscv/tinyvision/add_uvcmanager0.dtsi>
+
+&uvcmanager0_ep_in {
+	remote-endpoint-label = "debayer0_ep_out";
+};
+
+&debayer0_ep_out {
+	remote-endpoint-label = "uvcmanager0_ep_in";
+};

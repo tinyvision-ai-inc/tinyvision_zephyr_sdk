@@ -11,13 +11,13 @@ config VIDEO_I2C_RETRY_NUM
 	  flooding the I2C bus upon error with too many retries. There is a 1ms wait time between
 	  every retry.
 
-rsource "Kconfig.debayer"
-rsource "Kconfig.dphy_rx"
 rsource "Kconfig.imx219"
 rsource "Kconfig.imx296"
 rsource "Kconfig.imx477"
+rsource "Kconfig.lscc_csi_rx"
 rsource "Kconfig.shell"
-rsource "Kconfig.testpattern"
-rsource "Kconfig.uvcmanager"
+rsource "Kconfig.tvai_debayer"
+rsource "Kconfig.tvai_testpattern"
+rsource "Kconfig.tvai_uvcmanager"
 
 endif

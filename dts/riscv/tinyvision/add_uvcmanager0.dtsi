@@ -14,17 +14,11 @@
 				    "fifo";
 			usb-controller = <&zephyr_udc0>;
 			usb-endpoint = <0x81>;
-			status = "disabled";
 
 			port {
 				uvcmanager0_ep_in: endpoint {
-					remote-endpoint-label = "debayer0_ep_out";
 				};
 			};
 		};
 	};
-};
-
-&debayer0_ep_out {
-	remote-endpoint-label = "uvcmanager0_ep_in";
 };

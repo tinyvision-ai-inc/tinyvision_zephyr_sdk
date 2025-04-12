@@ -4,6 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* FPGA SoC definition */
+
+#include <riscv/tinyvision/from_csi0_to_stats0.dtsi>
+#include <riscv/tinyvision/from_csi0_to_debayer0.dtsi>
+#include <riscv/tinyvision/from_debayer0_to_uvcmanager0.dtsi>
+
+/* Devkit hardware */
+
+#include <riscv/tinyvision/add_i2c0_pll.dtsi>
+#include <riscv/tinyvision/add_i2c0_multiplexer.dtsi>
+
 /* USB interfaces */
 
 &zephyr_udc0 {
@@ -24,39 +35,10 @@
 
 &uvcmanager0 {
 	usb-endpoint = <0x81>;
-	status = "okay";
 };
 
 &uvcmanager1 {
 	usb-endpoint = <0x82>;
-	status = "okay";
-};
-
-/* I2C multiplexer */
-
-&i2c0 {
-	status = "okay";
-
-	pca9542a@71 {
-		compatible = "nxp,pca9542a";
-		reg = <0x71>;
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		i2c0ch0: ch@0 {
-			compatible = "nxp,pca9542a-channel";
-			reg = <0>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-		};
-
-		i2c0ch1: ch@1 {
-			compatible = "nxp,pca9542a-channel";
-			reg = <1>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-		};
-	};
 };
 
 /* Camera 0 config */

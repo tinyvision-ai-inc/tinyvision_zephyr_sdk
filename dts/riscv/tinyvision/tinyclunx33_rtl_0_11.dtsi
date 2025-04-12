@@ -4,10 +4,5 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tinyclunx33_add_base.dtsi"
-#include "tinyclunx33_add_opencores_i2c.dtsi"
-
-/* Stream 0 */
-#include "tinyclunx33_add_csi0.dtsi"
-#include "tinyclunx33_add_debayer0.dtsi"
-#include "tinyclunx33_add_uvcmanager0.dtsi"
+#include "tinyclunx33_rtl.dtsi"
+#include "add_opencores_i2c.dtsi"

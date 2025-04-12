@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) 2024-2025 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	soc {
+		stats1: stats@b2100000 {
+			compatible = "tinyvision,stats";
+			reg = <0xb2000000 0x40>;
+
+			port {
+				stats1_ep_in: endpoint {
+				};
+			};
+		};
+	};
+};

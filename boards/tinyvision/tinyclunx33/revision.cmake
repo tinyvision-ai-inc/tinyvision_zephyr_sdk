@@ -9,6 +9,4 @@ if(NOT BOARD_REVISION IN_LIST VALID_BOARD_REVISIONS)
     message(FATAL_ERROR "Invalid revision \"${BOARD_REVISION}\", expecting: ${VALID_BOARD_NAMES}")
 endif()
 
-message(WARNING "Make sure to use \"--shield tinyclunx33_devkit_${BOARD_REVISION}\" if using the devkit")
-
 set(ACTIVE_BOARD_REVISION ${BOARD_REVISION})

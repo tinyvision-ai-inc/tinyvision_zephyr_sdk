@@ -17,7 +17,7 @@
 
 #include "udc_dwc3.h"
 #include "udc_common.h"
-#include "uvcmanager.h"
+#include "tvai_uvcmanager.h"
 
 LOG_MODULE_REGISTER(uvcmanager, CONFIG_VIDEO_LOG_LEVEL);
 

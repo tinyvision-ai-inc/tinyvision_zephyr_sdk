@@ -123,7 +123,7 @@
 				"uptime_cycles";
 		};
 
-		uart0: serial@e0001800 {
+		uart0: uart@e0001800 {
 			compatible = "litex,uart";
 			reg = <0xe0001800 0x4
 				0xe0001804 0x4

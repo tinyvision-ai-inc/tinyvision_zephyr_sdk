@@ -4,12 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tinyclunx33_devkit.dtsi"
-
 &i2c0 {
 	status = "okay";
 
-	pll0: si5351@60 {
+	pll: si5351@60 {
 		compatible = "skyworks,si5351";
 		reg = <0x60>;
 		#clock-cells = <0>;
