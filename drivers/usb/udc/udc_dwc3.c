@@ -851,9 +851,11 @@ static void dwc3_on_ctrl_in(const struct device *dev)
 	struct dwc3_trb *trb = &ep_data->trb_buf[0];
 	struct net_buf *buf = ep_data->net_buf[0];
 
-	/* We are not expected to touch that buffer anymore */
+	if (buf == NULL) {
+		LOG_WRN("Received a CTRL-IN packet that was not requested.");
+		return;
+	}
 	ep_data->net_buf[0] = NULL;
-	__ASSERT_NO_MSG(buf != NULL);
 
 	/* Continue to the next step */
 	switch (trb->ctrl & DWC3_TRB_CTRL_TRBCTL_MASK) {
@@ -886,7 +888,11 @@ static void dwc3_on_ctrl_out(const struct device *dev)
 	struct dwc3_trb *trb = &ep_data->trb_buf[0];
 	struct net_buf *buf = ep_data->net_buf[0];
 
-	__ASSERT_NO_MSG(buf != NULL);
+	if (buf == NULL) {
+		LOG_WRN("Received a CTRL-OUT packet that was not requested.");
+		return;
+	}
+	ep_data->net_buf[0] = NULL;
 
 	/* For buffers coming from the host, update the size actually received */
 	buf->len = buf->size - FIELD_GET(DWC3_TRB_STATUS_BUFSIZ_MASK, trb->status);
@@ -896,10 +902,6 @@ static void dwc3_on_ctrl_out(const struct device *dev)
 	if (buf->len > 2 && buf->data[0] == 0x00 && buf->data[1] == 0x05) {
 		dwc3_set_address(dev, buf->data[2]);
 	}
-
-	/* We are not expected to touch that buffer anymore */
-	ep_data->net_buf[0] = NULL;
-	__ASSERT_NO_MSG(buf != NULL);
 
 	/* Continue to the next step */
 	switch (trb->ctrl & DWC3_TRB_CTRL_TRBCTL_MASK) {
