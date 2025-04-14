@@ -262,23 +262,6 @@ static void uvcmanager_worker(struct k_work *work)
 	}
 }
 
-int uvcmanager_cmd_show(const struct shell *sh, size_t argc, char **argv)
-{
-	const struct device *dev;
-	const struct uvcmanager_config *cfg;
-
-	dev = device_get_binding(argv[1]);
-	if (dev == NULL) {
-		shell_error(sh, "Device %s not found", argv[1]);
-		return -ENODEV;
-	}
-
-	cfg = dev->config;
-	uvcmanager_lib_cmd_show(cfg->base, sh);
-
-	return 0;
-}
-
 static int uvcmanager_init(const struct device *dev)
 {
 	const struct uvcmanager_config *cfg = dev->config;
@@ -330,6 +313,23 @@ DT_INST_FOREACH_STATUS_OKAY(UVCMANAGER_DEVICE_DEFINE)
 
 #ifdef CONFIG_SHELL
 
+int cmd_tvai_uvcmanager_show(const struct shell *sh, size_t argc, char **argv)
+{
+	const struct device *dev;
+	const struct uvcmanager_config *cfg;
+
+	dev = device_get_binding(argv[1]);
+	if (dev == NULL) {
+		shell_error(sh, "Device %s not found", argv[1]);
+		return -ENODEV;
+	}
+
+	cfg = dev->config;
+	uvcmanager_lib_cmd_show(cfg->base, sh);
+
+	return 0;
+}
+
 static bool device_is_video_and_ready(const struct device *dev)
 {
 	return device_is_ready(dev) && DEVICE_API_IS(video, dev);
@@ -346,11 +346,11 @@ static void complete_video_device(size_t idx, struct shell_static_entry *entry)
 }
 SHELL_DYNAMIC_CMD_CREATE(dsub_video_device, complete_video_device);
 
-SHELL_STATIC_SUBCMD_SET_CREATE(sub_uvcmanager,
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_tvai_uvcmanager,
 	SHELL_CMD_ARG(show, &dsub_video_device,
 		     "Show statistics about the uvcmanager core\n" "Usage: show <device>",
-		     uvcmanager_cmd_show, 2, 0),
+		     cmd_tvai_uvcmanager_show, 2, 0),
 	SHELL_SUBCMD_SET_END);
-SHELL_CMD_REGISTER(uvcmanager, &sub_uvcmanager, "UVC Manager debug commands", NULL);
+SHELL_CMD_REGISTER(tvai_uvcmanager, &sub_tvai_uvcmanager, "UVC Manager debug commands", NULL);
 
 #endif /* CONFIG_SHELL */

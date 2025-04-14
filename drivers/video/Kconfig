@@ -17,6 +17,7 @@ rsource "Kconfig.imx477"
 rsource "Kconfig.lscc_csi_rx"
 rsource "Kconfig.shell"
 rsource "Kconfig.tvai_debayer"
+rsource "Kconfig.tvai_stats"
 rsource "Kconfig.tvai_testpattern"
 rsource "Kconfig.tvai_uvcmanager"
 

@@ -35,9 +35,6 @@ struct tvai_stats_config {
 	const struct device *source_dev;
 };
 
-/* Used to tune the video format caps from the source at runtime */
-static struct video_format_cap fmts[10];
-
 static int tvai_stats_get_caps(const struct device *dev, enum video_endpoint_id ep,
 			    struct video_caps *caps)
 {

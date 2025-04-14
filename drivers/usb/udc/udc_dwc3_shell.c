@@ -371,63 +371,63 @@ static void device_name_get(size_t idx, struct shell_static_entry *entry)
 }
 SHELL_DYNAMIC_CMD_CREATE(dsub_device_name, device_name_get);
 
-static int cmd_dwc3_trb(const struct shell *sh, size_t argc, char **argv)
+static int cmd_tvai_dwc3_trb(const struct shell *sh, size_t argc, char **argv)
 {
 	return dump_cmd2_handler(sh, argc, argv, dwc3_dump_each_trb);
 }
 
-static int cmd_dwc3_evt(const struct shell *sh, size_t argc, char **argv)
+static int cmd_tvai_dwc3_evt(const struct shell *sh, size_t argc, char **argv)
 {
 	return dump_cmd2_handler(sh, argc, argv, dwc3_dump_events);
 }
 
-static int cmd_dwc3_reg(const struct shell *sh, size_t argc, char **argv)
+static int cmd_tvai_dwc3_reg(const struct shell *sh, size_t argc, char **argv)
 {
 	return dump_cmd2_handler(sh, argc, argv, dwc3_dump_registers);
 }
 
-static int cmd_dwc3_buserr(const struct shell *sh, size_t argc, char **argv)
+static int cmd_tvai_dwc3_buserr(const struct shell *sh, size_t argc, char **argv)
 {
 	return dump_cmd2_handler(sh, argc, argv, dwc3_dump_bus_error);
 }
 
-static int cmd_dwc3_link(const struct shell *sh, size_t argc, char **argv)
+static int cmd_tvai_dwc3_link(const struct shell *sh, size_t argc, char **argv)
 {
 	return dump_cmd2_handler(sh, argc, argv, dwc3_dump_link_state);
 }
 
-static int cmd_dwc3_fifo(const struct shell *sh, size_t argc, char **argv)
+static int cmd_tvai_dwc3_fifo(const struct shell *sh, size_t argc, char **argv)
 {
 	return dump_cmd2_handler(sh, argc, argv, dwc3_dump_fifo_space);
 }
 
-static int cmd_dwc3_all(const struct shell *sh, size_t argc, char **argv)
+static int cmd_tvai_dwc3_all(const struct shell *sh, size_t argc, char **argv)
 {
 	return dump_cmd2_handler(sh, argc, argv, dwc3_dump_all);
 }
 
-SHELL_STATIC_SUBCMD_SET_CREATE(sub_dwc3,
+SHELL_STATIC_SUBCMD_SET_CREATE(sub_tvai_dwc3,
 	SHELL_CMD_ARG(trb, &dsub_device_name,
 		      "Dump an endpoint's TRB buffer\n" "Usage: trb <device>",
-		      cmd_dwc3_trb, 2, 0),
+		      cmd_tvai_dwc3_trb, 2, 0),
 	SHELL_CMD_ARG(evt, &dsub_device_name,
 		      "Dump the device event buffer\n" "Usage: evt <device>",
-		      cmd_dwc3_evt, 2, 0),
+		      cmd_tvai_dwc3_evt, 2, 0),
 	SHELL_CMD_ARG(reg, &dsub_device_name,
 		      "Dump the device status registers\n" "Usage: reg <device>",
-		      cmd_dwc3_reg, 2, 0),
+		      cmd_tvai_dwc3_reg, 2, 0),
 	SHELL_CMD_ARG(buserr, &dsub_device_name,
 		      "Dump the AXI64 bus I/O errors\n" "Usage: buserr <device>",
-		      cmd_dwc3_buserr, 2, 0),
+		      cmd_tvai_dwc3_buserr, 2, 0),
 	SHELL_CMD_ARG(link, &dsub_device_name,
 		      "Dump the USB link state\n" "Usage: link <device>",
-		      cmd_dwc3_link, 2, 0),
+		      cmd_tvai_dwc3_link, 2, 0),
 	SHELL_CMD_ARG(fifo, &dsub_device_name,
 		      "Dump the FIFO available space\n" "Usage: fifo <device>",
-		      cmd_dwc3_fifo, 2, 0),
+		      cmd_tvai_dwc3_fifo, 2, 0),
 	SHELL_CMD_ARG(all, &dsub_device_name,
 		      "Dump everything\n" "Usage: all <device>",
-		      cmd_dwc3_all, 2, 0),
+		      cmd_tvai_dwc3_all, 2, 0),
 	SHELL_SUBCMD_SET_END);
 
-SHELL_CMD_REGISTER(dwc3, &sub_dwc3, "Synopsys DWC3 controller commands", NULL);
+SHELL_CMD_REGISTER(tvai_dwc3, &sub_tvai_dwc3, "Synopsys DWC3 controller commands", NULL);
