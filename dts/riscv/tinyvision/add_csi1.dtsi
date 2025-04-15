@@ -6,9 +6,9 @@
 
 / {
 	soc {
-		csi1: csi@b2000800 {
+		csi1: csi@b2100400 {
 			compatible = "lattice,csi-rx";
-			reg = <0xb2000800 0x400>;
+			reg = <0xb2100400 0x400>;
 
 			port {
 				#address-cells = <1>;

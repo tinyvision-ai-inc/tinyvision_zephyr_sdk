@@ -17,8 +17,9 @@
 LOG_MODULE_REGISTER(csi_rx, CONFIG_VIDEO_LOG_LEVEL);
 
 /* tinyVision.ai quirk: use 32-bit addresses: 2 lower address bits are always 0 */
-#define LSCC_CSI_RX_REG(addr) ((addr) << 2)
-#define LSCC_CSI_RX_WRITE(val, addr) sys_write32((val), (addr))
+#define LSCC_CSI_RX_REG(addr)			((addr) << 2)
+#define LSCC_CSI_RX_WRITE(val, addr)		sys_write32((val), (addr))
+#define LSCC_CSI_RX_READ(addr)			sys_read32((addr))
 
 #define LSCC_CSI_RX_LANE_SETTING		LSCC_CSI_RX_REG(0x0A)
 #define LSCC_CSI_RX_VC_DT			LSCC_CSI_RX_REG(0x1F)
@@ -59,13 +60,13 @@ static int lscc_csi_rx_init(const struct device *dev)
 	const struct lscc_csi_rx_config *cfg = dev->config;
 
 	/* Setup the REF_DT to RAW8 */
-	LSCC_CSI_RX_WRITE(0x2A, cfg->base + LSCC_CSI_RX_REFDT);
+	LSCC_CSI_RX_WRITE(0x2B, cfg->base + LSCC_CSI_RX_REFDT);
 
 	/* Set the settle time */
 	LSCC_CSI_RX_WRITE(0x06, cfg->base + LSCC_CSI_RX_NOCIL_DSETTLE);
 
-	/* Allow MIPI packet with this data type by default */
-	LSCC_CSI_RX_WRITE(0x2b, cfg->base + LSCC_CSI_RX_REFDT);
+	///* Allow MIPI packet with this data type by default */
+	//LSCC_CSI_RX_WRITE(0x2B, cfg->base + LSCC_CSI_RX_REFDT);
 
 	return 0;
 }
@@ -213,7 +214,7 @@ static int cmd_tvai_csi_rx_show(const struct shell *sh, size_t argc, char **argv
 	cfg = dev->config;
 
 	for (size_t i = 0; i < ARRAY_SIZE(lscc_csi_rx_regs); i++) {
-		value = sys_read8(cfg->base + lscc_csi_rx_regs[i].addr);
+		value = LSCC_CSI_RX_READ(cfg->base + lscc_csi_rx_regs[i].addr);
 		shell_print(sh, "%-20s = %02x - %s",
 			    lscc_csi_rx_regs[i].name, value, lscc_csi_rx_regs[i].description);
 	}
@@ -252,11 +253,11 @@ static int cmd_tvai_csi_rx_set(const struct shell *sh, size_t argc, char **argv,
 {
 	const struct device *dev;
 	const struct lscc_csi_rx_config *cfg;
-	uint32_t cur_value;
-	uint32_t new_value;
+	int cur_value;
+	int new_value;
 	char *end = NULL;
 
-	__ASSERT_NO_MSG(argc == 3);
+	__ASSERT_NO_MSG(argc == 2 || argc == 3);
 
 	dev = device_get_binding(argv[1]);
 	if (dev == NULL || !device_is_video_and_ready(dev)) {
@@ -266,10 +267,15 @@ static int cmd_tvai_csi_rx_set(const struct shell *sh, size_t argc, char **argv,
 
 	cfg = dev->config;
 
-	cur_value = sys_read8(cfg->base + reg);
+	cur_value = LSCC_CSI_RX_READ(cfg->base + reg);
 
-	if (strchr("+-", argv[2][0]) == 0) {
-		new_value = cur_value + strtoll(argv[2], &end, 10);
+	if (argc == 2) {
+		shell_print(sh, "Current value: %u", cur_value);
+		return 0;
+	}
+
+	if (strchr("+-", argv[2][0]) != NULL) {
+		new_value = CLAMP(cur_value + strtol(argv[2], &end, 10), 0x00, 0xff);
 	} else {
 		new_value = strtoll(argv[2], &end, 10);
 	}
@@ -297,7 +303,7 @@ static int cmd_tvai_csi_rx_delay(const struct shell *sh, size_t argc, char **arg
 	return cmd_tvai_csi_rx_set(sh, argc, argv, LSCC_CSI_RX_NOCIL_RXFIFODEL_LSB);
 }
 
-static int cmd_tvai_csi_rx_allow(const struct shell *sh, size_t argc, char **argv)
+static int cmd_tvai_csi_rx_refdt(const struct shell *sh, size_t argc, char **argv)
 {
 	unsigned long val;
 	char *end;
@@ -333,11 +339,11 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_CMD_ARG(show, &dsub_device_name, "Display MIPI CSI-2 registers",
 		      cmd_tvai_csi_rx_show, 2, 0),
 	SHELL_CMD_ARG(settle, &dsub_device_name, "Adjust the settle cycle register",
-		      cmd_tvai_csi_rx_settle, 3, 0),
+		      cmd_tvai_csi_rx_settle, 2, 1),
 	SHELL_CMD_ARG(delay, &dsub_device_name, "Adjust the RX fifo delay register",
-		      cmd_tvai_csi_rx_delay, 3, 0),
-	SHELL_CMD_ARG(allow, &dsub_device_name, "Allow MIPI packet with this data type",
-		      cmd_tvai_csi_rx_allow, 3, 0),
+		      cmd_tvai_csi_rx_delay, 2, 1),
+	SHELL_CMD_ARG(refdt, &dsub_device_name, "Allow MIPI packet with this data type",
+		      cmd_tvai_csi_rx_refdt, 3, 0),
 
 	SHELL_SUBCMD_SET_END);
 
