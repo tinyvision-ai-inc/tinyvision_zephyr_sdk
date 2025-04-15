@@ -16,27 +16,32 @@
 
 LOG_MODULE_REGISTER(csi_rx, CONFIG_VIDEO_LOG_LEVEL);
 
-#define LSCC_CSI_RX_LANE_SETTING        0x0A
-#define LSCC_CSI_RX_VC_DT               0x1F
-#define LSCC_CSI_RX_WCL                 0x20
-#define LSCC_CSI_RX_WCH                 0x21
-#define LSCC_CSI_RX_ECC                 0x22
-#define LSCC_CSI_RX_VC_DT2              0x23
-#define LSCC_CSI_RX_WC2L                0x24
-#define LSCC_CSI_RX_WC2H                0x25
-#define LSCC_CSI_RX_REFDT               0x27
-#define LSCC_CSI_RX_ERROR_STATUS        0x28
-#define LSCC_CSI_RX_ERROR_STATUS_EN     0x29
-#define LSCC_CSI_RX_CRC_BYTE_LOW        0x30
-#define LSCC_CSI_RX_CRC_BYTE_HIGH       0x31
-#define LSCC_CSI_RX_ERROR_CTRL          0x32
-#define LSCC_CSI_RX_ERROR_HS_SOT        0x33
-#define LSCC_CSI_RX_ERROR_HS_SOT_SYNC   0x34
-#define LSCC_CSI_RX_CONTROL             0x35
-#define LSCC_CSI_RX_NOCIL_DSETTLE       0x36
-#define LSCC_CSI_RX_NOCIL_RXFIFODEL_LSB 0x37
-#define LSCC_CSI_RX_NOCIL_RXFIFODEL_MSB 0x38
-#define LSCC_CSI_RX_ERROR_SOT_SYNC_DET  0x39
+/* tinyVision.ai quirk: use 32-bit addresses: 2 lower address bits are always 0 */
+#define LSCC_CSI_RX_REG(addr) ((addr) << 2)
+#define LSCC_CSI_RX_WRITE(val, addr) sys_write32((val), (addr))
+
+#define LSCC_CSI_RX_LANE_SETTING		LSCC_CSI_RX_REG(0x0A)
+#define LSCC_CSI_RX_VC_DT			LSCC_CSI_RX_REG(0x1F)
+#define LSCC_CSI_RX_WCL				LSCC_CSI_RX_REG(0x20)
+#define LSCC_CSI_RX_WCH				LSCC_CSI_RX_REG(0x21)
+#define LSCC_CSI_RX_ECC				LSCC_CSI_RX_REG(0x22)
+#define LSCC_CSI_RX_VC_DT2			LSCC_CSI_RX_REG(0x23)
+#define LSCC_CSI_RX_WC2L			LSCC_CSI_RX_REG(0x24)
+#define LSCC_CSI_RX_WC2H			LSCC_CSI_RX_REG(0x25)
+#define LSCC_CSI_RX_REFDT			LSCC_CSI_RX_REG(0x27)
+#define LSCC_CSI_RX_ERROR_STATUS		LSCC_CSI_RX_REG(0x28)
+#define LSCC_CSI_RX_ERROR_STATUS_EN		LSCC_CSI_RX_REG(0x29)
+#define LSCC_CSI_RX_CRC_BYTE_LOW		LSCC_CSI_RX_REG(0x30)
+#define LSCC_CSI_RX_CRC_BYTE_HIGH		LSCC_CSI_RX_REG(0x31)
+#define LSCC_CSI_RX_ERROR_CTRL			LSCC_CSI_RX_REG(0x32)
+#define LSCC_CSI_RX_ERROR_HS_SOT		LSCC_CSI_RX_REG(0x33)
+#define LSCC_CSI_RX_ERROR_HS_SOT_SYNC		LSCC_CSI_RX_REG(0x34)
+#define LSCC_CSI_RX_CONTROL			LSCC_CSI_RX_REG(0x35)
+#define LSCC_CSI_RX_NOCIL_DSETTLE		LSCC_CSI_RX_REG(0x36)
+#define LSCC_CSI_RX_NOCIL_RXFIFODEL_LSB		LSCC_CSI_RX_REG(0x37)
+#define LSCC_CSI_RX_NOCIL_RXFIFODEL_MSB		LSCC_CSI_RX_REG(0x38)
+#define LSCC_CSI_RX_ERROR_SOT_SYNC_DET		LSCC_CSI_RX_REG(0x39)
+
 
 struct lscc_csi_rx_config {
 	const struct device *source_dev;
@@ -54,10 +59,13 @@ static int lscc_csi_rx_init(const struct device *dev)
 	const struct lscc_csi_rx_config *cfg = dev->config;
 
 	/* Setup the REF_DT to RAW8 */
-	sys_write8(0x2A, cfg->base + LSCC_CSI_RX_REFDT);
+	LSCC_CSI_RX_WRITE(0x2A, cfg->base + LSCC_CSI_RX_REFDT);
 
 	/* Set the settle time */
-	sys_write8(0x06, cfg->base + LSCC_CSI_RX_NOCIL_DSETTLE);
+	LSCC_CSI_RX_WRITE(0x06, cfg->base + LSCC_CSI_RX_NOCIL_DSETTLE);
+
+	/* Allow MIPI packet with this data type by default */
+	LSCC_CSI_RX_WRITE(0x2b, cfg->base + LSCC_CSI_RX_REFDT);
 
 	return 0;
 }
@@ -146,8 +154,8 @@ static const DEVICE_API(video, lscc_csi_rx_driver_api) = {
 
 #define SRC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 0)
 
-#define LSCC_CSI_RX_DEVICE_DEFINE(inst)                                                                \
-	const struct lscc_csi_rx_config lscc_csi_rx_cfg_##inst = {                                         \
+#define LSCC_CSI_RX_DEVICE_DEFINE(inst)                                                            \
+	const struct lscc_csi_rx_config lscc_csi_rx_cfg_##inst = {                                 \
 		.source_dev = DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(SRC_EP(inst))),                  \
 		.base = DT_INST_REG_ADDR(inst),                                                    \
 	};                                                                                         \
@@ -164,30 +172,28 @@ static bool device_is_video_and_ready(const struct device *dev)
 
 static const struct lscc_csi_rx_reg lscc_csi_rx_regs[] = {
 
-#define LSCC_CSI_RX_REG(reg, desc) \
+#define LSCC_CSI_RX_REG_DESC(reg, desc) \
 	{.addr = LSCC_CSI_RX_##reg, .name = #reg, .description = (desc)}
 
-	LSCC_CSI_RX_REG(LANE_SETTING, "Number of Lane Select"),
-	LSCC_CSI_RX_REG(VC_DT, "Virtual channel and Data type register"),
-	LSCC_CSI_RX_REG(WCL, "Word count low register"),
-	LSCC_CSI_RX_REG(WCH, "Word count high register"),
-	LSCC_CSI_RX_REG(ECC, "ECC register / Extended virtual channel ID"),
-	LSCC_CSI_RX_REG(VC_DT2, "Virtual channel 2 and Data type 2 register"),
-	LSCC_CSI_RX_REG(WC2L, "Word count 2 low register"),
-	LSCC_CSI_RX_REG(WC2H, "Word count 2 high register"),
-	LSCC_CSI_RX_REG(REFDT, "Reference data type"),
-	LSCC_CSI_RX_REG(ERROR_STATUS, "ECC and CRC error status"),
-	LSCC_CSI_RX_REG(ERROR_STATUS_EN, "ECC and CRC error status enable"),
-	LSCC_CSI_RX_REG(CRC_BYTE_LOW, "Received payload CRC LSB"),
-	LSCC_CSI_RX_REG(CRC_BYTE_HIGH, "Received payload CRC MSB"),
-	LSCC_CSI_RX_REG(ERROR_CTRL, "Hard D-PHY control error"),
-	LSCC_CSI_RX_REG(ERROR_HS_SOT, "Hard D-PHY Start-of-Transmit error"),
-	LSCC_CSI_RX_REG(ERROR_HS_SOT_SYNC, "Hard D-PHY Start-of-Transmit sync error"),
-	LSCC_CSI_RX_REG(CONTROL, "Parser Controls"),
-	LSCC_CSI_RX_REG(NOCIL_DSETTLE, "Data Settle register"),
-	LSCC_CSI_RX_REG(NOCIL_RXFIFODEL_LSB, "RX_FIFO read delay LSB register"),
-	LSCC_CSI_RX_REG(NOCIL_RXFIFODEL_MSB, "RX_FIFO read delay MSB register"),
-	LSCC_CSI_RX_REG(ERROR_SOT_SYNC_DET, "Soft D-PHY SOT sync detect error"),
+	LSCC_CSI_RX_REG_DESC(WCL, "Word count low register"),
+	LSCC_CSI_RX_REG_DESC(WCH, "Word count high register"),
+	LSCC_CSI_RX_REG_DESC(ECC, "ECC register / Extended virtual channel ID"),
+	LSCC_CSI_RX_REG_DESC(VC_DT2, "Virtual channel 2 and Data type 2 register"),
+	LSCC_CSI_RX_REG_DESC(WC2L, "Word count 2 low register"),
+	LSCC_CSI_RX_REG_DESC(WC2H, "Word count 2 high register"),
+	LSCC_CSI_RX_REG_DESC(REFDT, "Reference data type"),
+	LSCC_CSI_RX_REG_DESC(ERROR_STATUS, "ECC and CRC error status"),
+	LSCC_CSI_RX_REG_DESC(ERROR_STATUS_EN, "ECC and CRC error status enable"),
+	LSCC_CSI_RX_REG_DESC(CRC_BYTE_LOW, "Received payload CRC LSB"),
+	LSCC_CSI_RX_REG_DESC(CRC_BYTE_HIGH, "Received payload CRC MSB"),
+	LSCC_CSI_RX_REG_DESC(ERROR_CTRL, "Hard D-PHY control error"),
+	LSCC_CSI_RX_REG_DESC(ERROR_HS_SOT, "Hard D-PHY Start-of-Transmit error"),
+	LSCC_CSI_RX_REG_DESC(ERROR_HS_SOT_SYNC, "Hard D-PHY Start-of-Transmit sync error"),
+	LSCC_CSI_RX_REG_DESC(CONTROL, "Parser Controls"),
+	LSCC_CSI_RX_REG_DESC(NOCIL_DSETTLE, "Data Settle register"),
+	LSCC_CSI_RX_REG_DESC(NOCIL_RXFIFODEL_LSB, "RX_FIFO read delay LSB register"),
+	LSCC_CSI_RX_REG_DESC(NOCIL_RXFIFODEL_MSB, "RX_FIFO read delay MSB register"),
+	LSCC_CSI_RX_REG_DESC(ERROR_SOT_SYNC_DET, "Soft D-PHY SOT sync detect error"),
 };
 
 static int cmd_tvai_csi_rx_show(const struct shell *sh, size_t argc, char **argv)
@@ -231,11 +237,11 @@ static int cmd_tvai_csi_rx_clear(const struct shell *sh, size_t argc, char **arg
 	cfg = dev->config;
 
 	/* Clear error registers by writing 1 to them */
-	sys_write8(0xFF, cfg->base + LSCC_CSI_RX_ERROR_STATUS);
-	sys_write8(0xFF, cfg->base + LSCC_CSI_RX_ERROR_CTRL);
-	sys_write8(0xFF, cfg->base + LSCC_CSI_RX_ERROR_HS_SOT);
-	sys_write8(0xFF, cfg->base + LSCC_CSI_RX_ERROR_HS_SOT_SYNC);
-	sys_write8(0xFF, cfg->base + LSCC_CSI_RX_ERROR_SOT_SYNC_DET);
+	LSCC_CSI_RX_WRITE(0xFF, cfg->base + LSCC_CSI_RX_ERROR_STATUS);
+	LSCC_CSI_RX_WRITE(0xFF, cfg->base + LSCC_CSI_RX_ERROR_CTRL);
+	LSCC_CSI_RX_WRITE(0xFF, cfg->base + LSCC_CSI_RX_ERROR_HS_SOT);
+	LSCC_CSI_RX_WRITE(0xFF, cfg->base + LSCC_CSI_RX_ERROR_HS_SOT_SYNC);
+	LSCC_CSI_RX_WRITE(0xFF, cfg->base + LSCC_CSI_RX_ERROR_SOT_SYNC_DET);
 
 	shell_print(sh, "MIPI error registers cleared");
 
@@ -274,7 +280,7 @@ static int cmd_tvai_csi_rx_set(const struct shell *sh, size_t argc, char **argv,
 		return -EINVAL;
 	}
 
-	sys_write8(new_value, cfg->base + reg);
+	LSCC_CSI_RX_WRITE(new_value, cfg->base + reg);
 
 	shell_print(sh, "Register changed from %u to %u", cur_value, new_value);
 
@@ -289,6 +295,23 @@ static int cmd_tvai_csi_rx_settle(const struct shell *sh, size_t argc, char **ar
 static int cmd_tvai_csi_rx_delay(const struct shell *sh, size_t argc, char **argv)
 {
 	return cmd_tvai_csi_rx_set(sh, argc, argv, LSCC_CSI_RX_NOCIL_RXFIFODEL_LSB);
+}
+
+static int cmd_tvai_csi_rx_allow(const struct shell *sh, size_t argc, char **argv)
+{
+	unsigned long val;
+	char *end;
+
+	val = strtoul(argv[2], &end, 16);
+	if (*end != '\0' || val > 0xff) {
+		shell_error(sh, "Expected hex number without 0x, in range [0x00-0xff], got '%s'",
+			    argv[2]);
+		return -EINVAL;
+	}
+
+	LSCC_CSI_RX_WRITE(val, LSCC_CSI_RX_REFDT);
+
+	return 0;
 }
 
 static void device_name_get(size_t idx, struct shell_static_entry *entry)
@@ -313,6 +336,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 		      cmd_tvai_csi_rx_settle, 3, 0),
 	SHELL_CMD_ARG(delay, &dsub_device_name, "Adjust the RX fifo delay register",
 		      cmd_tvai_csi_rx_delay, 3, 0),
+	SHELL_CMD_ARG(allow, &dsub_device_name, "Allow MIPI packet with this data type",
+		      cmd_tvai_csi_rx_allow, 3, 0),
 
 	SHELL_SUBCMD_SET_END);
 
