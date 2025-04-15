@@ -21,27 +21,33 @@ LOG_MODULE_REGISTER(csi2rx, CONFIG_VIDEO_LOG_LEVEL);
 #define LSCC_CSI2RX_WRITE(val, addr)		sys_write32((val), (addr))
 #define LSCC_CSI2RX_READ(addr)			sys_read32((addr))
 
-#define LSCC_CSI2RX_LANE_SETTING		LSCC_CSI2RX_REG(0x0A)
-#define LSCC_CSI2RX_VC_DT			LSCC_CSI2RX_REG(0x1F)
-#define LSCC_CSI2RX_WCL				LSCC_CSI2RX_REG(0x20)
-#define LSCC_CSI2RX_WCH				LSCC_CSI2RX_REG(0x21)
-#define LSCC_CSI2RX_ECC				LSCC_CSI2RX_REG(0x22)
-#define LSCC_CSI2RX_VC_DT2			LSCC_CSI2RX_REG(0x23)
-#define LSCC_CSI2RX_WC2L			LSCC_CSI2RX_REG(0x24)
-#define LSCC_CSI2RX_WC2H			LSCC_CSI2RX_REG(0x25)
-#define LSCC_CSI2RX_REFDT			LSCC_CSI2RX_REG(0x27)
-#define LSCC_CSI2RX_ERROR_STATUS		LSCC_CSI2RX_REG(0x28)
-#define LSCC_CSI2RX_ERROR_STATUS_EN		LSCC_CSI2RX_REG(0x29)
-#define LSCC_CSI2RX_CRC_BYTE_LOW		LSCC_CSI2RX_REG(0x30)
-#define LSCC_CSI2RX_CRC_BYTE_HIGH		LSCC_CSI2RX_REG(0x31)
-#define LSCC_CSI2RX_ERROR_CTRL			LSCC_CSI2RX_REG(0x32)
-#define LSCC_CSI2RX_ERROR_HS_SOT		LSCC_CSI2RX_REG(0x33)
-#define LSCC_CSI2RX_ERROR_HS_SOT_SYNC		LSCC_CSI2RX_REG(0x34)
-#define LSCC_CSI2RX_CONTROL			LSCC_CSI2RX_REG(0x35)
-#define LSCC_CSI2RX_NOCIL_DSETTLE		LSCC_CSI2RX_REG(0x36)
-#define LSCC_CSI2RX_NOCIL_RXFIFODEL_LSB		LSCC_CSI2RX_REG(0x37)
-#define LSCC_CSI2RX_NOCIL_RXFIFODEL_MSB		LSCC_CSI2RX_REG(0x38)
-#define LSCC_CSI2RX_ERROR_SOT_SYNC_DET		LSCC_CSI2RX_REG(0x39)
+#define LSCC_CSI2RX_REG_LANE_SETTING		LSCC_CSI2RX_REG(0x0A)
+#define LSCC_CSI2RX_REG_VC_DT			LSCC_CSI2RX_REG(0x1F)
+#define LSCC_CSI2RX_REG_WCL			LSCC_CSI2RX_REG(0x20)
+#define LSCC_CSI2RX_REG_WCH			LSCC_CSI2RX_REG(0x21)
+#define LSCC_CSI2RX_REG_ECC			LSCC_CSI2RX_REG(0x22)
+#define LSCC_CSI2RX_REG_VC_DT2			LSCC_CSI2RX_REG(0x23)
+#define LSCC_CSI2RX_REG_WC2L			LSCC_CSI2RX_REG(0x24)
+#define LSCC_CSI2RX_REG_WC2H			LSCC_CSI2RX_REG(0x25)
+#define LSCC_CSI2RX_REG_REFDT			LSCC_CSI2RX_REG(0x27)
+#define LSCC_CSI2RX_VAL_REFDT_RAW6		0x28
+#define LSCC_CSI2RX_VAL_REFDT_RAW7		0x29
+#define LSCC_CSI2RX_VAL_REFDT_RAW8		0x2A
+#define LSCC_CSI2RX_VAL_REFDT_RAW10		0x2B
+#define LSCC_CSI2RX_VAL_REFDT_RAW12		0x2C
+#define LSCC_CSI2RX_VAL_REFDT_RAW14		0x2D
+#define LSCC_CSI2RX_REG_ERROR_STATUS		LSCC_CSI2RX_REG(0x28)
+#define LSCC_CSI2RX_REG_ERROR_STATUS_EN		LSCC_CSI2RX_REG(0x29)
+#define LSCC_CSI2RX_REG_CRC_BYTE_LOW		LSCC_CSI2RX_REG(0x30)
+#define LSCC_CSI2RX_REG_CRC_BYTE_HIGH		LSCC_CSI2RX_REG(0x31)
+#define LSCC_CSI2RX_REG_ERROR_CTRL		LSCC_CSI2RX_REG(0x32)
+#define LSCC_CSI2RX_REG_ERROR_HS_SOT		LSCC_CSI2RX_REG(0x33)
+#define LSCC_CSI2RX_REG_ERROR_HS_SOT_SYNC	LSCC_CSI2RX_REG(0x34)
+#define LSCC_CSI2RX_REG_CONTROL			LSCC_CSI2RX_REG(0x35)
+#define LSCC_CSI2RX_REG_NOCIL_DSETTLE		LSCC_CSI2RX_REG(0x36)
+#define LSCC_CSI2RX_REG_NOCIL_RXFIFODEL_LSB	LSCC_CSI2RX_REG(0x37)
+#define LSCC_CSI2RX_REG_NOCIL_RXFIFODEL_MSB	LSCC_CSI2RX_REG(0x38)
+#define LSCC_CSI2RX_REG_ERROR_SOT_SYNC_DET	LSCC_CSI2RX_REG(0x39)
 
 
 struct lscc_csi2rx_config {
@@ -59,14 +65,11 @@ static int lscc_csi2rx_init(const struct device *dev)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	/* Setup the REF_DT to RAW8 */
-	LSCC_CSI2RX_WRITE(0x2B, cfg->base + LSCC_CSI2RX_REFDT);
+	/* Setup the default Reference Data Type to RAW8 to only allow RAW8 data in by default */
+	LSCC_CSI2RX_WRITE(LSCC_CSI2RX_VAL_REFDT_RAW8, cfg->base + LSCC_CSI2RX_REG_REFDT);
 
-	/* Set the settle time */
-	LSCC_CSI2RX_WRITE(0x06, cfg->base + LSCC_CSI2RX_NOCIL_DSETTLE);
-
-	///* Allow MIPI packet with this data type by default */
-	//LSCC_CSI2RX_WRITE(0x2B, cfg->base + LSCC_CSI2RX_REFDT);
+	/* Set the default settle time */
+	LSCC_CSI2RX_WRITE(0x06, cfg->base + LSCC_CSI2RX_REG_NOCIL_DSETTLE);
 
 	return 0;
 }
@@ -174,7 +177,7 @@ static bool device_is_video_and_ready(const struct device *dev)
 static const struct lscc_csi2rx_reg lscc_csi2rx_regs[] = {
 
 #define LSCC_CSI2RX_REG_DESC(reg, desc) \
-	{.addr = LSCC_CSI2RX_##reg, .name = #reg, .description = (desc)}
+	{.addr = LSCC_CSI2RX_REG_##reg, .name = #reg, .description = (desc)}
 
 	LSCC_CSI2RX_REG_DESC(WCL, "Word count low register"),
 	LSCC_CSI2RX_REG_DESC(WCH, "Word count high register"),
@@ -238,11 +241,11 @@ static int cmd_tvai_csi2rx_clear(const struct shell *sh, size_t argc, char **arg
 	cfg = dev->config;
 
 	/* Clear error registers by writing 1 to them */
-	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_ERROR_STATUS);
-	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_ERROR_CTRL);
-	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_ERROR_HS_SOT);
-	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_ERROR_HS_SOT_SYNC);
-	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_ERROR_SOT_SYNC_DET);
+	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_REG_ERROR_STATUS);
+	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_REG_ERROR_CTRL);
+	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_REG_ERROR_HS_SOT);
+	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_REG_ERROR_HS_SOT_SYNC);
+	LSCC_CSI2RX_WRITE(0xFF, cfg->base + LSCC_CSI2RX_REG_ERROR_SOT_SYNC_DET);
 
 	shell_print(sh, "MIPI error registers cleared");
 
@@ -295,12 +298,12 @@ static int cmd_tvai_csi2rx_set(const struct shell *sh, size_t argc, char **argv,
 
 static int cmd_tvai_csi2rx_settle(const struct shell *sh, size_t argc, char **argv)
 {
-	return cmd_tvai_csi2rx_set(sh, argc, argv, LSCC_CSI2RX_NOCIL_DSETTLE);
+	return cmd_tvai_csi2rx_set(sh, argc, argv, LSCC_CSI2RX_REG_NOCIL_DSETTLE);
 }
 
 static int cmd_tvai_csi2rx_delay(const struct shell *sh, size_t argc, char **argv)
 {
-	return cmd_tvai_csi2rx_set(sh, argc, argv, LSCC_CSI2RX_NOCIL_RXFIFODEL_LSB);
+	return cmd_tvai_csi2rx_set(sh, argc, argv, LSCC_CSI2RX_REG_NOCIL_RXFIFODEL_LSB);
 }
 
 static int cmd_tvai_csi2rx_refdt(const struct shell *sh, size_t argc, char **argv)
@@ -315,7 +318,7 @@ static int cmd_tvai_csi2rx_refdt(const struct shell *sh, size_t argc, char **arg
 		return -EINVAL;
 	}
 
-	LSCC_CSI2RX_WRITE(val, LSCC_CSI2RX_REFDT);
+	LSCC_CSI2RX_WRITE(val, LSCC_CSI2RX_REG_REFDT);
 
 	return 0;
 }
