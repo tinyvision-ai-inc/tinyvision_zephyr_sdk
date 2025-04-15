@@ -14,7 +14,7 @@ config VIDEO_I2C_RETRY_NUM
 rsource "Kconfig.imx219"
 rsource "Kconfig.imx296"
 rsource "Kconfig.imx477"
-rsource "Kconfig.lscc_csi_rx"
+rsource "Kconfig.lscc_csi2rx"
 rsource "Kconfig.shell"
 rsource "Kconfig.tvai_debayer"
 rsource "Kconfig.tvai_stats"

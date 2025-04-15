@@ -1,9 +1,9 @@
 # Copyright (c) 2025 tinyVision.ai Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-description: CSI-2 D-PHY Receiver FPGA soft-core distributed by Lattice
+description: MIPI CSI-2 D-PHY Receiver FPGA soft-core distributed by Lattice
 
-compatible: "lattice,csi-rx"
+compatible: "lattice,csi2rx"
 
 include: base.yaml
 

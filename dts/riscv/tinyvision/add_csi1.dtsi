@@ -7,7 +7,7 @@
 / {
 	soc {
 		csi1: csi@b2100400 {
-			compatible = "lattice,csi-rx";
+			compatible = "lattice,csi2rx";
 			reg = <0xb2100400 0x400>;
 
 			port {
