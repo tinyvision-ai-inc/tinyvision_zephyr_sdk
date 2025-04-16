@@ -17,18 +17,29 @@
 
 LOG_MODULE_REGISTER(tvai_stats, CONFIG_VIDEO_LOG_LEVEL);
 
-#define TVAI_STATS_SCRATCH    0x0000
-#define TVAI_STATS_CONTROL    0x0004
-#define TVAI_STATS_STATUS     0x0008
-#define TVAI_STATS_CONFIG     0x000C
-#define TVAI_STATS_NUM_FRAMES 0x0010
-#define TVAI_STATS_HEIGHT     0x0014
-#define TVAI_STATS_WIDTH      0x0016
-#define TVAI_STATS_IMAGE_GAIN 0x0018
-#define TVAI_STATS_CHAN_AVG_0 0x001C
-#define TVAI_STATS_CHAN_AVG_1 0x0020
-#define TVAI_STATS_CHAN_AVG_2 0x0024
-#define TVAI_STATS_CHAN_AVG_3 0x0028
+#define TVAI_STATS_SCRATCH    		0x0000
+#define TVAI_STATS_CONTROL    		0x0004
+#define TVAI_STATS_STATUS     		0x0008
+#define TVAI_STATS_CONFIG     		0x000C
+#define TVAI_STATS_NUM_FRAMES 		0x0010
+#define TVAI_STATS_HEIGHT     		0x0014
+#define TVAI_STATS_WIDTH      		0x0016
+#define TVAI_STATS_IMAGE_GAIN 		0x0018
+#define TVAI_STATS_CHAN_AVG_0 		0x001C
+#define TVAI_STATS_CHAN_AVG_1 		0x0020
+#define TVAI_STATS_CHAN_AVG_2 		0x0024
+#define TVAI_STATS_CHAN_AVG_3 		0x0028
+#define TVAI_STATS_NUM_PIXELS 		0x002C
+#define TVAI_STATS_ECC_ERROR_CMD 	0x0030
+#define TVAI_STATS_ECC_BYTE_ERROR 	0x0034
+#define TVAI_STATS_ECC_1BIT_ERROR 	0x0038
+#define TVAI_STATS_ECC_2BIT_ERROR 	0x003C
+#define TVAI_STATS_DELAY_ERROR 		0x0040
+#define TVAI_STATS_UNDERFLOW_ERROR 	0x0044
+#define TVAI_STATS_OVERFLOW_ERROR 	0x0048
+#define TVAI_STATS_OVERFLOW_CMD   	0x004C
+#define TVAI_STATS_OVERFLOW_F2S   	0x0050
+#define TVAI_STATS_OVERFLOW_S2USB 	0x0054
 
 struct tvai_stats_config {
 	uintptr_t base;
@@ -221,13 +232,53 @@ static int cmd_tvai_stats_show(const struct shell *sh, size_t argc, char **argv)
 
 	cfg = dev->config;
 
-	shell_print(sh, "frame count: %u", sys_read32(cfg->base + TVAI_STATS_NUM_FRAMES));
-	shell_print(sh, "frame width: %u", sys_read16(cfg->base + TVAI_STATS_WIDTH));
-	shell_print(sh, "frame height: %u", sys_read16(cfg->base + TVAI_STATS_HEIGHT));
-	shell_print(sh, "chan 0 average: 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_0));
-	shell_print(sh, "chan 1 average: 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_1));
-	shell_print(sh, "chan 2 average: 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_2));
-	shell_print(sh, "chan 3 average: 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_3));
+	shell_print(sh, "--------------------------------");
+	shell_print(sh, "Frame stats:");
+	shell_print(sh, "frame.count    : %u", sys_read32(cfg->base + TVAI_STATS_NUM_FRAMES));
+	shell_print(sh, "frame.width    : %u", sys_read16(cfg->base + TVAI_STATS_WIDTH));
+	shell_print(sh, "frame.height   : %u", sys_read16(cfg->base + TVAI_STATS_HEIGHT));
+	uint32_t pixels = sys_read32(cfg->base + TVAI_STATS_NUM_PIXELS);
+	shell_print(sh, "frame.pixels   : %u", pixels & 0xFFFFFF);
+	shell_print(sh, "frame.pxl_lock : %s", (pixels & BIT(24)) ? "LOCKED" : "UNLOCKED");
+	shell_print(sh, "frame.chan0    : 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_0));
+	shell_print(sh, "frame.chan1    : 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_1));
+	shell_print(sh, "frame.chan2    : 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_2));
+	shell_print(sh, "frame.chan3    : 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_3));
+	shell_print(sh, "--------------------------------");
+	shell_print(sh, "ISP Errors:");
+	shell_print(sh, "overflow.f2s   : 0x%02x", sys_read32(cfg->base + TVAI_STATS_OVERFLOW_F2S));
+	shell_print(sh, "overflow.s2usb : 0x%02x", sys_read32(cfg->base + TVAI_STATS_OVERFLOW_S2USB));
+	shell_print(sh, "--------------------------------");
+	shell_print(sh, "MIPI Rx Errors:");
+	shell_print(sh, "mipi.eccbyte   : 0x%02x", sys_read32(cfg->base + TVAI_STATS_ECC_BYTE_ERROR));
+	shell_print(sh, "mipi.ecc1bit   : 0x%02x", sys_read32(cfg->base + TVAI_STATS_ECC_1BIT_ERROR));
+	shell_print(sh, "mipi.ecc2bit   : 0x%02x", sys_read32(cfg->base + TVAI_STATS_ECC_2BIT_ERROR));
+	shell_print(sh, "mipi.delay     : 0x%02x", sys_read32(cfg->base + TVAI_STATS_DELAY_ERROR));
+	shell_print(sh, "mipi.underflow : 0x%02x", sys_read32(cfg->base + TVAI_STATS_UNDERFLOW_ERROR));
+	shell_print(sh, "mipi.overflow  : 0x%02x", sys_read32(cfg->base + TVAI_STATS_OVERFLOW_ERROR));
+	return 0;
+}
+
+static int cmd_tvai_stats_clear(const struct shell *sh, size_t argc, char **argv)
+{
+	const struct device *dev;
+	const struct tvai_stats_config *cfg;
+
+	__ASSERT_NO_MSG(argc == 2);
+
+	dev = device_get_binding(argv[1]);
+	if (dev == NULL || !device_is_video_and_ready(dev)) {
+		shell_error(sh, "could not find a stats device ready with that name");
+		return -ENODEV;
+	}
+
+	cfg = dev->config;
+
+	/* Clear error registers by writing 1 to them */
+	sys_write32(0xFF, cfg->base + TVAI_STATS_ECC_ERROR_CMD);
+	sys_write32(0xFF, cfg->base + TVAI_STATS_OVERFLOW_CMD);
+
+	shell_print(sh, "Stats error registers cleared");
 
 	return 0;
 }
@@ -248,6 +299,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 
 	SHELL_CMD_ARG(show, &dsub_device_name, "Show a dump of the hardware registers",
 		      cmd_tvai_stats_show, 2, 0),
+	SHELL_CMD_ARG(clear, &dsub_device_name, "Clear the stats error registers",
+		      cmd_tvai_stats_clear, 2, 0),
 
 	SHELL_SUBCMD_SET_END);
 
