@@ -70,8 +70,8 @@ static int lscc_csi2rx_init(const struct device *dev)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	/* Setup the default Reference Data Type to RAW8 to only allow RAW8 data in by default */
-	LSCC_CSI2RX_WRITE(LSCC_CSI2RX_VAL_REFDT_RAW8, cfg->base + LSCC_CSI2RX_REG_REFDT);
+	/* Setup the default Reference Data Type to RAW10 to only allow RAW10 data in by default */
+	LSCC_CSI2RX_WRITE(LSCC_CSI2RX_VAL_REFDT_RAW10, cfg->base + LSCC_CSI2RX_REG_REFDT);
 
 	/* Set the default settle time */
 	LSCC_CSI2RX_WRITE(0x06, cfg->base + LSCC_CSI2RX_REG_NOCIL_DSETTLE);
