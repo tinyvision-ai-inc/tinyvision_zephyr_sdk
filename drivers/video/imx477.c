@@ -563,10 +563,11 @@ static struct video_reg mode_640x480_200fps[] = {
 	{IMX477_REG_IVT_PREPLLCK_DIV,	2},
 	{IMX477_REG_IVT_PLL_MPY,	150},
 
+	/* Configure the output MIPI signal link frequency */
 	{IMX477_REG_IOPPXCK_DIV,	10},
 	{IMX477_REG_IOPSYCK_DIV,	2},
 	{IMX477_REG_IOP_PREPLLCK_DIV,	2},
-	{IMX477_REG_IOP_PLL_MPY,		130},
+	{IMX477_REG_IOP_PLL_MPY,	150},
 
 	{IMX477_REG_PLL_MULTI_DRV,	0x01},
 
