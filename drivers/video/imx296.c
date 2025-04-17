@@ -216,14 +216,16 @@ static int imx296_init(const struct device *dev)
 }
 
 #define IMX296_INIT(n)                                                                             \
-	static struct video_imager_config imx296_cfg_##n = {                                       \
+	static struct video_imager_data imx296_data_##n;                                           \
+                                                                                                   \
+	static const struct video_imager_config imx296_cfg_##n = {                                 \
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
 		.write_multi = &video_write_cci_multi,                                             \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(n, &imx296_init, NULL, NULL, &imx296_cfg_##n, POST_KERNEL,           \
-			      CONFIG_VIDEO_INIT_PRIORITY, &imx296_driver_api);
+	DEVICE_DT_INST_DEFINE(n, &imx296_init, NULL, &imx296_data_##n, &imx296_cfg_##n,            \
+			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &imx296_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(IMX296_INIT)

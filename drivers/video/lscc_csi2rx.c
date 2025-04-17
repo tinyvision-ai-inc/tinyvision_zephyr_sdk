@@ -183,7 +183,6 @@ static int cmd_tvai_csi2rx_show(const struct shell *sh, size_t argc, char **argv
 {
 	const struct device *dev;
 	const struct lscc_csi2rx_config *cfg;
-	uint32_t reg;
 
 	__ASSERT_NO_MSG(argc == 2);
 
@@ -195,71 +194,53 @@ static int cmd_tvai_csi2rx_show(const struct shell *sh, size_t argc, char **argv
 
 	cfg = dev->config;
 
-	shell_print(sh, "");
+	shell_print(sh, "--------------------------------");
+	shell_print(sh, "CSI2RX Configuration Registers:");
 
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_WCL);
-	reg |= LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_WCH) << 8;
-	shell_print(sh, "packet1.word_count           %u", reg);
+	shell_print(sh, "config.refdt     : 0x%02x   # Reference data type filtering packets",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_REFDT));
+	shell_print(sh, "config.dsettle   : 0x%02x   # Data settle time",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_NOCIL_DSETTLE));
+	shell_print(sh, "config.rxfifodel : 0x%02x   # RX FIFO delay",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_NOCIL_RXFIFODEL_LSB) << 0 |
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_NOCIL_RXFIFODEL_MSB) << 8);
+	shell_print(sh, "config.control   : 0x%02x   # Control register",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_CONTROL));
 
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ECC);
-	shell_print(sh, "packet1.ecc_checksum         0x%02x", reg);
+	shell_print(sh, "--------------------------------");
+	shell_print(sh, "MIPI Status Registers:");
 
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_VC_DT);
-	shell_print(sh, "packet1.data_type            0x%02x", reg);
-	shell_print(sh, "packet1.virtual_channel       //");
+	shell_print(sh, "mipi.crc         : 0x%04x # Received payload CRC value",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_CRC_BYTE_LOW) << 0 |
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_CRC_BYTE_HIGH) << 8);
+	shell_print(sh, "packet1.words    : %-6u # Packet word count field",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_WCL) << 0 |
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_WCH) << 8);
+	shell_print(sh, "packet1.checksum : 0x%02x   # Packet checksum field",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ECC));
+	shell_print(sh, "packet1.datatype : 0x%02x   # packet data-type/virtual-channel field",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_VC_DT));
+	shell_print(sh, "packet2.words    : %-6u # Packet word count field",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_WC2L) << 0 |
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_WC2H) << 8);
+	shell_print(sh, "packet2.checksum : 0x%02x   # Packet checksum field",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ECC2));
+	shell_print(sh, "packet2.datatype : 0x%02x   # packet data-type/virtual-channel field",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_VC_DT2));
 
-	shell_print(sh, "");
+	shell_print(sh, "--------------------------------");
+	shell_print(sh, "MIPI Rx Errors:");
 
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_WC2L);
-	reg |= LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_WC2H) << 8;
-	shell_print(sh, "packet2.word_count           %u", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ECC2);
-	shell_print(sh, "packet2.ecc_checksum         0x%02x", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_VC_DT2);
-	shell_print(sh, "packet2.data_type            0x%02x", reg);
-	shell_print(sh, "packet2.virtual_channel       //");
-
-	shell_print(sh, "");
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_REFDT);
-	shell_print(sh, "config.reference_data_type   0x%02x", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_NOCIL_DSETTLE);
-	shell_print(sh, "config.data_settle           0x%02x", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_NOCIL_RXFIFODEL_LSB);
-	reg |= LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_NOCIL_RXFIFODEL_MSB) << 8;
-	shell_print(sh, "config.rx_fifo_read_delay    0x%02x", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_CONTROL);
-	shell_print(sh, "config.parser_controls       0x%02x", reg);
-
-	shell_print(sh, "");
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_CRC_BYTE_LOW);
-	reg |= LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_CRC_BYTE_HIGH) << 8;
-	shell_print(sh, "status.crc_value             0x%04x", reg);
-
-	shell_print(sh, "");
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_STATUS);
-	shell_print(sh, "error.ecc_and_crc            0x%02x", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_CTRL);
-	shell_print(sh, "error.hard_d_phy_control     0x%02x", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_HS_SOT);
-	shell_print(sh, "error.start_of_transmission  0x%02x", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_HS_SOT_SYNC);
-	shell_print(sh, "error.sot_synchronization    0x%02x", reg);
-
-	reg = LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_HS_SOT_SYNC);
-	shell_print(sh, "error.sot_sync_detection     0x%02x", reg);
-
-	shell_print(sh, "");
+	shell_print(sh, "mipi.ecccrc      : 0x%02x   # ECC and CRC errors",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_STATUS));
+	shell_print(sh, "mipi.dphyctl     : 0x%02x   # D-PHY errors",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_CTRL));
+	shell_print(sh, "mipi.sot         : 0x%02x   # Start-of-transmission errors",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_HS_SOT));
+	shell_print(sh, "mipi.sotsync     : 0x%02x   # Start-of-transmission synchronization errs",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_HS_SOT_SYNC));
+	shell_print(sh, "mipi.sotsyncdet  : 0x%02x   # Start-of-transmission synch detection errs",
+		    LSCC_CSI2RX_READ(cfg->base + LSCC_CSI2RX_REG_ERROR_HS_SOT_SYNC));
 
 	return 0;
 }
@@ -345,29 +326,6 @@ static int cmd_tvai_csi2rx_delay(const struct shell *sh, size_t argc, char **arg
 	return cmd_tvai_csi2rx_set(sh, argc, argv, LSCC_CSI2RX_REG_NOCIL_RXFIFODEL_LSB);
 }
 
-static int cmd_tvai_csi2rx_datatype(const struct shell *sh, size_t argc, char **argv)
-{
-	unsigned long val;
-	char *end;
-
-	if (argc == 2) {
-		shell_print(sh, "Reference MIPI data type allowed for reception: 0x%02x",
-			    LSCC_CSI2RX_READ(LSCC_CSI2RX_REG_REFDT));
-		return 0;
-	}
-
-	val = strtoul(argv[2], &end, 16);
-	if (*end != '\0' || val > 0xff) {
-		shell_error(sh, "Expected hex number without 0x, in range [0x00-0xff], got '%s'",
-			    argv[2]);
-		return -EINVAL;
-	}
-
-	LSCC_CSI2RX_WRITE(val, LSCC_CSI2RX_REG_REFDT);
-
-	return 0;
-}
-
 static void device_name_get(size_t idx, struct shell_static_entry *entry)
 {
 	const struct device *dev = shell_device_filter(idx, device_is_video_and_ready);
@@ -390,8 +348,6 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 		      cmd_tvai_csi2rx_settle, 2, 1),
 	SHELL_CMD_ARG(delay, &dsub_device_name, "Adjust the RX fifo delay register",
 		      cmd_tvai_csi2rx_delay, 2, 1),
-	SHELL_CMD_ARG(datatype, &dsub_device_name, "Allow MIPI packet with this data type",
-		      cmd_tvai_csi2rx_datatype, 2, 1),
 
 	SHELL_SUBCMD_SET_END);
 

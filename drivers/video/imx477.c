@@ -75,7 +75,7 @@ LOG_MODULE_REGISTER(imx477, CONFIG_VIDEO_LOG_LEVEL);
 #define IMX477_REG_COARSE_INTEGRATION_TIME	IMX477_REG16(0x0202)
 
 /* Mux to select a source for ADCK, CPCK, HCLK, IVTPXCK: 0 for IOPCK, 1 for IVTCK */
-#define IMX477_REG_PLL_MULTI_DRV		IMX477_REG8(0x0310)
+#define IMX477_REG_PLL_MULTI_DRIVE		IMX477_REG8(0x0310)
 
 /* PLL multiplier, valid range: [150, 350] */
 #define IMX477_REG_IVT_PLL_MPY			IMX477_REG16(0x0306)
@@ -154,26 +154,23 @@ LOG_MODULE_REGISTER(imx477, CONFIG_VIDEO_LOG_LEVEL);
 #define IMX477_REG_DOL_CONST			IMX477_REG8(0xe013)
 
 static const struct video_reg init_regs[] = {
-	{IMX477_REG_EXCK_FREQ,		0x1800},
-	{IMX477_REG_TEMP_SENS_CTL,	0x01},
-
 	/* whether to go out of high-speed and into low-power mode while frame blank happen */
-	{IMX477_REG_FRAME_BLANKSTOP_CTRL, 0x01},
 
-	{IMX477_REG8(0xe07a),		0x01},
+	/* External clock input on board set at 24 MHz */
+	{IMX477_REG_EXCK_FREQ, 0x1800},
 
-	{IMX477_REG_DPHY_CTRL,		0x02},
-
-	{IMX477_REG8(0x4ae9),		0x18},
-	{IMX477_REG8(0x4aea),		0x08},
-	{IMX477_REG8(0xf61c),		0x04},
-	{IMX477_REG8(0xf61e),		0x04},
-	{IMX477_REG8(0x4ae9),		0x21},
-	{IMX477_REG8(0x4aea),		0x80},
-
-	{IMX477_REG_PD_AREA_WIDTH,	0x1fff},
-	{IMX477_REG_PD_AREA_HEIGHT,	0x1fff},
-
+	{IMX477_REG_TEMP_SENS_CTL, 0x01},		//temprature sensor control
+	{IMX477_REG_FRAME_BLANKSTOP_CTRL, 0x01}, // Whether to go out of HS and into LP mode while frame blank happen
+	{IMX477_REG8(0xe07a), 0x01},
+	{IMX477_REG_DPHY_CTRL, 0x02},
+	{IMX477_REG8(0x4ae9), 0x18},
+	{IMX477_REG8(0x4aea), 0x08},
+	{IMX477_REG8(0xf61c), 0x04},
+	{IMX477_REG8(0xf61e), 0x04},
+	{IMX477_REG8(0x4ae9), 0x21},
+	{IMX477_REG8(0x4aea), 0x80},
+	{IMX477_REG_PD_AREA_WIDTH, 0x1fff},
+	{IMX477_REG_PD_AREA_HEIGHT, 0x1fff},
 	{IMX477_REG8(0x55d4), 0x00},
 	{IMX477_REG8(0x55d5), 0x00},
 	{IMX477_REG8(0x55d6), 0x07},
@@ -461,131 +458,102 @@ static const struct video_reg init_regs[] = {
 	{IMX477_REG8(0xb21f), 0x04},
 	{IMX477_REG8(0xb35c), 0x00},
 	{IMX477_REG8(0xb35e), 0x08},
-
-	 /* Number of bits */
-	{IMX477_REG_CSI_FORMAT_C,	12},
-	{IMX477_REG_CSI_FORMAT_D,	12},
-	{IMX477_REG_CSI_LANE,		0x01},
-	{IMX477_REG_FRAME_LENGTH_CTRL,	0x00},
-	{IMX477_REG_EBD_SIZE_V,		0x02},
-	{IMX477_REG_DPGA_GLOBEL_GAIN,	0x01},
-
+	{IMX477_REG_CSI_FORMAT_C, 0x0c},
+	{IMX477_REG_CSI_FORMAT_D, 0x0c},
+	{IMX477_REG_CSI_LANE, 0x01},
+	{IMX477_REG_FRAME_LENGTH_CTRL, 0x00},
+	{IMX477_REG_EBD_SIZE_V, 0x02},
+	{IMX477_REG_DPGA_GLOBEL_GAIN, 0x01},
 	{0},
 };
 
-/* 4x4 Binned mode, 10 bit per pixel */
-static struct video_reg mode_640x480_200fps[] = {
-	{IMX477_REG8(0x420b), 0x01},
-	{IMX477_REG8(0x990c), 0x00},
-	{IMX477_REG8(0x990d), 0x08},
-	{IMX477_REG8(0x9956), 0x8c},
-	{IMX477_REG8(0x9957), 0x64},
-	{IMX477_REG8(0x9958), 0x50},
-	{IMX477_REG8(0x9a48), 0x06},
-	{IMX477_REG8(0x9a49), 0x06},
-	{IMX477_REG8(0x9a4a), 0x06},
-	{IMX477_REG8(0x9a4b), 0x06},
-	{IMX477_REG8(0x9a4c), 0x06},
-	{IMX477_REG8(0x9a4d), 0x06},
-
-	{IMX477_REG_CSI_FORMAT_C,	10},
-	{IMX477_REG_CSI_FORMAT_D,	10},
-	{IMX477_REG_CSI_LANE,		0x01},
-
-	{IMX477_REG_LINE_LEN,		0x1a08},
-	{IMX477_REG_FRAME_LEN,		0x041a},
-	{IMX477_REG_X_ADD_STA,		0x0000},
-	{IMX477_REG_Y_ADD_STA,		0x0210},
-	{IMX477_REG_X_ADD_END,		0x0fd7},
-	{IMX477_REG_Y_ADD_END,		0x09cf},
-
-	{IMX477_REG_DOL_HDR_EN,		false},
-	{IMX477_REG_DOL_HDR_NUM,	0},
-	{IMX477_REG_DOL_CSI_DT_FMT_H_2ND, 0x0a},
-	{IMX477_REG_DOL_CSI_DT_FMT_L_2ND, 0x0a},
-	{IMX477_REG_DOL_CSI_DT_FMT_H_3ND, 0x0a},
-	{IMX477_REG_DOL_CSI_DT_FMT_L_3ND, 0x0a},
-	{IMX477_REG_DOL_CONST, 0x00},
-
+/* cropped mode */
+static struct video_reg mode_1920x1080_30[] = {
+	{IMX477_REG_LINE_LEN, 0x31c4},
+	{IMX477_REG_X_ADD_STA, 0x0000},
+	{IMX477_REG_Y_ADD_STA, 0x01b8},
+	{IMX477_REG_X_ADD_END, 0x0fd7},
+	{IMX477_REG_Y_ADD_END, 0x0a27},
 	{IMX477_REG8(0x0220), 0x00},
 	{IMX477_REG8(0x0221), 0x11},
-
-	{IMX477_REG_X_ENV_INC_CONST,	1},
-	{IMX477_REG_X_ODD_INC_CONST,	1},
-	{IMX477_REG_Y_ENV_INC_CONST,	1},
-	{IMX477_REG_Y_ODD_INC,		1},
-
-	{IMX477_REG_BINNING_MODE,	0x01},
-	{IMX477_REG_BINNING_HV,		0x22},
-	{IMX477_REG_BINNING_WEIGHTING,	0x02},
-
+	{IMX477_REG_X_ENV_INC_CONST, 0x01},
+	{IMX477_REG_X_ODD_INC_CONST, 0x01},
+	{IMX477_REG_Y_ENV_INC_CONST, 0x01},
+	{IMX477_REG_Y_ODD_INC, 0x01},
+	{IMX477_REG_BINNING_MODE, 0x01},
+	{IMX477_REG_BINNING_HV, 0x12},
+	{IMX477_REG_BINNING_WEIGHTING, 0x02},
 	{IMX477_REG8(0x3140), 0x02},
 	{IMX477_REG8(0x3c00), 0x00},
-	{IMX477_REG8(0x3c01), 0x01},
-	{IMX477_REG8(0x3c02), 0x9c},
-	{IMX477_REG_ADC_BIT_SETTING, 0x00},
-	{IMX477_REG8(0x5748), 0x00},
-	{IMX477_REG8(0x5749), 0x00},
+	{IMX477_REG8(0x3c01), 0x03},
+	{IMX477_REG8(0x3c02), 0xa2},
+	{IMX477_REG_ADC_BIT_SETTING, 0x01},
+	{IMX477_REG8(0x5748), 0x07},
+	{IMX477_REG8(0x5749), 0xff},
 	{IMX477_REG8(0x574a), 0x00},
-	{IMX477_REG8(0x574b), 0xa4},
-	{IMX477_REG8(0x7b75), 0x0e},
-	{IMX477_REG8(0x7b76), 0x09},
-	{IMX477_REG8(0x7b77), 0x08},
-	{IMX477_REG8(0x7b78), 0x06},
-	{IMX477_REG8(0x7b79), 0x34},
-	{IMX477_REG8(0x7b53), 0x00},
+	{IMX477_REG8(0x574b), 0x00},
+	{IMX477_REG8(0x7b53), 0x01},
 	{IMX477_REG8(0x9369), 0x73},
 	{IMX477_REG8(0x936b), 0x64},
 	{IMX477_REG8(0x936d), 0x5f},
-	{IMX477_REG8(0x9304), 0x03},
-	{IMX477_REG8(0x9305), 0x80},
+	{IMX477_REG8(0x9304), 0x00},
+	{IMX477_REG8(0x9305), 0x00},
 	{IMX477_REG8(0x9e9a), 0x2f},
 	{IMX477_REG8(0x9e9b), 0x2f},
 	{IMX477_REG8(0x9e9c), 0x2f},
 	{IMX477_REG8(0x9e9d), 0x00},
 	{IMX477_REG8(0x9e9e), 0x00},
 	{IMX477_REG8(0x9e9f), 0x00},
-	{IMX477_REG8(0xa2a9), 0x27},
-	{IMX477_REG8(0xa2b7), 0x03},
-
-	{IMX477_REG_SCALE_MODE,		0x00},
-	{IMX477_REG_SCALE_M,		0x0010},
-
-	{IMX477_REG_DIG_CROP_X_OFFSET,	604},
-	{IMX477_REG_DIG_CROP_Y_OFFSET,	0},
-	{IMX477_REG_DIG_CROP_WIDTH,	640},
-	{IMX477_REG_DIG_CROP_HEIGHT,	480},
-	{IMX477_REG_X_OUT_SIZE,		640},
-	{IMX477_REG_Y_OUT_SIZE,		480},
-
-	{IMX477_REG_IVTPXCK_DIV,	5},
-	{IMX477_REG_IVTSYCK_DIV,	2},
-	{IMX477_REG_IVT_PREPLLCK_DIV,	2},
-	{IMX477_REG_IVT_PLL_MPY,	150},
-
-	/* Configure the output MIPI signal link frequency */
-	{IMX477_REG_IOPPXCK_DIV,	10},
-	{IMX477_REG_IOPSYCK_DIV,	2},
-	{IMX477_REG_IOP_PREPLLCK_DIV,	2},
-	{IMX477_REG_IOP_PLL_MPY,	150},
-
-	{IMX477_REG_PLL_MULTI_DRV,	0x01},
-
-	{IMX477_REG_REQ_LINK_BIT_RATE,	0x07080000},
-	{IMX477_REG_TCLK_POST_EX,	0x007f},
-	{IMX477_REG_THS_PRE_EX,		0x004f},
-	{IMX477_REG_THS_ZERO_MIN,	119},
-	{IMX477_REG_THS_TRAIL_EX,	95},
-	{IMX477_REG_TCLK_TRAIL_MIN,	87},
-	{IMX477_REG_TCLK_PREP_EX,	79},
-	{IMX477_REG_TCLK_ZERO_EX,	295},
-	{IMX477_REG_TLPX_EX,		63},
-	{IMX477_REG16(0xe04c), 0x005f},
-	{IMX477_REG16(0xe04e), 0x001f},
+	{IMX477_REG8(0xa2a9), 0x60},
+	{IMX477_REG8(0xa2b7), 0x00},
+	{IMX477_REG_SCALE_MODE, 0x00},
+	{IMX477_REG_SCALE_M, 0x0020},
+	{IMX477_REG_DIG_CROP_X_OFFSET, 0x0000},
+	{IMX477_REG_DIG_CROP_Y_OFFSET, 0x0000},
+	{IMX477_REG_DIG_CROP_WIDTH, 0x0fd8},
+	{IMX477_REG_DIG_CROP_HEIGHT, 0x0438},
+	{IMX477_REG_X_OUT_SIZE, 1920}, // change to 1920
+	{IMX477_REG_Y_OUT_SIZE, 1080},
+	{IMX477_REG_IVTPXCK_DIV, 0x05},
+	{IMX477_REG_IVTSYCK_DIV, 0x02},
+	{IMX477_REG_IVT_PREPLLCK_DIV, 0x02},
+	{IMX477_REG_IVT_PLL_MPY, 0x009B},
+	{IMX477_REG_IOPPXCK_DIV, 0x0a}, //decided by output bit width
+	{IMX477_REG_IOPSYCK_DIV, 0x02},
+	{IMX477_REG_IOP_PREPLLCK_DIV, 0x01},
+	{IMX477_REG_IOP_PLL_MPY, 100},
+	{IMX477_REG_PLL_MULTI_DRIVE, 0x00},
+	{IMX477_REG_REQ_LINK_BIT_RATE, 0x07080000},
+	{IMX477_REG_TCLK_POST_EX, 0x007f},
+	{IMX477_REG_THS_PRE_EX, 0x004f},
+	{IMX477_REG_THS_ZERO_MIN, 0x0077},
+	{IMX477_REG_THS_TRAIL_EX, 0x005f},
+	{IMX477_REG_TCLK_TRAIL_MIN, 0x0057},
+	{IMX477_REG_TCLK_PREP_EX, 0x004f},
+	{IMX477_REG_TCLK_ZERO_EX, 0x0127},
+	{IMX477_REG_TLPX_EX, 0x003f},
+	{IMX477_REG8(0xe04c), 0x00},
+	{IMX477_REG8(0xe04d), 0x7f},
+	{IMX477_REG8(0xe04e), 0x00},
+	{IMX477_REG8(0xe04f), 0x1f},
 	{IMX477_REG8(0x3e20), 0x01},
-	{IMX477_REG_PDAF_CTRL1_0,	0x00},
-	{IMX477_REG_POWER_SAVE_ENABLE,	0x00},
-	{IMX477_REG_LINE_LEN_INCLK,	0x00bf},
+	{IMX477_REG_PDAF_CTRL1_0, 0x00},
+	{IMX477_REG_POWER_SAVE_ENABLE, 0x00},
+	{IMX477_REG_LINE_LEN_INCLK, 0x016C},
+
+	{IMX477_REG_MAP_COUPLET_CORR, 0x01},
+	{IMX477_REG_SING_DYNAMIC_CORR, 0x01},
+	{IMX477_REG_CIT_LSHIFT_LONG_EXP, 0x00},
+	{IMX477_REG_FRAME_LEN, 1167},
+
+	//{IMX477_REG_COARSE_INTEGRATION_TIME, mode->integration_def},
+
+	{0},
+};
+
+static const struct video_imager_mode modes_1920x1080[] = {
+	{.fps = 30, .regs = {mode_1920x1080_30}},
+	{0},
 };
 
 #if 0
@@ -626,22 +594,17 @@ static const struct video_reg clk_498_mhz[] = {
 };
 #endif
 
-static const struct video_imager_mode modes_640x480[] = {
-	{.fps = 200, .regs = {mode_640x480_200fps}},
-	{0},
-};
-
 enum {
-	SIZE_640x480,
+	SIZE_1920x1080,
 };
 
 static const struct video_imager_mode *modes[] = {
-	[SIZE_640x480] = modes_640x480,
+	[SIZE_1920x1080] = modes_1920x1080,
 	NULL,
 };
 
 static const struct video_format_cap fmts[] = {
-	[SIZE_640x480] = VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 640, 480),
+	[SIZE_1920x1080] = VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1920, 1080),
 	{0},
 };
 
@@ -688,6 +651,8 @@ static int imx477_init(const struct device *dev)
 		return -ENODEV;
 	}
 
+	k_sleep(K_MSEC(10));
+
 	ret = video_read_cci_reg(&cfg->i2c, IMX477_REG_CHIP_ID, &reg);
 	if (ret != 0) {
 		LOG_ERR("Error during %s initialization: %s", dev->name, strerror(-ret));
@@ -701,12 +666,21 @@ static int imx477_init(const struct device *dev)
 
 	LOG_INF("Detected IMX477 on %s", cfg->i2c.bus->name);
 
-	ret = video_imager_init(dev, init_regs, 0);
+	video_stream_stop(dev);
+
+	ret = video_imager_init(dev, init_regs, SIZE_1920x1080);
 	if (ret != 0) {
 		return ret;
 	}
 
 	ret = video_write_cci_reg(&cfg->i2c, IMX477_REG_SW_RESET, 0x01);
+	if (ret != 0) {
+		return ret;
+	}
+
+	k_sleep(K_MSEC(10));
+
+	ret = video_write_cci_reg(&cfg->i2c, IMX477_REG_SW_RESET, 0x00);
 	if (ret != 0) {
 		return ret;
 	}
@@ -730,11 +704,10 @@ static int imx477_init(const struct device *dev)
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
-		.data = &imx477_data_##n,                                                          \
 		.write_multi = &video_write_cci_multi,                                             \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(n, &imx477_init, NULL, NULL, &imx477_cfg_##n, POST_KERNEL,           \
-			      CONFIG_VIDEO_INIT_PRIORITY, &imx477_driver_api);
+	DEVICE_DT_INST_DEFINE(n, &imx477_init, NULL, &imx477_data_##n, &imx477_cfg_##n,            \
+			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &imx477_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(IMX477_INIT)

@@ -287,18 +287,17 @@ err:
 	return ret;
 }
 
-#define IMX219_INIT(inst)                                                                          \
-	static struct video_imager_data imx219_data_##inst;                                        \
+#define IMX219_INIT(n)                                                                          \
+	static struct video_imager_data imx219_data_##n;                                        \
                                                                                                    \
-	static const struct video_imager_config imx219_cfg_##inst = {                              \
-		.i2c = I2C_DT_SPEC_INST_GET(inst),                                                 \
+	static const struct video_imager_config imx219_cfg_##n = {                              \
+		.i2c = I2C_DT_SPEC_INST_GET(n),                                                 \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
-		.data = &imx219_data_##inst,                                                       \
 		.write_multi = video_write_cci_multi,                                              \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(inst, &imx219_init, NULL, NULL, &imx219_cfg_##inst, POST_KERNEL,     \
-			      CONFIG_VIDEO_INIT_PRIORITY, &imx219_driver_api);
+	DEVICE_DT_INST_DEFINE(n, &imx219_init, NULL, &imx219_data_##n, &imx219_cfg_##n,            \
+			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &imx219_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(IMX219_INIT)

@@ -181,8 +181,6 @@ struct video_imager_config {
 	struct i2c_dt_spec i2c;
 	/** Write a table of registers onto the device */
 	int (*write_multi)(const struct i2c_dt_spec *i2c, const struct video_reg *regs);
-	/** Reference to a ; */
-	struct video_imager_data *data;
 };
 
 /**

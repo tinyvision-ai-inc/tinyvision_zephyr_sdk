@@ -155,7 +155,7 @@ int video_write_cci_multi(const struct i2c_dt_spec *i2c, const struct video_reg 
 int video_imager_set_mode(const struct device *dev, const struct video_imager_mode *mode)
 {
 	const struct video_imager_config *cfg = dev->config;
-	struct video_imager_data *data = cfg->data;
+	struct video_imager_data *data = dev->data;
 	int ret;
 
 	if (data->mode == mode) {
@@ -181,7 +181,7 @@ int video_imager_set_frmival(const struct device *dev, enum video_endpoint_id ep
 			     struct video_frmival *frmival)
 {
 	const struct video_imager_config *cfg = dev->config;
-	struct video_imager_data *data = cfg->data;
+	struct video_imager_data *data = dev->data;
 	struct video_frmival_enum fie = {.format = &data->fmt, .discrete = *frmival};
 
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
@@ -196,8 +196,7 @@ int video_imager_set_frmival(const struct device *dev, enum video_endpoint_id ep
 int video_imager_get_frmival(const struct device *dev, enum video_endpoint_id ep,
 			     struct video_frmival *frmival)
 {
-	const struct video_imager_config *cfg = dev->config;
-	struct video_imager_data *data = cfg->data;
+	struct video_imager_data *data = dev->data;
 
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
@@ -251,7 +250,7 @@ int video_imager_set_fmt(const struct device *const dev, enum video_endpoint_id 
 			 struct video_format *fmt)
 {
 	const struct video_imager_config *cfg = dev->config;
-	struct video_imager_data *data = cfg->data;
+	struct video_imager_data *data = dev->data;
 	size_t fmt_id;
 	int ret;
 
@@ -281,8 +280,7 @@ int video_imager_set_fmt(const struct device *const dev, enum video_endpoint_id 
 int video_imager_get_fmt(const struct device *dev, enum video_endpoint_id ep,
 			 struct video_format *fmt)
 {
-	const struct video_imager_config *cfg = dev->config;
-	struct video_imager_data *data = cfg->data;
+	struct video_imager_data *data = dev->data;
 
 	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
 		return -EINVAL;
