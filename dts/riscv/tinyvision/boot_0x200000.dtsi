@@ -1,0 +1,29 @@
+/*
+ * Copyright (c) 2025 tinyVision.ai Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	chosen {
+		zephyr,code-partition = &slot0_partition;
+	};
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "fpga";
+			reg = <0x000000 0x200000>;
+		};
+
+		slot0_partition: partition@200000 {
+			label = "image-0";
+			reg = <0x200000 0x100000>;
+		};
+	};
+};

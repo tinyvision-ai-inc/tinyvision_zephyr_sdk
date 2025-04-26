@@ -4,4 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tinyclunx33_rev1.dtsi"
+/dts-v1/;
+
+#include <riscv/tinyvision/tinyclunx33_rtl_1_1.dtsi>

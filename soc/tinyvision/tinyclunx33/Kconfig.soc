@@ -8,14 +8,6 @@ config SOC_SERIES_TINYCLUNX33
 	  that implements the virtual SoC loaded onto the FPGA. They are
 	  published by tinyVision.ai.
 
-config SOC_TINYCLUNX33_CUSTOM
-	bool "tinyCLUNX33 custom RTL"
-	select SOC_SERIES_TINYCLUNX33
-	help
-	  This SoC is a placeholder for application-specific designs, where
-	  the peripheral definition is done in the app.overlay directly.
-	  This is a good starting point for a custom FPGA design.
-
 config SOC_TINYCLUNX33_RTL_0_8
 	bool "tinyCLUNX33 RTL v0.8 release"
 	select SOC_SERIES_TINYCLUNX33
@@ -47,13 +39,19 @@ config SOC_TINYCLUNX33_RTL_1_0
 	help
 	  The tinyCLUNX33 RTL v1.0.* releases.
 
+config SOC_TINYCLUNX33_RTL_1_1
+	bool "tinyCLUNX33 RTL v1.1.* releases"
+	select SOC_SERIES_TINYCLUNX33
+	help
+	  The tinyCLUNX33 RTL v1.1.* releases.
+
 config SOC_SERIES
 	default "tinyclunx33" if SOC_SERIES_TINYCLUNX33
 
 config SOC
-	default "custom" if SOC_TINYCLUNX33_CUSTOM
 	default "rtl_0_8" if SOC_TINYCLUNX33_RTL_0_8
 	default "rtl_0_9" if SOC_TINYCLUNX33_RTL_0_9
 	default "rtl_0_10" if SOC_TINYCLUNX33_RTL_0_10
 	default "rtl_0_11" if SOC_TINYCLUNX33_RTL_0_11
 	default "rtl_1_0" if SOC_TINYCLUNX33_RTL_1_0
+	default "rtl_1_1" if SOC_TINYCLUNX33_RTL_1_1
