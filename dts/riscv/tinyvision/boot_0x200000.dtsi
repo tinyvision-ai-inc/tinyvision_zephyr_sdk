@@ -21,7 +21,11 @@
 		spi-max-frequency = <4000000>;
 		#write-block-size = <256>;
 		#erase-block-size = <DT_SIZE_K(4)>;
-		/* jedec-id = [17 60 18]; */
+		jedec-id = [ef 60 18];
+		//requires-ulbpr;
+		//has-lock = <0x1c>;
+		/* Mega**BITS** */
+		size = <DT_SIZE_M(128)>;
 		partitions {
 			compatible = "fixed-partitions";
 			#address-cells = <1>;
