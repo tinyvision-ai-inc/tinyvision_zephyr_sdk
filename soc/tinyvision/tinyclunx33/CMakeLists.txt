@@ -12,4 +12,4 @@ set(SOC_LINKER_SCRIPT ${ZEPHYR_BASE}/include/zephyr/arch/riscv/common/linker.ld 
 
 # Append extra snippets to it
 zephyr_linker_sources(RAM_SECTIONS ${CMAKE_CURRENT_SOURCE_DIR}/linker.ld)
-zephyr_code_relocate(FILES ../../../drivers/spi/spi_tinyvision.c LOCATION RAM NOKEEP)
+zephyr_code_relocate_ifdef(CONFIG_SPI_TINYVISION FILES ../../../drivers/spi/spi_tinyvision.c LOCATION RAM NOKEEP)
