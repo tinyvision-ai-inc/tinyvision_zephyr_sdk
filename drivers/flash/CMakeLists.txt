@@ -3,4 +3,4 @@
 
 zephyr_library()
 
-zephyr_library_sources_ifdef(CONFIG_SPI_TINYVISION spi_tinyvision.c)
+zephyr_library_sources_ifdef(CONFIG_FLASH_TINYVISION flash_tinyvision.c)

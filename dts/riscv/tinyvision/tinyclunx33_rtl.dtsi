@@ -36,11 +36,11 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		spi0: spi@e001f000 {
-			compatible = "tinyvision,spi";
-			reg = <0xe001f000 0x30 0x20000000 0x1000000>;
+		flashctrl: flash-controller@e001f000 {
+			compatible = "tinyvision,flash";
+			reg = <0xe001f000 0x30>;
 			#address-cells = <1>;
-			#size-cells = <0>;
+			#size-cells = <1>;
 		};
 
 		sram0: memory@40000000 {

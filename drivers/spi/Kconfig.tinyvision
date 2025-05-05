@@ -1,8 +1,0 @@
-
-config SPI_TINYVISION
-	bool "tinyVision SPI driver"
-	default y
-	depends on DT_HAS_TINYVISION_SPI_ENABLED
-	help
-	  Enable support for tinyVision SPI driver
-

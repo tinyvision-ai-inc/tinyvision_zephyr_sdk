@@ -12,20 +12,15 @@
 	};
 };
 
-&spi0 {
-	flash0: flash@0 {
+&flashctrl {
+	flash0: flash@20000000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		compatible = "jedec,spi-nor";
-		reg = <0>;
-		spi-max-frequency = <4000000>;
-		#write-block-size = <256>;
-		#erase-block-size = <DT_SIZE_K(4)>;
-		jedec-id = [ef 60 18];
-		//requires-ulbpr;
-		//has-lock = <0x1c>;
-		/* Mega**BITS** */
-		size = <DT_SIZE_M(128)>;
+		compatible = "soc-nv-flash";
+		reg = <0x20000000 0x1000000>;
+		write-block-size = <256>;
+		erase-block-size = <DT_SIZE_K(4)>;
+		//jedec-id = [ef 60 18];
 		partitions {
 			compatible = "fixed-partitions";
 			#address-cells = <1>;
@@ -41,7 +36,7 @@
 				reg = <0x200000 0x100000>;
 			};
 
-			storage_partition: partition@100000 {
+			storage_partition: partition@300000 {
 				label = "storage";
 				reg = <0x300000 0xC00000>;
 			};

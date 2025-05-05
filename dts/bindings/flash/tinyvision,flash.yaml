@@ -1,11 +1,11 @@
 # Copyright (c) 2025 tinyVision.ai
 # SPDX-License-Identifier: Apache-2.0
 
-description: tinyVision.ai SPI
+description: tinyVision.ai Flash
 
-compatible: "tinyvision,spi"
+compatible: "tinyvision,flash"
 
-include: spi-controller.yaml
+include: flash-controller.yaml
 
 properties:
   reg:
