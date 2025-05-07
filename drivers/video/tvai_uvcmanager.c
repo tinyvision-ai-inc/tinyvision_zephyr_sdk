@@ -15,6 +15,7 @@
 #include <zephyr/shell/shell.h>
 #include <zephyr/logging/log.h>
 
+#include "video_ctrls.h"
 #include "udc_dwc3.h"
 #include "udc_common.h"
 #include "tvai_uvcmanager.h"
@@ -36,6 +37,9 @@ struct uvcmanager_data {
 	struct k_work work;
 	struct k_fifo fifo_in;
 	struct k_fifo fifo_out;
+	struct {
+		struct video_ctrl test_pattern;
+	} ctrl;
 };
 
 /*
@@ -148,14 +152,14 @@ static int uvcmanager_get_format(const struct device *dev, enum video_endpoint_i
 	return video_get_format(cfg->source_dev, VIDEO_EP_OUT, fmt);
 }
 
-static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void *value)
+static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid)
 {
 	const struct uvcmanager_config *cfg = dev->config;
+	struct uvcmanager_data *data = dev->data;
 	int ret;
 
-	switch (cid) {
-	case VIDEO_CID_TEST_PATTERN:
-		if ((int)value == 0) {
+	if (cid == VIDEO_CID_TEST_PATTERN) {
+		if (data->ctrl.test_pattern.val == 0) {
 			LOG_DBG("Disabling the test pattern");
 			uvcmanager_lib_set_test_pattern(cfg->base, 0, 0, 0);
 		} else {
@@ -166,20 +170,16 @@ static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid, void 
 				return ret;
 			}
 
-			LOG_DBG("Setting test pattern to %ux%u", fmt.width, fmt.height);
-			uvcmanager_lib_set_test_pattern(cfg->base, fmt.width, fmt.height, (int)value);
+			LOG_DBG("Setting test pattern to %ux%u with value %u",
+				fmt.width, fmt.height, data->ctrl.test_pattern.val);
+
+			uvcmanager_lib_set_test_pattern(cfg->base, fmt.width, fmt.height,
+							data->ctrl.test_pattern.val);
 		}
 		return 0;
-	default:
-		return video_set_ctrl(cfg->source_dev, cid, value);
 	}
-}
 
-static int uvcmanager_get_ctrl(const struct device *dev, unsigned int cid, void *value)
-{
-	const struct uvcmanager_config *cfg = dev->config;
-
-	return video_get_ctrl(cfg->source_dev, cid, value);
+	return -ENOTSUP;
 }
 
 static int uvcmanager_set_frmival(const struct device *dev, enum video_endpoint_id ep,
@@ -284,7 +284,6 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.enum_frmival = uvcmanager_enum_frmival,
 	.set_stream = uvcmanager_set_stream,
 	.set_ctrl = uvcmanager_set_ctrl,
-	.get_ctrl = uvcmanager_get_ctrl,
 	.enqueue = uvcmanager_enqueue,
 	.dequeue = uvcmanager_dequeue,
 };

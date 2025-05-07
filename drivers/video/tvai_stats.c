@@ -165,20 +165,6 @@ static int tvai_stats_get_tvai_stats(const struct device *dev, enum video_endpoi
 }
 #endif
 
-static int tvai_stats_get_ctrl(const struct device *dev, unsigned int cid, void *value)
-{
-	const struct tvai_stats_config *cfg = dev->config;
-
-	return video_get_ctrl(cfg->source_dev, cid, value);
-}
-
-static int tvai_stats_set_ctrl(const struct device *dev, unsigned int cid, void *value)
-{
-	const struct tvai_stats_config *cfg = dev->config;
-
-	return video_set_ctrl(cfg->source_dev, cid, value);
-}
-
 static int tvai_stats_set_stream(const struct device *dev, bool on)
 {
 	const struct tvai_stats_config *cfg = dev->config;
@@ -194,8 +180,6 @@ static const DEVICE_API(video, tvai_stats_driver_api) = {
 	.get_frmival = tvai_stats_get_frmival,
 	.enum_frmival = tvai_stats_enum_frmival,
 	.set_stream = tvai_stats_set_stream,
-	.set_ctrl = tvai_stats_set_ctrl,
-	.get_ctrl = tvai_stats_get_ctrl,
 #if 0 /* New API not upstreamed */
 	.get_tvai_stats = tvai_stats_get_tvai_stats,
 #endif

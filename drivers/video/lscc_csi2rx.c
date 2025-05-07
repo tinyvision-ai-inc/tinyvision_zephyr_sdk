@@ -135,20 +135,6 @@ static int lscc_csi2rx_set_stream(const struct device *dev, bool on)
 
 }
 
-static int lscc_csi2rx_set_ctrl(const struct device *dev, unsigned int cid, void *value)
-{
-	const struct lscc_csi2rx_config *cfg = dev->config;
-
-	return video_set_ctrl(cfg->source_dev, cid, value);
-}
-
-static int lscc_csi2rx_get_ctrl(const struct device *dev, unsigned int cid, void *value)
-{
-	const struct lscc_csi2rx_config *cfg = dev->config;
-
-	return video_get_ctrl(cfg->source_dev, cid, value);
-}
-
 static const DEVICE_API(video, lscc_csi2rx_driver_api) = {
 	.set_format = lscc_csi2rx_set_format,
 	.get_format = lscc_csi2rx_get_format,
@@ -157,8 +143,6 @@ static const DEVICE_API(video, lscc_csi2rx_driver_api) = {
 	.get_frmival = lscc_csi2rx_get_frmival,
 	.enum_frmival = lscc_csi2rx_enum_frmival,
 	.set_stream = lscc_csi2rx_set_stream,
-	.set_ctrl = lscc_csi2rx_set_ctrl,
-	.get_ctrl = lscc_csi2rx_get_ctrl,
 };
 
 #define SRC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 0)

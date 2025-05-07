@@ -15,6 +15,7 @@
 #include <zephyr/logging/log.h>
 
 #include "video_common.h"
+#include "video_ctrls.h"
 
 LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
 
@@ -60,6 +61,15 @@ LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
 #define IMX219_REG_Y_OUTPUT_SIZE	IMX219_REG16(0x016e)
 #define IMX219_REG_X_ODD_INC_A		IMX219_REG8(0x0170)
 #define IMX219_REG_Y_ODD_INC_A		IMX219_REG8(0x0171)
+
+struct imx219_data {
+	struct video_imager_data imager;
+	struct {
+		struct video_ctrl exposure;
+		struct video_ctrl gain;
+		struct video_ctrl test_pattern;
+	} ctrl;
+};
 
 /* Registers to crop down a resolution to a centered width and height */
 static const struct video_reg init_regs[] = {
@@ -196,39 +206,22 @@ static int imx219_set_stream(const struct device *dev, bool on)
 	return video_write_cci_reg(&cfg->i2c, IMX219_REG_MODE_SELECT, on ? 0x01 : 0x00);
 }
 
-static int imx219_get_ctrl(const struct device *dev, unsigned int cid, void *value)
+static int imx219_set_ctrl(const struct device *dev, unsigned int cid)
 {
 	const struct video_imager_config *cfg = dev->config;
-	uint32_t reg;
-	int ret;
-
-	switch (cid) {
-	case VIDEO_CID_EXPOSURE:
-		ret = video_read_cci_reg(&cfg->i2c, IMX219_REG_INTEGRATION_TIME, &reg);
-		*(uint32_t *)value = reg;
-		return ret;
-	case VIDEO_CID_GAIN:
-		ret = video_read_cci_reg(&cfg->i2c, IMX219_REG_ANALOG_GAIN, &reg);
-		*(uint32_t *)value = reg;
-		return ret;
-	default:
-		LOG_WRN("Control not supported");
-		return -ENOTSUP;
-	}
-}
-
-static int imx219_set_ctrl(const struct device *dev, unsigned int cid, void *value)
-{
-	const struct video_imager_config *cfg = dev->config;
+	struct imx219_data *data = dev->data;
 
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
 		/* Values for normal frame rate, different range for low frame rate mode */
-		return video_write_cci_reg(&cfg->i2c, IMX219_REG_INTEGRATION_TIME, (int)value);
+		return video_write_cci_reg(&cfg->i2c, IMX219_REG_INTEGRATION_TIME,
+					   data->ctrl.exposure.val);
 	case VIDEO_CID_GAIN:
-		return video_write_cci_reg(&cfg->i2c, IMX219_REG_ANALOG_GAIN, (int)value);
+		return video_write_cci_reg(&cfg->i2c, IMX219_REG_ANALOG_GAIN,
+					   data->ctrl.gain.val);
 	case VIDEO_CID_TEST_PATTERN:
-		return video_write_cci_reg(&cfg->i2c, IMX219_REG_TESTPATTERN, (int)value);
+		return video_write_cci_reg(&cfg->i2c, IMX219_REG_TESTPATTERN,
+					   data->ctrl.test_pattern.val);
 	default:
 		LOG_WRN("Control not supported");
 		return -ENOTSUP;
@@ -239,7 +232,6 @@ static const DEVICE_API(video, imx219_driver_api) = {
 	/* Local implementation */
 	.set_stream = imx219_set_stream,
 	.set_ctrl = imx219_set_ctrl,
-	.get_ctrl = imx219_get_ctrl,
 	/* Default implementation */
 	.set_format = video_imager_set_fmt,
 	.get_format = video_imager_get_fmt,
@@ -287,11 +279,11 @@ err:
 	return ret;
 }
 
-#define IMX219_INIT(n)                                                                          \
-	static struct video_imager_data imx219_data_##n;                                        \
+#define IMX219_INIT(n)                                                                             \
+	static struct imx219_data imx219_data_##n;                                                 \
                                                                                                    \
-	static const struct video_imager_config imx219_cfg_##n = {                              \
-		.i2c = I2C_DT_SPEC_INST_GET(n),                                                 \
+	static const struct video_imager_config imx219_cfg_##n = {                                 \
+		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
 		.write_multi = video_write_cci_multi,                                              \

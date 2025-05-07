@@ -146,20 +146,6 @@ static int tvai_debayer_enum_frmival(const struct device *dev, enum video_endpoi
 	return ret;
 }
 
-static int tvai_debayer_get_ctrl(const struct device *dev, unsigned int cid, void *value)
-{
-	const struct tvai_debayer_config *cfg = dev->config;
-
-	return video_get_ctrl(cfg->source_dev, cid, value);
-}
-
-static int tvai_debayer_set_ctrl(const struct device *dev, unsigned int cid, void *value)
-{
-	const struct tvai_debayer_config *cfg = dev->config;
-
-	return video_set_ctrl(cfg->source_dev, cid, value);
-}
-
 static int tvai_debayer_set_stream(const struct device *dev, bool on)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
@@ -175,8 +161,7 @@ static const DEVICE_API(video, tvai_debayer_driver_api) = {
 	.get_frmival = tvai_debayer_get_frmival,
 	.enum_frmival = tvai_debayer_enum_frmival,
 	.set_stream = tvai_debayer_set_stream,
-	.set_ctrl = tvai_debayer_set_ctrl,
-	.get_ctrl = tvai_debayer_get_ctrl,
+
 };
 
 #define TVAI_DEBAYER_INIT(n)                                                                       \

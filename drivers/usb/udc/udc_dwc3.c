@@ -81,7 +81,8 @@ static void dwc3_push_trb(const struct device *dev, struct dwc3_ep_data *ep_data
 	trb->addr_lo = LO32((uintptr_t)buf->data);
 	trb->addr_hi = HI32((uintptr_t)buf->data);
 	trb->status = ep_data->cfg.caps.in ? buf->len : buf->size;
-	LOG_DBG("PUSH %u buf %p, data %p, size %u", ep_data->head, buf, buf->data, buf->size);
+	LOG_DBG("PUSH %u buf %p, data %p, size %u",
+		ep_data->head, (void *)buf, (void *)buf->data, buf->size);
 
 	/* Shift the head */
 	dwc3_ring_inc(&ep_data->head, CONFIG_UDC_DWC3_TRB_NUM - 1);
@@ -106,7 +107,7 @@ static struct net_buf *dwc3_pop_trb(const struct device *dev, struct dwc3_ep_dat
 	}
 
 	LOG_DBG("POP %u EP 0x%02x, buf %p, data %p",
-		ep_data->tail, ep_data->cfg.addr, buf, buf->data);
+		ep_data->tail, ep_data->cfg.addr, (void *)buf, (void *)buf->data);
 
 	/* If we just pulled a TRB, we know we made one hole and we are not full anymore */
 	ep_data->full = false;
@@ -442,8 +443,9 @@ static int dwc3_trb_bulk(const struct device *dev, struct dwc3_ep_data *ep_data,
 {
 	uint32_t ctrl = DWC3_TRB_CTRL_IOC | DWC3_TRB_CTRL_HWO | DWC3_TRB_CTRL_CSP;
 
-	LOG_INF("TRB_BULK_EP_0x%02x, buf %p, data %p, size %u, len %u", ep_data->cfg.addr, buf,
-		buf->data, buf->size, buf->len);
+	LOG_INF("Processing buffer %p from queue", (void *)buf);
+	LOG_INF("TRB_BULK_EP_0x%02x, buf %p, data %p, size %u, len %u",
+		ep_data->cfg.addr, (void *)buf, (void *)buf->data, buf->size, buf->len);
 
 	if (ep_data->full) {
 		return -EBUSY;
@@ -730,7 +732,7 @@ static void dwc3_on_link_state_event(const struct device *dev)
 /* OUT */
 static void dwc3_on_ctrl_write_setup(const struct device *dev, struct net_buf *buf)
 {
-	LOG_DBG("evt: CTRL_WRITE_SETUP (out), data %p", buf->data);
+	LOG_DBG("evt: CTRL_WRITE_SETUP (out), data %p", (void *)buf->data);
 	dwc3_trb_ctrl_data_out(dev);
 }
 
@@ -739,7 +741,7 @@ static void dwc3_on_ctrl_write_data(const struct device *dev, struct net_buf *bu
 {
 	int ret;
 
-	LOG_DBG("evt: CTRL_WRITE_DATA (out), data %p", buf->data);
+	LOG_DBG("evt: CTRL_WRITE_DATA (out), data %p", (void *)buf->data);
 	udc_ctrl_update_stage(dev, buf);
 	ret = udc_ctrl_submit_s_out_status(dev, buf);
 	__ASSERT_NO_MSG(ret == 0);
@@ -751,7 +753,7 @@ static void dwc3_on_ctrl_write_status(const struct device *dev, struct net_buf *
 {
 	int ret;
 
-	LOG_DBG("evt: CTRL_WRITE_STATUS (in), data %p", buf->data);
+	LOG_DBG("evt: CTRL_WRITE_STATUS (in), data %p", (void *)buf->data);
 	ret = udc_ctrl_submit_status(dev, buf);
 	__ASSERT_NO_MSG(ret == 0);
 	udc_ctrl_update_stage(dev, buf);
@@ -764,7 +766,7 @@ static void dwc3_on_ctrl_read_setup(const struct device *dev, struct net_buf *bu
 {
 	int ret;
 
-	LOG_DBG("evt: CTRL_READ_SETUP (out), data %p", buf->data);
+	LOG_DBG("evt: CTRL_READ_SETUP (out), data %p", (void *)buf->data);
 	ret = udc_ctrl_submit_s_in_status(dev);
 	__ASSERT_NO_MSG(ret == 0);
 }
@@ -772,7 +774,7 @@ static void dwc3_on_ctrl_read_setup(const struct device *dev, struct net_buf *bu
 /* IN */
 static void dwc3_on_ctrl_read_data(const struct device *dev, struct net_buf *buf)
 {
-	LOG_DBG("evt: CTRL_READ_DATA (in), data %p", buf->data);
+	LOG_DBG("evt: CTRL_READ_DATA (in), data %p", (void *)buf->data);
 	dwc3_trb_ctrl_status_3_out(dev);
 	udc_ctrl_update_stage(dev, buf);
 	net_buf_unref(buf);
@@ -783,7 +785,7 @@ static void dwc3_on_ctrl_read_status(const struct device *dev, struct net_buf *b
 {
 	int ret;
 
-	LOG_DBG("evt: CTRL_READ_STATUS (out), data %p", buf->data);
+	LOG_DBG("evt: CTRL_READ_STATUS (out), data %p", (void *)buf->data);
 	ret = udc_ctrl_submit_status(dev, buf);
 	__ASSERT_NO_MSG(ret == 0);
 	udc_ctrl_update_stage(dev, buf);
@@ -796,7 +798,7 @@ static void dwc3_on_ctrl_nodata_setup(const struct device *dev, struct net_buf *
 {
 	int ret;
 
-	LOG_DBG("evt: CTRL_NODATA_SETUP (out), data %p", buf->data);
+	LOG_DBG("evt: CTRL_NODATA_SETUP (out), data %p", (void *)buf->data);
 	ret = udc_ctrl_submit_s_status(dev);
 	__ASSERT_NO_MSG(ret == 0);
 }
@@ -806,7 +808,7 @@ static void dwc3_on_ctrl_nodata_status(const struct device *dev, struct net_buf 
 {
 	int ret;
 
-	LOG_DBG("evt: CTRL_NODATA_STATUS (in), data %p", buf->data);
+	LOG_DBG("evt: CTRL_NODATA_STATUS (in), data %p", (void *)buf->data);
 	ret = udc_ctrl_submit_status(dev, buf);
 	__ASSERT_NO_MSG(ret == 0);
 	udc_ctrl_update_stage(dev, buf);
@@ -971,7 +973,7 @@ static void dwc3_on_xfer_done_norm(const struct device *dev, uint32_t evt)
 
 	/* Clear the TRB that triggered the event */
 	buf = dwc3_pop_trb(dev, ep_data);
-	LOG_DBG("evt: XFER_DONE_NORM: EP 0x%02x, data %p", ep_data->cfg.addr, buf->data);
+	LOG_DBG("evt: XFER_DONE_NORM: EP 0x%02x, data %p", ep_data->cfg.addr, (void *)buf->data);
 	__ASSERT_NO_MSG(buf != NULL);
 	dwc3_on_xfer_done(dev, ep_data);
 
@@ -1010,12 +1012,12 @@ int dwc3_api_ep_enqueue(const struct device *dev, struct udc_ep_config *ep_cfg,
 	struct dwc3_ep_data *ep_data = (void *)ep_cfg;
 	struct udc_buf_info *bi = udc_get_buf_info(buf);
 
-	LOG_DBG("Enqueued buffer to EP 0x%02x", ep_data->cfg.addr);
+	LOG_DBG("Enqueued buffer %p to EP 0x%02x", (void *)buf, ep_data->cfg.addr);
 
 	switch (ep_data->cfg.addr) {
 	case USB_CONTROL_EP_IN:
 		/* Save the buffer to fetch it back later */
-		__ASSERT(ep_data->net_buf[0] == NULL, "concurrenn requests not allowed for EP0");
+		__ASSERT(ep_data->net_buf[0] == NULL, "concurrent requests not allowed for EP0");
 		ep_data->net_buf[0] = buf;
 
 		/* Control buffers are managed directly without a queue */
@@ -1034,6 +1036,8 @@ int dwc3_api_ep_enqueue(const struct device *dev, struct udc_ep_config *ep_cfg,
 		CODE_UNREACHABLE;
 		break;
 	default:
+		LOG_DBG("Submitting %p to EP 0x%02x", (void *)buf, ep_data->cfg.addr);
+
 		/* Submit the buffer to the queue */
 		udc_buf_put(ep_cfg, buf);
 
@@ -1053,7 +1057,7 @@ int dwc3_api_ep_dequeue(const struct device *dev, struct udc_ep_config *const ep
 	struct net_buf *buf;
 
 	lock_key = irq_lock();
-	buf = udc_buf_get_all(dev, ep_cfg->addr);
+	buf = udc_buf_get_all(ep_cfg);
 	if (buf) {
 		udc_submit_ep_event(dev, buf, -ECONNABORTED);
 	}
@@ -1325,8 +1329,8 @@ static void dwc3_flush_buffer_queue(const struct device *dev, struct dwc3_ep_dat
 		}
 
 		/* BEGIN CRITICAL SECTION */
-		while ((buf = udc_buf_peek(dev, ep_data->cfg.addr)) != NULL) {
-			LOG_INF("Processing buffer %p from queue", buf);
+		while ((buf = udc_buf_peek(&ep_data->cfg)) != NULL) {
+			LOG_INF("Processing buffer %p from queue", (void *)buf);
 
 			ret = dwc3_trb_bulk(dev, ep_data, buf);
 			if (ret < 0) {
@@ -1335,7 +1339,7 @@ static void dwc3_flush_buffer_queue(const struct device *dev, struct dwc3_ep_dat
 			}
 
 			LOG_DBG("queue: success: Buffer enqueued");
-			udc_buf_get(dev, ep_data->cfg.addr);
+			udc_buf_get(&ep_data->cfg);
 		}
 		/* END CRITICAL SECTION */
 
