@@ -125,8 +125,8 @@ static void spi_tinyvision_deselect(uint32_t reg, uint32_t slaveId)
 }
 
 #define SOC_NV_FLASH_ADDR 0x20000000
-#define DELAY_SETTLE 1000
-#define DELAY_SETTLE_SHORT 10
+#define DELAY_SETTLE 2000
+#define DELAY_SETTLE_SHORT 30
 
 #define WRITE_SIZE DT_PROP(DT_CHOSEN(zephyr_flash), write_block_size)
 #define ERASE_SIZE DT_PROP(DT_CHOSEN(zephyr_flash), erase_block_size)
@@ -141,7 +141,7 @@ static struct flash_tinyvision_config flash_config = {
 };
 
 static const struct flash_parameters flash_tinyvision_parameters = {
-	.write_block_size = 256,
+	.write_block_size = WRITE_SIZE,
 	.erase_value = 0xff,
 };
 
@@ -174,27 +174,32 @@ static int flash_tinyvision_write(const struct device *dev, off_t offset,
 	const struct spi_tinyvision_config *cfg = dev->config;
 	int ret = 0;
 
+	if (len == 0U) {
+		return 0;
+	}
+
+	if (!flash_tinyvision_valid_range(offset, len)) {
+		return -EINVAL;
+	}
+
 	uint32_t lock_key = irq_lock();
+
+	/* clear icache */
+	__asm__ volatile(
+		".insn 0x100F\n"
+		"nop\n"
+		"nop\n"
+		"nop\n"
+		"nop\n"
+		"nop\n"
+	);
 
 	volatile int time = DELAY_SETTLE;
 	while (time > 0) {
 		time--;
 	}
 
-	if (len == 0U) {
-		return 0;
-	}
-
-	if (!flash_tinyvision_valid_range(offset, len)) {
-		time = DELAY_SETTLE;
-		while (time > 0) {
-			time--;
-		}
-		irq_unlock(lock_key);
-		return -EINVAL;
-	}
-
-	for (size_t i = 0; i < len; i += 256) {
+	for (size_t i = 0; i < len; i += WRITE_SIZE) {
 		spi_tinyvision_select(cfg->reg, 0);
 		spi_tinyvision_write(cfg->reg, 0x6); // Write enable
 		spi_tinyvision_deselect(cfg->reg, 0);
@@ -209,7 +214,7 @@ static int flash_tinyvision_write(const struct device *dev, off_t offset,
 		spi_tinyvision_write(cfg->reg, (point & 0xFF0000) >> 16);
 		spi_tinyvision_write(cfg->reg, (point & 0xFF00)  >> 8);
 		spi_tinyvision_write(cfg->reg, (point & 0xFF));
-		for (size_t j = 0; j < 256 && i + j < len; j++) {
+		for (size_t j = 0; j < WRITE_SIZE && i + j < len; j++) {
 			spi_tinyvision_write(cfg->reg, ((uint8_t*)data)[i+j]);
 		}
 		spi_tinyvision_deselect(cfg->reg, 0);
@@ -243,36 +248,36 @@ static int flash_tinyvision_erase(const struct device *dev, off_t offset, size_t
 	const struct spi_tinyvision_config *cfg = dev->config;
 	int ret = 0;
 
+	if (size == 0U) {
+		return 0;
+	}
+
+	if (!flash_tinyvision_valid_range(offset, size)) {
+		return -EINVAL;
+	}
+
+	if (size % ERASE_SIZE) {
+		return -EINVAL;
+	}
+
 	uint32_t lock_key = irq_lock();
+
+	/* clear icache */
+	__asm__ volatile(
+		".insn 0x100F\n"
+		"nop\n"
+		"nop\n"
+		"nop\n"
+		"nop\n"
+		"nop\n"
+	);
 
 	volatile int time = DELAY_SETTLE;
 	while (time > 0) {
 		time--;
 	}
 
-	if (size == 0U) {
-		return 0;
-	}
-
-	if (!flash_tinyvision_valid_range(offset, size)) {
-		irq_unlock(lock_key);
-		time = DELAY_SETTLE;
-		while (time > 0) {
-			time--;
-		}
-		return -EINVAL;
-	}
-
-	if (size % 0x1000) {
-		irq_unlock(lock_key);
-		time = DELAY_SETTLE;
-		while (time > 0) {
-			time--;
-		}
-		return -EINVAL;
-	}
-
-	for (size_t i = 0; i < size; i += 0x1000) {
+	for (size_t i = 0; i < size; i += ERASE_SIZE) {
 		spi_tinyvision_select(cfg->reg, 0);
 		spi_tinyvision_write(cfg->reg, 0x6); // Write enable
 		spi_tinyvision_deselect(cfg->reg, 0);
