@@ -13,6 +13,8 @@ config UDC_DWC3
 	help
 	  Synopsys DWC3 USB device controller driver.
 
+if UDC_DWC3
+
 config UDC_DWC3_SHELL
 	bool "Enable debug shell commands for the DWC3 driver"
 	default y
@@ -48,3 +50,5 @@ config UDC_DWC3_TRB_NUM
 	  endpoint. This does not affect control endpoints. The default is
 	  enough for most conditions, but for performance and debug purposes,
 	  increasing could reveal useful.
+
+endif
