@@ -79,60 +79,54 @@ static int lscc_csi2rx_init(const struct device *dev)
 	return 0;
 }
 
-static int lscc_csi2rx_set_format(const struct device *dev, enum video_endpoint_id ep,
-			      struct video_format *fmt)
+static int lscc_csi2rx_set_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	return video_set_format(cfg->source_dev, VIDEO_EP_OUT, fmt);
+	return video_set_format(cfg->source_dev, fmt);
 }
 
-static int lscc_csi2rx_get_format(const struct device *dev, enum video_endpoint_id ep,
-			      struct video_format *fmt)
+static int lscc_csi2rx_get_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	return video_get_format(cfg->source_dev, VIDEO_EP_OUT, fmt);
+	return video_get_format(cfg->source_dev, fmt);
 }
 
-static int lscc_csi2rx_get_caps(const struct device *dev, enum video_endpoint_id ep,
-			    struct video_caps *caps)
+static int lscc_csi2rx_get_caps(const struct device *dev, struct video_caps *caps)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	return video_get_caps(cfg->source_dev, VIDEO_EP_OUT, caps);
+	return video_get_caps(cfg->source_dev, caps);
 }
 
-static int lscc_csi2rx_set_frmival(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_frmival *frmival)
+static int lscc_csi2rx_set_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	return video_set_frmival(cfg->source_dev, VIDEO_EP_OUT, frmival);
+	return video_set_frmival(cfg->source_dev, frmival);
 }
 
-static int lscc_csi2rx_get_frmival(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_frmival *frmival)
+static int lscc_csi2rx_get_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	return video_get_frmival(cfg->source_dev, VIDEO_EP_OUT, frmival);
+	return video_get_frmival(cfg->source_dev, frmival);
 }
 
-static int lscc_csi2rx_enum_frmival(const struct device *dev, enum video_endpoint_id ep,
-				   struct video_frmival_enum *fie)
+static int lscc_csi2rx_enum_frmival(const struct device *dev, struct video_frmival_enum *fie)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	return video_enum_frmival(cfg->source_dev, VIDEO_EP_OUT, fie);
+	return video_enum_frmival(cfg->source_dev, fie);
 }
 
-static int lscc_csi2rx_set_stream(const struct device *dev, bool on)
+static int lscc_csi2rx_set_stream(const struct device *dev, bool on, enum video_buf_type type)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
 
-	return on ? video_stream_start(cfg->source_dev) : video_stream_stop(cfg->source_dev);
-
+	return on ? video_stream_start(cfg->source_dev, VIDEO_BUF_TYPE_OUTPUT)
+		  : video_stream_stop(cfg->source_dev, VIDEO_BUF_TYPE_OUTPUT);
 }
 
 static const DEVICE_API(video, lscc_csi2rx_driver_api) = {

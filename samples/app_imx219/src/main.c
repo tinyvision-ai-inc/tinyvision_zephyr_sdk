@@ -12,7 +12,7 @@ int app_usb_init(void);
 
 int main(void)
 {
-	struct video_format fmt = {0};
+	struct video_format fmt = {.type = VIDEO_BUF_TYPE_OUTPUT};
 	int ret;
 
 	uvc_set_video_dev(uvc0_dev, uvcmanager0_dev);
@@ -25,7 +25,7 @@ int main(void)
 
 	/* Get the video format once it is selected by the host */
 	while (true) {
-		ret = video_get_format(uvc0_dev, VIDEO_EP_IN, &fmt);
+		ret = video_get_format(uvc0_dev, &fmt);
 		if (ret == 0) {
 			break;
 		}
@@ -37,7 +37,7 @@ int main(void)
 		k_sleep(K_MSEC(10));
 	}
 
-	ret = video_stream_start(uvcmanager0_dev);
+	ret = video_stream_start(uvcmanager0_dev, VIDEO_BUF_TYPE_OUTPUT);
 	if (ret != 0) {
 		LOG_ERR("Failed to start %s", uvcmanager0_dev->name);
 		return ret;

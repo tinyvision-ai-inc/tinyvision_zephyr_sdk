@@ -9,7 +9,7 @@ endif()
 
 zephyr_include_directories(.)
 zephyr_include_directories(${ZEPHYR_BASE}/drivers/video)
-zephyr_library_sources(video_common.c)
+zephyr_library_sources(video_imager.c)
 zephyr_library_sources_ifdef(CONFIG_VIDEO_IMX219 imx219.c)
 zephyr_library_sources_ifdef(CONFIG_VIDEO_IMX296 imx296.c)
 zephyr_library_sources_ifdef(CONFIG_VIDEO_IMX477 imx477.c)

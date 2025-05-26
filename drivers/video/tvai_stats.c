@@ -46,57 +46,51 @@ struct tvai_stats_config {
 	const struct device *source_dev;
 };
 
-static int tvai_stats_get_caps(const struct device *dev, enum video_endpoint_id ep,
-			    struct video_caps *caps)
+static int tvai_stats_get_caps(const struct device *dev, struct video_caps *caps)
 {
 	const struct tvai_stats_config *cfg = dev->config;
 
-	return video_get_caps(cfg->source_dev, ep, caps);
+	return video_get_caps(cfg->source_dev, caps);
 }
 
-static int tvai_stats_set_format(const struct device *dev, enum video_endpoint_id ep,
-			      struct video_format *fmt)
+static int tvai_stats_set_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct tvai_stats_config *cfg = dev->config;
 
-	return video_set_format(cfg->source_dev, ep, fmt);
+	return video_set_format(cfg->source_dev, fmt);
 }
 
-static int tvai_stats_get_format(const struct device *dev, enum video_endpoint_id ep,
-			      struct video_format *fmt)
+static int tvai_stats_get_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct tvai_stats_config *cfg = dev->config;
 
-	return video_get_format(cfg->source_dev, ep, fmt);
+	return video_get_format(cfg->source_dev, fmt);
 }
 
-static int tvai_stats_set_frmival(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_frmival *frmival)
+static int tvai_stats_set_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct tvai_stats_config *cfg = dev->config;
 
-	return video_set_frmival(cfg->source_dev, ep, frmival);
+	return video_set_frmival(cfg->source_dev, frmival);
 }
 
-static int tvai_stats_get_frmival(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_frmival *frmival)
+static int tvai_stats_get_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct tvai_stats_config *cfg = dev->config;
 
-	return video_get_frmival(cfg->source_dev, ep, frmival);
+	return video_get_frmival(cfg->source_dev, frmival);
 }
 
-static int tvai_stats_enum_frmival(const struct device *dev, enum video_endpoint_id ep,
-				struct video_frmival_enum *fie)
+static int tvai_stats_enum_frmival(const struct device *dev, struct video_frmival_enum *fie)
 {
 	const struct tvai_stats_config *cfg = dev->config;
 
-	return video_enum_frmival(cfg->source_dev, ep, fie);
+	return video_enum_frmival(cfg->source_dev, fie);
 }
 
 #if 0
-static int tvai_stats_get_tvai_stats(const struct device *dev, enum video_endpoint_id ep,
-			     uint16_t type_flags, struct video_tvai_stats *tvai_stats_in)
+static int tvai_stats_get_tvai_stats(const struct device *dev, uint16_t type_flags,
+				     struct video_tvai_stats *tvai_stats_in)
 {
 	const struct tvai_stats_config *cfg = dev->config;
 	uint8_t ch0 = sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_0);
@@ -165,11 +159,12 @@ static int tvai_stats_get_tvai_stats(const struct device *dev, enum video_endpoi
 }
 #endif
 
-static int tvai_stats_set_stream(const struct device *dev, bool on)
+static int tvai_stats_set_stream(const struct device *dev, bool on, enum video_buf_type type)
 {
 	const struct tvai_stats_config *cfg = dev->config;
 
-	return on ? video_stream_start(cfg->source_dev) : video_stream_stop(cfg->source_dev);
+	return on ? video_stream_start(cfg->source_dev, VIDEO_BUF_TYPE_OUTPUT)
+		  : video_stream_stop(cfg->source_dev, VIDEO_BUF_TYPE_OUTPUT);
 }
 
 static const DEVICE_API(video, tvai_stats_driver_api) = {

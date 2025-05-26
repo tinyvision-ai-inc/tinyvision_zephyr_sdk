@@ -18,7 +18,7 @@
 #include "video_common.h"
 #include "video_imager.h"
 
-LOG_MODULE_REGISTER(video_common, CONFIG_VIDEO_LOG_LEVEL);
+LOG_MODULE_REGISTER(video_imager, CONFIG_VIDEO_LOG_LEVEL);
 
 /* Common implementation for imagers (a.k.a. image sensor) drivers */
 
@@ -34,8 +34,8 @@ int video_imager_set_mode(const struct device *dev, const struct video_imager_mo
 	}
 
 	/* Write each register table to the device */
-	for (int i = 0; i < ARRAY_SIZE(mode->regs) && mode->regs[i] != NULL; i++) {
-		ret = cfg->write_multi(&cfg->i2c, mode->regs[i]);
+	for (int i = 0; i < ARRAY_SIZE(mode->regs); i++) {
+		ret = cfg->write_multi(&cfg->i2c, mode->regs[i].values, mode->regs[i].nb);
 		if (ret != 0) {
 			LOG_ERR("Could not set %s to mode %p, %u FPS", dev->name, mode, mode->fps);
 			return ret;
@@ -47,16 +47,13 @@ int video_imager_set_mode(const struct device *dev, const struct video_imager_mo
 	return 0;
 }
 
-int video_imager_set_frmival(const struct device *dev, enum video_endpoint_id ep,
-			     struct video_frmival *frmival)
+int video_imager_set_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct video_imager_config *cfg = dev->config;
 	struct video_imager_data *data = dev->data;
 	struct video_frmival_enum fie = {.format = &data->fmt, .discrete = *frmival};
-	int ret;
 
-	ret = video_closest_frmival(dev, ep, &fie);
-	__ASSERT(ret == 0, "The current format is expected to be valid");
+	video_closest_frmival(dev, &fie);
 
 	return video_imager_set_mode(dev, &cfg->modes[data->fmt_id][fie.index]);
 }
@@ -147,8 +144,7 @@ int video_imager_get_caps(const struct device *dev, struct video_caps *caps)
 	return 0;
 }
 
-int video_imager_init(const struct device *dev, const struct video_reg *init_regs,
-		      int default_fmt_idx)
+int video_imager_init(const struct device *dev, int default_fmt_idx)
 {
 	const struct video_imager_config *cfg = dev->config;
 	struct video_format fmt;
@@ -157,25 +153,12 @@ int video_imager_init(const struct device *dev, const struct video_reg *init_reg
 	__ASSERT_NO_MSG(cfg->modes != NULL);
 	__ASSERT_NO_MSG(cfg->fmts != NULL);
 
-	if (!device_is_ready(cfg->i2c.bus)) {
-		LOG_ERR("I2C bus device %s is not ready", cfg->i2c.bus->name);
-		return -ENODEV;
-	}
-
-	if (init_regs != NULL) {
-		ret = cfg->write_multi(&cfg->i2c, init_regs);
-		if (ret != 0) {
-			LOG_ERR("Could not set %s initial registers", dev->name);
-			return ret;
-		}
-	}
-
 	fmt.pixelformat = cfg->fmts[default_fmt_idx].pixelformat;
 	fmt.width = cfg->fmts[default_fmt_idx].width_max;
 	fmt.height = cfg->fmts[default_fmt_idx].height_max;
 	fmt.pitch = fmt.width * video_bits_per_pixel(fmt.pixelformat) / BITS_PER_BYTE;
 
-	ret = video_set_format(dev, VIDEO_EP_OUT, &fmt);
+	ret = video_set_format(dev, &fmt);
 	if (ret != 0) {
 		LOG_ERR("Failed to set %s to default format '%s' %ux%u",
 			dev->name, VIDEO_FOURCC_TO_STR(fmt.pixelformat), fmt.width, fmt.height);

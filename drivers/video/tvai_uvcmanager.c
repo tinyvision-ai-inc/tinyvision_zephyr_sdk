@@ -30,16 +30,18 @@ struct uvcmanager_config {
 	uint8_t usb_endpoint;
 };
 
+struct uvcmanager_ctrls {
+	struct video_ctrl test_pattern;
+};
+
 struct uvcmanager_data {
 	const struct device *dev;
-	struct video_buffer *vbuf;
+	struct video_format fmt;
 	size_t id;
 	struct k_work work;
 	struct k_fifo fifo_in;
 	struct k_fifo fifo_out;
-	struct {
-		struct video_ctrl test_pattern;
-	} ctrl;
+	struct uvcmanager_ctrls ctrls;
 };
 
 /*
@@ -68,7 +70,7 @@ uint32_t dwc3_get_depupdxfer(const struct device *dev, uint8_t ep_addr)
 		FIELD_PREP(DWC3_DEPCMD_XFERRSCIDX_MASK, ep_data->xferrscidx);
 }
 
-static int uvcmanager_set_stream(const struct device *dev, bool on)
+static int uvcmanager_set_stream(const struct device *dev, bool on, enum video_buf_type type)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 	uint32_t trb_addr = dwc3_get_trb_addr(cfg->dwc3_dev, cfg->usb_endpoint);
@@ -81,7 +83,7 @@ static int uvcmanager_set_stream(const struct device *dev, bool on)
 		LOG_DBG("trb addr 0x%08x, depupdxfer 0x%02x, depcmd 0x%08x",
 			trb_addr, depupdxfer, depcmd);
 
-		ret = video_stream_start(cfg->source_dev);
+		ret = video_stream_start(cfg->source_dev, VIDEO_BUF_TYPE_OUTPUT);
 		if (ret < 0) {
 			LOG_ERR("%s: failed to start %s", dev->name, cfg->source_dev->name);
 			return ret;
@@ -93,7 +95,7 @@ static int uvcmanager_set_stream(const struct device *dev, bool on)
 
 		uvcmanager_lib_stop(cfg->base);
 
-		ret = video_stream_stop(cfg->source_dev);
+		ret = video_stream_stop(cfg->source_dev, VIDEO_BUF_TYPE_OUTPUT);
 		if (ret < 0) {
 			LOG_ERR("%s: failed to stop %s", dev->name, cfg->source_dev->name);
 			return ret;
@@ -103,78 +105,69 @@ static int uvcmanager_set_stream(const struct device *dev, bool on)
 	return 0;
 }
 
-static int uvcmanager_get_caps(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_caps *caps)
+static int uvcmanager_get_caps(const struct device *dev, struct video_caps *caps)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
-	return video_get_caps(cfg->source_dev, ep, caps);
+	return video_get_caps(cfg->source_dev, caps);
 }
 
-static int uvcmanager_set_format(const struct device *dev, enum video_endpoint_id ep,
-				 struct video_format *fmt)
+static int uvcmanager_set_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct uvcmanager_config *cfg = dev->config;
+	struct uvcmanager_data *drv_data = dev->data;
 	const struct device *source_dev = cfg->source_dev;
 	struct video_format source_fmt = *fmt;
 	int ret;
 
-	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
-		return -EINVAL;
-	}
-
-	if (source_dev == NULL) {
-		LOG_DBG("%s: no source, skipping format selection", dev->name);
-		return 0;
-	}
-
 	LOG_INF("setting %s to %ux%u", source_dev->name, source_fmt.width, source_fmt.height);
 
-	ret = video_set_format(source_dev, VIDEO_EP_OUT, &source_fmt);
+	/* This call will update fmt->pitch */
+	ret = video_set_format(source_dev, &source_fmt);
 	if (ret < 0) {
 		LOG_ERR("failed to set %s format", source_dev->name);
 		return ret;
 	}
 
+	/* Now, the pitch is set correctly, we use it to configure the frame size */
 	uvcmanager_lib_set_format(cfg->base, fmt->pitch, fmt->height);
+
+	drv_data->fmt = *fmt;
+
 	return 0;
 }
 
-static int uvcmanager_get_format(const struct device *dev, enum video_endpoint_id ep,
-				 struct video_format *fmt)
+static int uvcmanager_get_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
-	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
-		return -EINVAL;
-	}
-
-	return video_get_format(cfg->source_dev, VIDEO_EP_OUT, fmt);
+	return video_get_format(cfg->source_dev, fmt);
 }
 
 static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 	struct uvcmanager_data *data = dev->data;
+	struct uvcmanager_ctrls *ctrls = &data->ctrls;
 	int ret;
 
 	if (cid == VIDEO_CID_TEST_PATTERN) {
-		if (data->ctrl.test_pattern.val == 0) {
+		if (ctrls->test_pattern.val == 0) {
 			LOG_DBG("Disabling the test pattern");
 			uvcmanager_lib_set_test_pattern(cfg->base, 0, 0, 0);
 		} else {
 			struct video_format fmt;
 
-			ret = uvcmanager_get_format(dev, VIDEO_EP_OUT, &fmt);
+			ret = uvcmanager_get_format(dev, &fmt);
 			if (ret < 0) {
 				return ret;
 			}
 
 			LOG_DBG("Setting test pattern to %ux%u with value %u",
-				fmt.width, fmt.height, data->ctrl.test_pattern.val);
+				fmt.width, fmt.height, ctrls->test_pattern.val);
 
 			uvcmanager_lib_set_test_pattern(cfg->base, fmt.width, fmt.height,
-							data->ctrl.test_pattern.val);
+							ctrls->test_pattern.val);
 		}
 		return 0;
 	}
@@ -182,67 +175,25 @@ static int uvcmanager_set_ctrl(const struct device *dev, unsigned int cid)
 	return -ENOTSUP;
 }
 
-static int uvcmanager_set_frmival(const struct device *dev, enum video_endpoint_id ep,
-				  struct video_frmival *frmival)
+static int uvcmanager_set_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
-	return video_set_frmival(cfg->source_dev, VIDEO_EP_OUT, frmival);
+	return video_set_frmival(cfg->source_dev, frmival);
 }
 
-static int uvcmanager_get_frmival(const struct device *dev, enum video_endpoint_id ep,
-				  struct video_frmival *frmival)
+static int uvcmanager_get_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
-	return video_get_frmival(cfg->source_dev, VIDEO_EP_OUT, frmival);
+	return video_get_frmival(cfg->source_dev, frmival);
 }
 
-static int uvcmanager_enum_frmival(const struct device *dev, enum video_endpoint_id ep,
-				   struct video_frmival_enum *fie)
+static int uvcmanager_enum_frmival(const struct device *dev, struct video_frmival_enum *fie)
 {
 	const struct uvcmanager_config *cfg = dev->config;
 
-	return video_enum_frmival(cfg->source_dev, VIDEO_EP_OUT, fie);
-}
-
-static int uvcmanager_enqueue(const struct device *dev, enum video_endpoint_id ep,
-			   struct video_buffer *vbuf)
-{
-	struct uvcmanager_data *data = dev->data;
-
-	/* Can only enqueue a buffer to get data out, data input is from hardware */
-	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
-		return -EINVAL;
-	}
-
-	/* The buffer has not been filled yet: flag as emtpy */
-	vbuf->bytesused = 0;
-
-	/* Submit the buffer for processing in the worker, where everything happens */
-	k_fifo_put(&data->fifo_in, vbuf);
-	k_work_submit(&data->work);
-
-	return 0;
-}
-
-static int uvcmanager_dequeue(const struct device *dev, enum video_endpoint_id ep,
-			   struct video_buffer **vbufp, k_timeout_t timeout)
-{
-	struct uvcmanager_data *data = dev->data;
-
-	/* Can only dequeue a buffer to get data out, data input is from hardware */
-	if (ep != VIDEO_EP_OUT && ep != VIDEO_EP_ALL) {
-		return -EINVAL;
-	}
-
-	/* All the processing is expected to happen in the worker */
-	*vbufp = k_fifo_get(&data->fifo_out, timeout);
-	if (*vbufp == NULL) {
-		return -EAGAIN;
-	}
-
-	return 0;
+	return video_enum_frmival(cfg->source_dev, fie);
 }
 
 static void uvcmanager_worker(struct k_work *work)
@@ -262,17 +213,26 @@ static void uvcmanager_worker(struct k_work *work)
 	}
 }
 
+static const char *uvcmanager_menu_test_pattern[] = {
+	"None",
+	"Incrementing Number",
+	NULL,
+};
+
 static int uvcmanager_init(const struct device *dev)
 {
 	const struct uvcmanager_config *cfg = dev->config;
-	struct uvcmanager_data *data = dev->data;
+	struct uvcmanager_data *drv_data = dev->data;
+	struct uvcmanager_ctrls *ctrls = &drv_data->ctrls;
 
-	k_fifo_init(&data->fifo_in);
-	k_fifo_init(&data->fifo_out);
-	k_work_init(&data->work, &uvcmanager_worker);
+	k_fifo_init(&drv_data->fifo_in);
+	k_fifo_init(&drv_data->fifo_out);
+	k_work_init(&drv_data->work, &uvcmanager_worker);
 
 	uvcmanager_lib_init(cfg->base, cfg->fifo);
-	return 0;
+
+	return video_init_menu_ctrl(&ctrls->test_pattern, dev, VIDEO_CID_TEST_PATTERN, 0,
+				    uvcmanager_menu_test_pattern);
 }
 
 static const DEVICE_API(video, uvcmanager_driver_api) = {
@@ -284,8 +244,6 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.enum_frmival = uvcmanager_enum_frmival,
 	.set_stream = uvcmanager_set_stream,
 	.set_ctrl = uvcmanager_set_ctrl,
-	.enqueue = uvcmanager_enqueue,
-	.dequeue = uvcmanager_dequeue,
 };
 
 #define SRC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 0)

@@ -7,7 +7,7 @@ description: |
   This is a driver for the frame stacker engine that vertically aggregates frames from two image
   sensors.
 
-compatible: "tinyvision,debayer"
+compatible: "tinyvision,stacker"
 
 include: base.yaml
 

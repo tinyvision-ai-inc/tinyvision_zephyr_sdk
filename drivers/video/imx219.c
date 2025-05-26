@@ -15,6 +15,7 @@
 #include <zephyr/logging/log.h>
 
 #include "video_common.h"
+#include "video_imager.h"
 #include "video_ctrls.h"
 
 LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
@@ -116,8 +117,6 @@ static const struct video_reg init_regs[] = {
 	{IMX219_REG_ANALOG_GAIN, 240},
 	{IMX219_REG_INTEGRATION_TIME, 500},
 	{IMX219_REG_ORIENTATION, 0x03},
-
-	{0},
 };
 
 #define IMX219_REGS_CROP(width, height)                                                            \
@@ -131,7 +130,6 @@ static const struct video_reg fmt_raw10[] = {
 	{IMX219_REG_CSI_DATA_FORMAT_A0, 10},
 	{IMX219_REG_CSI_DATA_FORMAT_A1, 10},
 	{IMX219_REG_OPPXCK_DIV, 10},
-	{0},
 };
 
 static const struct video_reg fps_30[] = {
@@ -143,7 +141,6 @@ static const struct video_reg fps_30[] = {
 	{IMX219_REG_OPSYCK_DIV, 1},
 	{IMX219_REG_PLL_VT_MPY, 30},		/* Video Timing clock multiplier */
 	{IMX219_REG_PLL_OP_MPY, 50},		/* Output clock multiplier */
-	{0},
 };
 
 static const struct video_reg fps_15[] = {
@@ -155,17 +152,14 @@ static const struct video_reg fps_15[] = {
 	{IMX219_REG_OPSYCK_DIV, 1},
 	{IMX219_REG_PLL_VT_MPY, 15},		/* Video Timing clock multiplier */
 	{IMX219_REG_PLL_OP_MPY, 50},		/* Output clock multiplier */
-	{0},
 };
 
 static const struct video_reg stop[] = {
 	{IMX219_REG_MODE_SELECT, 0x00},
-	{0},
 };
 
 static const struct video_reg start[] = {
 	{IMX219_REG_MODE_SELECT, 0x01},
-	{0},
 };
 
 static const struct video_reg size_1920x1080[] = {
@@ -176,12 +170,23 @@ static const struct video_reg size_1920x1080[] = {
 	/* Test pattern size */
 	{IMX219_REG_TP_WINDOW_WIDTH, 1920},
 	{IMX219_REG_TP_WINDOW_HEIGHT, 1080},
-	{0},
 };
 
 static const struct video_imager_mode modes_1920x1080[] = {
-	{.fps = 30, .regs = {stop, fmt_raw10, size_1920x1080, fps_30, start}},
-	{.fps = 15, .regs = {stop, fmt_raw10, size_1920x1080, fps_15, start}},
+	{.fps = 30, .regs = {
+		VIDEO_IMAGER_REGS(stop),
+		VIDEO_IMAGER_REGS(fmt_raw10),
+		VIDEO_IMAGER_REGS(size_1920x1080),
+		VIDEO_IMAGER_REGS(fps_30),
+		VIDEO_IMAGER_REGS(start),
+	}},
+	{.fps = 15, .regs = {
+		VIDEO_IMAGER_REGS(stop),
+		VIDEO_IMAGER_REGS(fmt_raw10),
+		VIDEO_IMAGER_REGS(size_1920x1080),
+		VIDEO_IMAGER_REGS(fps_15),
+		VIDEO_IMAGER_REGS(start),
+	}},
 	{0},
 };
 
@@ -195,11 +200,11 @@ static const struct video_imager_mode *modes[] = {
 };
 
 static const struct video_format_cap fmts[] = {
-	[SIZE_1920x1080] = VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_BGGR8, 1920, 1080),
+	[SIZE_1920x1080] = VIDEO_IMAGER_FORMAT_CAP(VIDEO_PIX_FMT_SBGGR8, 1920, 1080),
 	{0},
 };
 
-static int imx219_set_stream(const struct device *dev, bool on)
+static int imx219_set_stream(const struct device *dev, bool on, enum video_buf_type type)
 {
 	const struct video_imager_config *cfg = dev->config;
 
@@ -255,7 +260,7 @@ static int imx219_init(const struct device *dev)
 	k_sleep(K_MSEC(1));
 
 	ret = video_write_cci_reg(&cfg->i2c, IMX219_REG_SOFTWARE_RESET, 1);
-	if (ret != 0) {
+	if (ret < 0) {
 		goto err;
 	}
 
@@ -263,7 +268,7 @@ static int imx219_init(const struct device *dev)
 	k_sleep(K_MSEC(6));
 
 	ret = video_read_cci_reg(&cfg->i2c, IMX219_REG_CHIP_ID, &reg);
-	if (ret != 0) {
+	if (ret < 0) {
 		LOG_ERR("Unable to read Chip ID");
 		goto err;
 	}
@@ -273,7 +278,12 @@ static int imx219_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	return video_imager_init(dev, init_regs, SIZE_1920x1080);
+	ret = video_write_cci_multiregs(&cfg->i2c, init_regs, ARRAY_SIZE(init_regs));
+	if (ret < 0) {
+		return ret;
+	}
+
+	return video_imager_init(dev, SIZE_1920x1080);
 err:
 	LOG_ERR("Error during %s initialization: %s", dev->name, strerror(-ret));
 	return ret;
@@ -286,7 +296,7 @@ err:
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.fmts = fmts,                                                                      \
 		.modes = modes,                                                                    \
-		.write_multi = video_write_cci_multi,                                              \
+		.write_multi = video_write_cci_multiregs,                                          \
 	};                                                                                         \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(n, &imx219_init, NULL, &imx219_data_##n, &imx219_cfg_##n,            \

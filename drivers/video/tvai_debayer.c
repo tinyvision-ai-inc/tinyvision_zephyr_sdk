@@ -17,7 +17,7 @@
 
 LOG_MODULE_REGISTER(tvai_debayer, CONFIG_VIDEO_LOG_LEVEL);
 
-#define TVAI_DEBAYER_PIX_FMT VIDEO_PIX_FMT_BGGR8
+#define TVAI_DEBAYER_PIX_FMT VIDEO_PIX_FMT_SBGGR8
 
 struct tvai_debayer_config {
 	const struct device *source_dev;
@@ -26,13 +26,12 @@ struct tvai_debayer_config {
 /* Used to tune the video format caps from the source at runtime */
 static struct video_format_cap fmts[10];
 
-static int tvai_debayer_get_caps(const struct device *dev, enum video_endpoint_id ep,
-			    struct video_caps *caps)
+static int tvai_debayer_get_caps(const struct device *dev, struct video_caps *caps)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
 	int ret;
 
-	ret = video_get_caps(cfg->source_dev, ep, caps);
+	ret = video_get_caps(cfg->source_dev, caps);
 	if (ret < 0) {
 		return ret;
 	}
@@ -54,8 +53,7 @@ static int tvai_debayer_get_caps(const struct device *dev, enum video_endpoint_i
 	return 0;
 }
 
-static int tvai_debayer_set_format(const struct device *dev, enum video_endpoint_id ep,
-			      struct video_format *fmt)
+static int tvai_debayer_set_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
 	const struct device *source_dev = cfg->source_dev;
@@ -74,7 +72,7 @@ static int tvai_debayer_set_format(const struct device *dev, enum video_endpoint
 
 	LOG_DBG("setting %s to %ux%u", source_dev->name, source_fmt.width, source_fmt.height);
 
-	ret = video_set_format(source_dev, ep, &source_fmt);
+	ret = video_set_format(source_dev, &source_fmt);
 	if (ret < 0) {
 		LOG_ERR("failed to set %s format", source_dev->name);
 		return ret;
@@ -83,13 +81,12 @@ static int tvai_debayer_set_format(const struct device *dev, enum video_endpoint
 	return 0;
 }
 
-static int tvai_debayer_get_format(const struct device *dev, enum video_endpoint_id ep,
-			      struct video_format *fmt)
+static int tvai_debayer_get_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
 	int ret;
 
-	ret = video_get_format(cfg->source_dev, ep, fmt);
+	ret = video_get_format(cfg->source_dev, fmt);
 	if (ret < 0) {
 		LOG_ERR("failed to get %s format", cfg->source_dev->name);
 		return ret;
@@ -106,24 +103,21 @@ static int tvai_debayer_get_format(const struct device *dev, enum video_endpoint
 	return 0;
 }
 
-static int tvai_debayer_set_frmival(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_frmival *frmival)
+static int tvai_debayer_set_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
 
-	return video_set_frmival(cfg->source_dev, ep, frmival);
+	return video_set_frmival(cfg->source_dev, frmival);
 }
 
-static int tvai_debayer_get_frmival(const struct device *dev, enum video_endpoint_id ep,
-			       struct video_frmival *frmival)
+static int tvai_debayer_get_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
 
-	return video_get_frmival(cfg->source_dev, ep, frmival);
+	return video_get_frmival(cfg->source_dev, frmival);
 }
 
-static int tvai_debayer_enum_frmival(const struct device *dev, enum video_endpoint_id ep,
-				struct video_frmival_enum *fie)
+static int tvai_debayer_enum_frmival(const struct device *dev, struct video_frmival_enum *fie)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
 	const struct video_format *prev_fmt = fie->format;
@@ -140,17 +134,18 @@ static int tvai_debayer_enum_frmival(const struct device *dev, enum video_endpoi
 	fmt.pixelformat = TVAI_DEBAYER_PIX_FMT,
 
 	fie->format = &fmt;
-	ret = video_enum_frmival(cfg->source_dev, ep, fie);
+	ret = video_enum_frmival(cfg->source_dev, fie);
 	fie->format = prev_fmt;
 
 	return ret;
 }
 
-static int tvai_debayer_set_stream(const struct device *dev, bool on)
+static int tvai_debayer_set_stream(const struct device *dev, bool on, enum video_buf_type type)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
 
-	return on ? video_stream_start(cfg->source_dev) : video_stream_stop(cfg->source_dev);
+	return on ? video_stream_start(cfg->source_dev, type)
+		  : video_stream_stop(cfg->source_dev, type);
 }
 
 static const DEVICE_API(video, tvai_debayer_driver_api) = {
