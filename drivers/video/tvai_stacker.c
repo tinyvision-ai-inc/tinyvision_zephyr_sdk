@@ -17,8 +17,6 @@
 
 LOG_MODULE_REGISTER(tvai_stacker, CONFIG_VIDEO_LOG_LEVEL);
 
-#define TVAI_DEBAYER_PIX_FMT VIDEO_PIX_FMT_BGGR8
-
 struct tvai_stacker_config {
 	const struct device *source0_dev;
 	const struct device *source1_dev;
@@ -26,34 +24,33 @@ struct tvai_stacker_config {
 };
 
 struct tvai_stacker_data {
-	const struct video_format fmt;
+	struct video_format fmt;
 };
 
 /* Used to tune the video format caps from the source at runtime */
 static struct video_format_cap fmts[10];
 
-static int tvai_stacker_get_caps(const struct device *dev, enum video_endpoint_id ep,
-				 struct video_caps *caps)
+static int tvai_stacker_get_caps(const struct device *dev, struct video_caps *caps)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
 	struct video_caps caps0;
 	struct video_caps caps1;
 	int ret;
 
-	ret = video_get_caps(cfg->source0_dev, ep, &caps0);
+	ret = video_get_caps(cfg->source0_dev, &caps0);
 	if (ret < 0) {
 		return ret;
 	}
 
-	ret = video_get_caps(cfg->source1_dev, ep, &caps1);
+	ret = video_get_caps(cfg->source1_dev, &caps1);
 	if (ret < 0) {
 		return ret;
 	}
 
 	/* Adjust the formats according to the conversion done in hardware */
 	for (size_t i = 0; caps->format_caps[i].pixelformat != 0; i++) {
-		struct video_format_caps *fmts0 = &caps0.format_caps[i];
-		struct video_format_caps *fmts1 = &caps1.format_caps[i];
+		const struct video_format_cap *fmts0 = &caps0.format_caps[i];
+		const struct video_format_cap *fmts1 = &caps1.format_caps[i];
 
 		if (i + 1 >= ARRAY_SIZE(fmts)) {
 			LOG_WRN("not enough format capabilities");
@@ -65,9 +62,7 @@ static int tvai_stacker_get_caps(const struct device *dev, enum video_endpoint_i
 			return -ENOTSUP;
 		}
 
-		fmts[i].pixelformat = fmts0->pixelformat;
-		fmts[i].width_min = fmts0->width_min;
-		fmts[i].width_max = fmts0->width_max;
+		memcpy(&fmts[i], fmts0->pixelformat, sizeof(fmts[i]));
 		fmts[i].height_min = fmts0->height_min * 2;
 		fmts[i].height_max = fmts0->height_max * 2;
 	}
@@ -76,36 +71,29 @@ static int tvai_stacker_get_caps(const struct device *dev, enum video_endpoint_i
 	return 0;
 }
 
-static int tvai_stacker_set_format(const struct device *dev, enum video_endpoint_id ep,
-				   struct video_format *fmt)
+static int tvai_stacker_set_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
+	struct tvai_stacker_data *drv_data = dev->data;
 	const struct device *source0_dev = cfg->source0_dev;
 	const struct device *source1_dev = cfg->source1_dev;
 	struct video_format source_fmt = *fmt;
 	int ret;
 
-	if (fmt->pixelformat != VIDEO_PIX_FMT_YUYV) {
-		LOG_ERR("Only YUYV is supported as output format");
-		return -ENOTSUP;
-	}
-
 	/* Apply the conversion done by hardware to the format */
-	source_fmt.width;
 	source_fmt.height /= 2;
-	source_fmt.pixelformat = TVAI_DEBAYER_PIX_FMT;
 
 	LOG_DBG("setting %s and %s to '%s' %ux%u",
 		source0_dev->name, source1_dev->name, VIDEO_FOURCC_TO_STR(source_fmt.pixelformat),
 		source_fmt.width, source_fmt.height);
 
-	ret = video_set_format(source0_dev, ep, &source_fmt);
+	ret = video_set_format(source0_dev, &source_fmt);
 	if (ret < 0) {
 		LOG_ERR("failed to set %s format", source0_dev->name);
 		return ret;
 	}
 
-	ret = video_set_format(source1_dev, ep, &source_fmt);
+	ret = video_set_format(source1_dev, &source_fmt);
 	if (ret < 0) {
 		LOG_ERR("failed to set %s format", source1_dev->name);
 		return ret;
@@ -116,37 +104,40 @@ static int tvai_stacker_set_format(const struct device *dev, enum video_endpoint
 	return 0;
 }
 
-static int tvai_stacker_get_format(const struct device *dev, enum video_endpoint_id ep,
-				   struct video_format *fmt)
+static int tvai_stacker_get_format(const struct device *dev, struct video_format *fmt)
+{
+	struct tvai_stacker_data *drv_data = dev->data;
+
+	*fmt = drv_data->fmt;
+	return 0;
+}
+
+static int tvai_stacker_set_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
 	int ret;
 
-	LOG_DBG("%s format is %ux%u, stripping 2 pixels vertically and horizontally",
-		cfg->source_dev->name, fmt->width, fmt->height);
+	ret = video_set_frmival(cfg->source0_dev, frmival);
+	if (ret < 0) {
+		return ret;
+	}
 
+	ret = video_set_frmival(cfg->source1_dev, frmival);
+	if (ret < 0) {
+		return ret;
+	}
 
 	return 0;
 }
 
-static int tvai_stacker_set_frmival(const struct device *dev, enum video_endpoint_id ep,
-				    struct video_frmival *frmival)
+static int tvai_stacker_get_frmival(const struct device *dev, struct video_frmival *frmival)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
 
-	return video_set_frmival(cfg->source_dev, ep, frmival);
+	return video_get_frmival(cfg->source0_dev, frmival);
 }
 
-static int tvai_stacker_get_frmival(const struct device *dev, enum video_endpoint_id ep,
-				    struct video_frmival *frmival)
-{
-	const struct tvai_stacker_config *cfg = dev->config;
-
-	return video_get_frmival(cfg->source_dev, ep, frmival);
-}
-
-static int tvai_stacker_enum_frmival(const struct device *dev, enum video_endpoint_id ep,
-				     struct video_frmival_enum *fie)
+static int tvai_stacker_enum_frmival(const struct device *dev, struct video_frmival_enum *fie)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
 	const struct video_format *prev_fmt = fie->format;
@@ -158,35 +149,49 @@ static int tvai_stacker_enum_frmival(const struct device *dev, enum video_endpoi
 		return -ENOTSUP;
 	}
 
-	fmt.height += 2;
-	fmt.pixelformat = TVAI_DEBAYER_PIX_FMT,
+	fmt.height /= 2;
 
 	fie->format = &fmt;
-	ret = video_enum_frmival(cfg->source_dev, ep, fie);
+	ret = video_enum_frmival(cfg->source0_dev, fie);
 	fie->format = prev_fmt;
 
 	return ret;
 }
 
-static int tvai_stacker_set_stream(const struct device *dev, bool on)
+static int tvai_stacker_set_stream(const struct device *dev, bool on, enum video_buf_type type)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
+	int ret;
 
-	ret = video_stream_start(cfg->source0_dev);
-	if (ret != 0) {
-		LOG_ERR("Failed to start %s", cfg->source0_dev->name);
-		return ret;
+	if (on) {
+		ret = video_stream_start(cfg->source0_dev, VIDEO_BUF_TYPE_OUTPUT);
+		if (ret != 0) {
+			LOG_ERR("Failed to start %s", cfg->source0_dev->name);
+			return ret;
+		}
+
+		k_sleep(cfg->start_delay);
+
+		ret = video_stream_start(cfg->source1_dev, VIDEO_BUF_TYPE_OUTPUT);
+		if (ret != 0) {
+			LOG_ERR("Failed to start %s", cfg->source1_dev->name);
+			return ret;
+		}
+	} else {
+		ret = video_stream_stop(cfg->source0_dev, VIDEO_BUF_TYPE_OUTPUT);
+		if (ret != 0) {
+			LOG_ERR("Failed to stop %s", cfg->source0_dev->name);
+			return ret;
+		}
+
+		ret = video_stream_stop(cfg->source1_dev, VIDEO_BUF_TYPE_OUTPUT);
+		if (ret != 0) {
+			LOG_ERR("Failed to stop %s", cfg->source1_dev->name);
+			return ret;
+		}
 	}
 
-	k_sleep(cfg->start_delay);
-
-	ret = video_stream_start(cfg->source1_dev);
-	if (ret != 0) {
-		LOG_ERR("Failed to start %s", cfg->source1_dev->name);
-		return ret;
-	}
-
-	return on ? video_stream_start() : video_stream_stop(cfg->source_dev);
+	return 0;
 }
 
 static const DEVICE_API(video, tvai_stacker_driver_api) = {
@@ -199,18 +204,18 @@ static const DEVICE_API(video, tvai_stacker_driver_api) = {
 	.set_stream = tvai_stacker_set_stream,
 };
 
-#define TVAI_DEBAYER_INIT(n)                                                                       \
+#define TVAI_STACKER_INIT(n)                                                                       \
 	static struct tvai_stacker_data tvai_stacker_data_##n;                                     \
                                                                                                    \
 	const static struct tvai_stacker_config tvai_stacker_cfg_##n = {                           \
-		.start_delay = K_USEC(DT_INST_PROP(n, start_delay)),                               \
+		.start_delay = K_USEC(DT_INST_PROP(n, start_delay_us)),                            \
 		.source0_dev =                                                                     \
 			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
 		.source1_dev =                                                                     \
 			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 1))),     \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(n, NULL, NULL, tvai_stacker_data_##n, &tvai_stacker_cfg_##n,         \
+	DEVICE_DT_INST_DEFINE(n, NULL, NULL, &tvai_stacker_data_##n, &tvai_stacker_cfg_##n,        \
 			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &tvai_stacker_driver_api);
 
-DT_INST_FOREACH_STATUS_OKAY(TVAI_DEBAYER_INIT)
+DT_INST_FOREACH_STATUS_OKAY(TVAI_STACKER_INIT)

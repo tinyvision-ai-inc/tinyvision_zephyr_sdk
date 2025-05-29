@@ -20,3 +20,7 @@ properties:
 child-binding:
   child-binding:
     include: video-interfaces.yaml
+    properties:
+      reg:
+        type: array
+        required: true

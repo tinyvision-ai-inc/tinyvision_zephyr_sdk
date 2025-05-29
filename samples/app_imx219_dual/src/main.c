@@ -28,7 +28,7 @@ static void app_thread_main(void *p0, void *p1, void *p2)
 
 	/* Get the video format once it is selected by the host */
 	while (true) {
-		ret = video_get_format(uvc_dev, VIDEO_EP_IN, &fmt);
+		ret = video_get_format(uvc_dev, &fmt);
 		if (ret == 0) {
 			break;
 		}
@@ -40,7 +40,7 @@ static void app_thread_main(void *p0, void *p1, void *p2)
 		k_sleep(K_MSEC(10));
 	}
 
-	ret = video_stream_start(video_dev);
+	ret = video_stream_start(video_dev, VIDEO_BUF_TYPE_OUTPUT);
 	if (ret != 0) {
 		LOG_ERR("Failed to start %s", video_dev->name);
 		return;
