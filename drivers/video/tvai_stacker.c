@@ -33,9 +33,13 @@ static struct video_format_cap fmts[10];
 static int tvai_stacker_get_caps(const struct device *dev, struct video_caps *caps)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
+	const struct video_format_cap *fmts0;
+	const struct video_format_cap *fmts1;
 	struct video_caps caps0;
 	struct video_caps caps1;
 	int ret;
+
+	LOG_DBG("%s: %s", dev->name, __func__);
 
 	ret = video_get_caps(cfg->source0_dev, &caps0);
 	if (ret < 0) {
@@ -47,11 +51,11 @@ static int tvai_stacker_get_caps(const struct device *dev, struct video_caps *ca
 		return ret;
 	}
 
-	/* Adjust the formats according to the conversion done in hardware */
-	for (size_t i = 0; caps->format_caps[i].pixelformat != 0; i++) {
-		const struct video_format_cap *fmts0 = &caps0.format_caps[i];
-		const struct video_format_cap *fmts1 = &caps1.format_caps[i];
+	fmts0 = caps0.format_caps;
+	fmts1 = caps1.format_caps;
 
+	/* Adjust the formats according to the conversion done in hardware */
+	for (size_t i = 0; fmts0[i].pixelformat != 0 && fmts1[i].pixelformat != 0; i++) {
 		if (i + 1 >= ARRAY_SIZE(fmts)) {
 			LOG_WRN("not enough format capabilities");
 			break;
@@ -62,12 +66,13 @@ static int tvai_stacker_get_caps(const struct device *dev, struct video_caps *ca
 			return -ENOTSUP;
 		}
 
-		memcpy(&fmts[i], fmts0->pixelformat, sizeof(fmts[i]));
+		memcpy(&fmts[i], &fmts0->pixelformat, sizeof(fmts[i]));
 		fmts[i].height_min = fmts0->height_min * 2;
 		fmts[i].height_max = fmts0->height_max * 2;
 	}
 
 	caps->format_caps = fmts;
+
 	return 0;
 }
 
@@ -109,6 +114,7 @@ static int tvai_stacker_get_format(const struct device *dev, struct video_format
 	struct tvai_stacker_data *drv_data = dev->data;
 
 	*fmt = drv_data->fmt;
+
 	return 0;
 }
 
