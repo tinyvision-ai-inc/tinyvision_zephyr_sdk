@@ -16,6 +16,7 @@
 #include <zephyr/logging/log.h>
 
 #include "video_ctrls.h"
+#include "video_device.h"
 #include "udc_dwc3.h"
 #include "udc_common.h"
 #include "tvai_uvcmanager.h"
@@ -246,25 +247,25 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.set_ctrl = uvcmanager_set_ctrl,
 };
 
-#define SRC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 0)
-#define UVC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 1)
-
-#define UVCMANAGER_DEVICE_DEFINE(inst)                                                             \
-	const struct uvcmanager_config uvcmanager_cfg_##inst = {                                   \
-		.source_dev = DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(SRC_EP(inst))),                  \
-		.dwc3_dev = DEVICE_DT_GET(DT_INST_PHANDLE(inst, usb_controller)),                  \
-		.usb_endpoint = DT_INST_PROP(inst, usb_endpoint),                                  \
-		.base = DT_INST_REG_ADDR_BY_NAME(inst, base),                                      \
-		.fifo = DT_INST_REG_ADDR_BY_NAME(inst, fifo),                                      \
+#define UVCMANAGER_DEVICE_DEFINE(n)                                                                \
+	const struct uvcmanager_config uvcmanager_cfg_##n = {                                      \
+		.source_dev =                                                                      \
+			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
+		.dwc3_dev = DEVICE_DT_GET(DT_INST_PHANDLE(n, usb_controller)),                     \
+		.usb_endpoint = DT_INST_PROP(n, usb_endpoint),                                     \
+		.base = DT_INST_REG_ADDR_BY_NAME(n, base),                                         \
+		.fifo = DT_INST_REG_ADDR_BY_NAME(n, fifo),                                         \
 	};                                                                                         \
                                                                                                    \
-	struct uvcmanager_data uvcmanager_data_##inst = {                                          \
-		.dev = DEVICE_DT_INST_GET(inst),                                                   \
+	struct uvcmanager_data uvcmanager_data_##n = {                                             \
+		.dev = DEVICE_DT_INST_GET(n),                                                      \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(inst, uvcmanager_init, NULL, &uvcmanager_data_##inst,                \
-			      &uvcmanager_cfg_##inst, POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY,     \
-			      &uvcmanager_driver_api);
+	DEVICE_DT_INST_DEFINE(n, uvcmanager_init, NULL, &uvcmanager_data_##n, &uvcmanager_cfg_##n, \
+			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &uvcmanager_driver_api);    \
+                                                                                                   \
+	VIDEO_DEVICE_DEFINE(tvai_uvcmanager##n, DEVICE_DT_INST_GET(n),                             \
+			    DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))));
 
 DT_INST_FOREACH_STATUS_OKAY(UVCMANAGER_DEVICE_DEFINE)
 
