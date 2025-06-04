@@ -150,11 +150,6 @@ static int tvai_stacker_enum_frmival(const struct device *dev, struct video_frmi
 	struct video_format fmt = *fie->format;
 	int ret;
 
-	if (fie->format->pixelformat != VIDEO_PIX_FMT_YUYV) {
-		LOG_ERR("Only YUYV is supported");
-		return -ENOTSUP;
-	}
-
 	fmt.height /= 2;
 
 	fie->format = &fmt;
