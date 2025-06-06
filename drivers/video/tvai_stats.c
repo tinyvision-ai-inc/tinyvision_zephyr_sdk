@@ -42,6 +42,7 @@ LOG_MODULE_REGISTER(tvai_stats, CONFIG_VIDEO_LOG_LEVEL);
 #define TVAI_STATS_OVERFLOW_CMD   	0x004C
 #define TVAI_STATS_OVERFLOW_F2S   	0x0050
 #define TVAI_STATS_OVERFLOW_S2USB 	0x0054
+#define TVAI_STATS_DROPPED_FRAMES 	0x0058
 
 struct tvai_stats_config {
 	uintptr_t base;
@@ -228,6 +229,7 @@ static int cmd_tvai_stats_show(const struct shell *sh, size_t argc, char **argv)
 	shell_print(sh, "frame.chan1    : 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_1));
 	shell_print(sh, "frame.chan2    : 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_2));
 	shell_print(sh, "frame.chan3    : 0x%02x", sys_read32(cfg->base + TVAI_STATS_CHAN_AVG_3));
+	shell_print(sh, "frame.dropped  : %u", sys_read32(cfg->base + TVAI_STATS_DROPPED_FRAMES));
 	shell_print(sh, "--------------------------------");
 	shell_print(sh, "ISP Errors:");
 	shell_print(sh, "overflow.f2s   : 0x%02x", sys_read32(cfg->base + TVAI_STATS_OVERFLOW_F2S));

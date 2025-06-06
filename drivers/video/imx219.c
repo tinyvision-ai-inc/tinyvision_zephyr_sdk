@@ -173,18 +173,18 @@ static const struct video_reg size_1920x1080[] = {
 };
 
 static const struct video_imager_mode modes_1920x1080[] = {
-	{.fps = 30, .regs = {
-		VIDEO_IMAGER_REGS(stop),
-		VIDEO_IMAGER_REGS(fmt_raw10),
-		VIDEO_IMAGER_REGS(size_1920x1080),
-		VIDEO_IMAGER_REGS(fps_30),
-		VIDEO_IMAGER_REGS(start),
-	}},
 	{.fps = 15, .regs = {
 		VIDEO_IMAGER_REGS(stop),
 		VIDEO_IMAGER_REGS(fmt_raw10),
 		VIDEO_IMAGER_REGS(size_1920x1080),
 		VIDEO_IMAGER_REGS(fps_15),
+		VIDEO_IMAGER_REGS(start),
+	}},
+	{.fps = 30, .regs = {
+		VIDEO_IMAGER_REGS(stop),
+		VIDEO_IMAGER_REGS(fmt_raw10),
+		VIDEO_IMAGER_REGS(size_1920x1080),
+		VIDEO_IMAGER_REGS(fps_30),
 		VIDEO_IMAGER_REGS(start),
 	}},
 	{0},
