@@ -159,12 +159,14 @@ static const DEVICE_API(video, tvai_debayer_driver_api) = {
 
 };
 
+#define SOURCE_DEV(n) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID((n), 0, 0)))
+
 #define TVAI_DEBAYER_INIT(n)                                                                       \
 	const static struct tvai_debayer_config tvai_debayer_cfg_##n = {                           \
-		.source_dev =                                                                      \
-			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
+		.source_dev = SOURCE_DEV(n),                                                       \
 	};                                                                                         \
 	DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, &tvai_debayer_cfg_##n, POST_KERNEL,             \
-			      CONFIG_VIDEO_INIT_PRIORITY, &tvai_debayer_driver_api);
+			      CONFIG_VIDEO_INIT_PRIORITY, &tvai_debayer_driver_api);               \
+	VIDEO_DEVICE_DEFINE(tvai_debayer##n, DEVICE_DT_INST_GET(n), SOURCE_DEV(n));
 
 DT_INST_FOREACH_STATUS_OKAY(TVAI_DEBAYER_INIT)

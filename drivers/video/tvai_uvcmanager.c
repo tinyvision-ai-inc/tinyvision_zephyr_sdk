@@ -247,10 +247,11 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.set_ctrl = uvcmanager_set_ctrl,
 };
 
+#define SOURCE_DEV(n) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID((n), 0, 0)))
+
 #define UVCMANAGER_DEVICE_DEFINE(n)                                                                \
 	const struct uvcmanager_config uvcmanager_cfg_##n = {                                      \
-		.source_dev =                                                                      \
-			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
+		.source_dev = SOURCE_DEV(n),                                                       \
 		.dwc3_dev = DEVICE_DT_GET(DT_INST_PHANDLE(n, usb_controller)),                     \
 		.usb_endpoint = DT_INST_PROP(n, usb_endpoint),                                     \
 		.base = DT_INST_REG_ADDR_BY_NAME(n, base),                                         \
@@ -264,8 +265,7 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	DEVICE_DT_INST_DEFINE(n, uvcmanager_init, NULL, &uvcmanager_data_##n, &uvcmanager_cfg_##n, \
 			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &uvcmanager_driver_api);    \
                                                                                                    \
-	VIDEO_DEVICE_DEFINE(tvai_uvcmanager##n, DEVICE_DT_INST_GET(n),                             \
-			    DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))));
+	VIDEO_DEVICE_DEFINE(tvai_uvcmanager##n, DEVICE_DT_INST_GET(n), SOURCE_DEV(n));
 
 DT_INST_FOREACH_STATUS_OKAY(UVCMANAGER_DEVICE_DEFINE)
 

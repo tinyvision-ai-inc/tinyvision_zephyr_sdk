@@ -205,18 +205,21 @@ static const DEVICE_API(video, tvai_stacker_driver_api) = {
 	.set_stream = tvai_stacker_set_stream,
 };
 
+#define SOURCE_DEV(n, e) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID((n), 0, (e))))
+
 #define TVAI_STACKER_INIT(n)                                                                       \
 	static struct tvai_stacker_data tvai_stacker_data_##n;                                     \
                                                                                                    \
 	const static struct tvai_stacker_config tvai_stacker_cfg_##n = {                           \
 		.start_delay = K_USEC(DT_INST_PROP(n, start_delay_us)),                            \
-		.source0_dev =                                                                     \
-			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
-		.source1_dev =                                                                     \
-			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 1))),     \
+		.source0_dev = SOURCE_DEV(n, 0),                                                   \
+		.source1_dev = SOURCE_DEV(n, 1),                                                   \
 	};                                                                                         \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(n, NULL, NULL, &tvai_stacker_data_##n, &tvai_stacker_cfg_##n,        \
-			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &tvai_stacker_driver_api);
+			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &tvai_stacker_driver_api);  \
+                                                                                                   \
+	VIDEO_DEVICE_DEFINE(tvai_stacker##n, DEVICE_DT_INST_GET(n), SOURCE_DEV(n, 0));             \
+	VIDEO_DEVICE_DEFINE(tvai_stacker##n, DEVICE_DT_INST_GET(n), SOURCE_DEV(n, 1));
 
 DT_INST_FOREACH_STATUS_OKAY(TVAI_STACKER_INIT)
