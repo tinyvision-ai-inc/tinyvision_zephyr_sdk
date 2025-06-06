@@ -15,6 +15,8 @@
 #include <zephyr/shell/shell.h>
 #include <zephyr/logging/log.h>
 
+#include "video_device.h"
+
 LOG_MODULE_REGISTER(tvai_stats, CONFIG_VIDEO_LOG_LEVEL);
 
 #define TVAI_STATS_SCRATCH    		0x0000
@@ -186,8 +188,11 @@ static const DEVICE_API(video, tvai_stats_driver_api) = {
 			DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0))),     \
 		.base = DT_INST_REG_ADDR(n),                                                       \
 	};                                                                                         \
+                                                                                                   \
 	DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, &tvai_stats_cfg_##n, POST_KERNEL,               \
-			      CONFIG_VIDEO_INIT_PRIORITY, &tvai_stats_driver_api);
+			      CONFIG_VIDEO_INIT_PRIORITY, &tvai_stats_driver_api);                 \
+                                                                                                   \
+	VIDEO_DEVICE_DEFINE(tvai_stats##n, DEVICE_DT_INST_GET(n), NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(TVAI_STATS_INIT)
 

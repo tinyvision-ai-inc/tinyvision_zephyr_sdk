@@ -14,6 +14,8 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/shell/shell.h>
 
+#include "video_device.h"
+
 LOG_MODULE_REGISTER(csi2rx, CONFIG_VIDEO_LOG_LEVEL);
 
 /* tinyVision.ai quirk: use 32-bit addresses: 2 lower address bits are always 0 */
@@ -139,16 +141,18 @@ static const DEVICE_API(video, lscc_csi2rx_driver_api) = {
 	.set_stream = lscc_csi2rx_set_stream,
 };
 
-#define SRC_EP(inst) DT_INST_ENDPOINT_BY_ID(inst, 0, 0)
+#define SOURCE_DEV(n) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0)))
 
-#define LSCC_CSI2RX_DEVICE_DEFINE(inst)                                                            \
-	const struct lscc_csi2rx_config lscc_csi2rx_cfg_##inst = {                                 \
-		.source_dev = DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(SRC_EP(inst))),                  \
-		.base = DT_INST_REG_ADDR(inst),                                                    \
+#define LSCC_CSI2RX_DEVICE_DEFINE(n)                                                               \
+	const struct lscc_csi2rx_config lscc_csi2rx_cfg_##n = {                                    \
+		.source_dev = SOURCE_DEV(n),                                                       \
+		.base = DT_INST_REG_ADDR(n),                                                       \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(inst, lscc_csi2rx_init, NULL, NULL, &lscc_csi2rx_cfg_##inst,         \
-			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &lscc_csi2rx_driver_api);
+	DEVICE_DT_INST_DEFINE(n, lscc_csi2rx_init, NULL, NULL, &lscc_csi2rx_cfg_##n,               \
+			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &lscc_csi2rx_driver_api);   \
+                                                                                                   \
+	VIDEO_DEVICE_DEFINE(lcss_csi2rx##n, DEVICE_DT_INST_GET(n), SOURCE_DEV(n));
 
 DT_INST_FOREACH_STATUS_OKAY(LSCC_CSI2RX_DEVICE_DEFINE)
 

@@ -15,6 +15,8 @@
 #include <zephyr/shell/shell.h>
 #include <zephyr/logging/log.h>
 
+#include "video_device.h"
+
 LOG_MODULE_REGISTER(tvai_stacker, CONFIG_VIDEO_LOG_LEVEL);
 
 struct tvai_stacker_config {
@@ -205,7 +207,7 @@ static const DEVICE_API(video, tvai_stacker_driver_api) = {
 	.set_stream = tvai_stacker_set_stream,
 };
 
-#define SOURCE_DEV(n, e) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID((n), 0, (e))))
+#define SOURCE_DEV(n, e) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, e)))
 
 #define TVAI_STACKER_INIT(n)                                                                       \
 	static struct tvai_stacker_data tvai_stacker_data_##n;                                     \

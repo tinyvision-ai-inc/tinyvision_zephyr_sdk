@@ -247,7 +247,7 @@ static const DEVICE_API(video, uvcmanager_driver_api) = {
 	.set_ctrl = uvcmanager_set_ctrl,
 };
 
-#define SOURCE_DEV(n) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID((n), 0, 0)))
+#define SOURCE_DEV(n) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0)))
 
 #define UVCMANAGER_DEVICE_DEFINE(n)                                                                \
 	const struct uvcmanager_config uvcmanager_cfg_##n = {                                      \

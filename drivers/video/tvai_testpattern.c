@@ -14,6 +14,8 @@
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
 
+#include "video_device.h"
+
 LOG_MODULE_REGISTER(testpattern, CONFIG_VIDEO_LOG_LEVEL);
 
 struct testpattern_data {
@@ -116,7 +118,6 @@ static int testpattern_set_stream(const struct device *dev, bool on)
 	return 0;
 }
 
-
 static const DEVICE_API(video, testpattern_driver_api) = {
 	.set_format = testpattern_set_fmt,
 	.get_format = testpattern_get_fmt,
@@ -137,9 +138,11 @@ static int testpattern_init(const struct device *dev)
 	return testpattern_set_fmt(dev, VIDEO_EP_OUT, &fmt);
 }
 
-#define TESTPATTERN_INIT(n)                                                                       \
-	struct testpattern_data testpattern_data_##n;                                            \
-	DEVICE_DT_INST_DEFINE(n, &testpattern_init, NULL, &testpattern_data_##n, NULL,           \
-			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &testpattern_driver_api);
+#define TESTPATTERN_INIT(n)                                                                        \
+	struct testpattern_data testpattern_data_##n;                                              \
+	DEVICE_DT_INST_DEFINE(n, &testpattern_init, NULL, &testpattern_data_##n, NULL,             \
+			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &testpattern_driver_api);   \
+                                                                                                   \
+	VIDEO_DEVICE_DEFINE(tvai_uvcmanager##n, DEVICE_DT_INST_GET(n), NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(TESTPATTERN_INIT)
