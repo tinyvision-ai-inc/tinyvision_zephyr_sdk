@@ -15,30 +15,53 @@
 #include <zephyr/shell/shell.h>
 #include <zephyr/logging/log.h>
 
+#include "video_ctrls.h"
 #include "video_device.h"
+#include "video_common.h"
 
 LOG_MODULE_REGISTER(tvai_stacker, CONFIG_VIDEO_LOG_LEVEL);
 
 struct tvai_stacker_config {
 	const struct device *source0_dev;
 	const struct device *source1_dev;
-	k_timeout_t start_delay;
+};
+
+struct tvai_stacker_ctrls {
+	struct video_ctrl start_delay_us;
 };
 
 struct tvai_stacker_data {
 	struct video_format fmt;
+	struct tvai_stacker_ctrls ctrls;;
+	k_timeout_t start_delay;
 };
 
 /* Used to tune the video format caps from the source at runtime */
 static struct video_format_cap fmts[10];
+
+#define TVAI_STACKER_CID_START_DELAY_US (VIDEO_CID_PRIVATE_BASE + 0)
+
+static int tvai_stacker_set_ctrl(const struct device *dev, unsigned int cid)
+{
+	struct tvai_stacker_data *drv_data = dev->data;
+	struct tvai_stacker_ctrls *ctrls = &drv_data->ctrls;
+
+	switch (cid) {
+	case TVAI_STACKER_CID_START_DELAY_US:
+		drv_data->start_delay = K_USEC(ctrls->start_delay_us.val);
+		return 0;
+	default:
+		return -ENOTSUP;
+	}
+}
 
 static int tvai_stacker_get_caps(const struct device *dev, struct video_caps *caps)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
 	const struct video_format_cap *fmts0;
 	const struct video_format_cap *fmts1;
-	struct video_caps caps0;
-	struct video_caps caps1;
+	struct video_caps caps0 = {.type = VIDEO_BUF_TYPE_OUTPUT};
+	struct video_caps caps1 = {.type = VIDEO_BUF_TYPE_OUTPUT};
 	int ret;
 
 	LOG_DBG("%s: %s", dev->name, __func__);
@@ -164,6 +187,7 @@ static int tvai_stacker_enum_frmival(const struct device *dev, struct video_frmi
 static int tvai_stacker_set_stream(const struct device *dev, bool on, enum video_buf_type type)
 {
 	const struct tvai_stacker_config *cfg = dev->config;
+	struct tvai_stacker_data *drv_data = dev->data;
 	int ret;
 
 	if (on) {
@@ -173,7 +197,7 @@ static int tvai_stacker_set_stream(const struct device *dev, bool on, enum video
 			return ret;
 		}
 
-		k_sleep(cfg->start_delay);
+		k_sleep(drv_data->start_delay);
 
 		ret = video_stream_start(cfg->source1_dev, VIDEO_BUF_TYPE_OUTPUT);
 		if (ret != 0) {
@@ -199,6 +223,7 @@ static int tvai_stacker_set_stream(const struct device *dev, bool on, enum video
 
 static const DEVICE_API(video, tvai_stacker_driver_api) = {
 	.set_format = tvai_stacker_set_format,
+	.set_ctrl = tvai_stacker_set_ctrl,
 	.get_format = tvai_stacker_get_format,
 	.get_caps = tvai_stacker_get_caps,
 	.set_frmival = tvai_stacker_set_frmival,
@@ -207,21 +232,46 @@ static const DEVICE_API(video, tvai_stacker_driver_api) = {
 	.set_stream = tvai_stacker_set_stream,
 };
 
+static int tvai_stacker_init(const struct device *dev)
+{
+	struct tvai_stacker_data *drv_data = dev->data;
+	struct tvai_stacker_ctrls *ctrls = &drv_data->ctrls;
+	int ret;
+
+	LOG_DBG("Initializing %s", dev->name);
+
+	ret = video_init_ctrl(
+		&ctrls->start_delay_us, dev, TVAI_STACKER_CID_START_DELAY_US,
+		(struct video_ctrl_range){
+			.min = 0,
+			.max = 0xFFFFFF,
+			.step = 1,
+			.def = 0x70});
+	if (ret < 0) {
+		LOG_ERR("Failed to initialize start delay (custom control)");
+		return ret;
+	}
+
+	return 0;
+}
+
 #define SOURCE_DEV(n, e) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, e)))
 
 #define TVAI_STACKER_INIT(n)                                                                       \
-	static struct tvai_stacker_data tvai_stacker_data_##n;                                     \
+	static struct tvai_stacker_data tvai_stacker_data_##n = {                                  \
+		.start_delay = K_USEC(DT_INST_PROP(n, start_delay_us)),                            \
+	};                                                                                         \
                                                                                                    \
 	const static struct tvai_stacker_config tvai_stacker_cfg_##n = {                           \
-		.start_delay = K_USEC(DT_INST_PROP(n, start_delay_us)),                            \
 		.source0_dev = SOURCE_DEV(n, 0),                                                   \
 		.source1_dev = SOURCE_DEV(n, 1),                                                   \
 	};                                                                                         \
                                                                                                    \
-	DEVICE_DT_INST_DEFINE(n, NULL, NULL, &tvai_stacker_data_##n, &tvai_stacker_cfg_##n,        \
-			      POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY, &tvai_stacker_driver_api);  \
+	DEVICE_DT_INST_DEFINE(n, &tvai_stacker_init, NULL, &tvai_stacker_data_##n,                 \
+			      &tvai_stacker_cfg_##n, POST_KERNEL, CONFIG_VIDEO_INIT_PRIORITY,      \
+			      &tvai_stacker_driver_api);                                           \
                                                                                                    \
-	VIDEO_DEVICE_DEFINE(tvai_stacker##n, DEVICE_DT_INST_GET(n), SOURCE_DEV(n, 0));             \
-	VIDEO_DEVICE_DEFINE(tvai_stacker##n, DEVICE_DT_INST_GET(n), SOURCE_DEV(n, 1));
+	VIDEO_DEVICE_DEFINE(tvai_stacker##n##_src0, DEVICE_DT_INST_GET(n), SOURCE_DEV(n, 0));      \
+	VIDEO_DEVICE_DEFINE(tvai_stacker##n##_src1, DEVICE_DT_INST_GET(n), SOURCE_DEV(n, 1));
 
 DT_INST_FOREACH_STATUS_OKAY(TVAI_STACKER_INIT)
