@@ -65,10 +65,13 @@ LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
 #define IMX219_REG_Y_OUTPUT_SIZE	IMX219_REG16(0x016e)
 #define IMX219_REG_X_ODD_INC_A		IMX219_REG8(0x0170)
 #define IMX219_REG_Y_ODD_INC_A		IMX219_REG8(0x0171)
+#define IMX219_REG_DT_PEDESTAL		IMX219_REG16(0xD1EA)
 
 struct imx219_ctrls {
 	struct video_ctrl exposure;
-	struct video_ctrl gain;
+	struct video_ctrl brightness;
+	struct video_ctrl analogue_gain;
+	struct video_ctrl digital_gain;
 	struct video_ctrl test_pattern;
 };
 
@@ -260,6 +263,8 @@ enum {
 
 static int imx219_enum_frmival(const struct device *dev, struct video_frmival_enum *fie)
 {
+	fie->type = VIDEO_FRMIVAL_TYPE_DISCRETE;
+
 	switch (fie->index) {
 	case IMX219_FRMIVAL_30FPS:
 		fie->discrete.numerator = 1;
@@ -273,8 +278,6 @@ static int imx219_enum_frmival(const struct device *dev, struct video_frmival_en
 		return -EINVAL;
 	}
 
-	fie->type = VIDEO_FRMIVAL_TYPE_DISCRETE;
-
 	return 0;
 }
 
@@ -282,7 +285,11 @@ static int imx219_set_frmival(const struct device *dev, struct video_frmival *fr
 {
 	const struct imx219_config *cfg = dev->config;
 	struct imx219_data *drv_data = dev->data;
-	struct video_frmival_enum fie = {};
+	struct video_frmival_enum fie = {
+		.discrete = *frmival,
+		.type = VIDEO_FRMIVAL_TYPE_DISCRETE,
+		.format = &drv_data->fmt,
+	};
 	int ret;
 
 	video_closest_frmival(dev, &fie);
@@ -343,18 +350,25 @@ static int imx219_set_ctrl(const struct device *dev, unsigned int cid)
 {
 	const struct imx219_config *cfg = dev->config;
 	struct imx219_data *drv_data = dev->data;
+	struct imx219_ctrls *ctrls = &drv_data->ctrls;
 
 	switch (cid) {
 	case VIDEO_CID_EXPOSURE:
 		/* Values for normal frame rate, different range for low frame rate mode */
 		return video_write_cci_reg(&cfg->i2c, IMX219_REG_INTEGRATION_TIME,
-					   drv_data->ctrls.exposure.val);
-	case VIDEO_CID_GAIN:
+					   ctrls->exposure.val);
+	case VIDEO_CID_ANALOGUE_GAIN:
 		return video_write_cci_reg(&cfg->i2c, IMX219_REG_ANALOG_GAIN,
-					   drv_data->ctrls.gain.val);
+					   ctrls->analogue_gain.val);
+	case VIDEO_CID_DIGITAL_GAIN:
+		return video_write_cci_reg(&cfg->i2c, IMX219_REG_DIGITAL_GAIN,
+					   ctrls->digital_gain.val);
+	case VIDEO_CID_BRIGHTNESS:
+		return video_write_cci_reg(&cfg->i2c, IMX219_REG_DT_PEDESTAL,
+					   ctrls->brightness.val);
 	case VIDEO_CID_TEST_PATTERN:
 		return video_write_cci_reg(&cfg->i2c, IMX219_REG_TESTPATTERN,
-					   drv_data->ctrls.test_pattern.val);
+					   ctrls->test_pattern.val);
 	default:
 		LOG_WRN("Control not supported");
 		return -ENOTSUP;
@@ -372,10 +386,68 @@ static const DEVICE_API(video, imx219_driver_api) = {
 	.enum_frmival = imx219_enum_frmival,
 };
 
+static const char *imx219_test_pattern_menu[] = {
+	"Off",
+	"Solid color",
+	"100% color bars",
+	"Fade to grey color bar",
+	"PN9",
+	"16 split color bar",
+	"16 split inverted color bar",
+	"Column counter",
+	"Inverted column counter",
+	"PN31",
+	NULL,
+};
+
+static int imx219_init_ctrls(const struct device *dev)
+{
+	struct imx219_data *drv_data = dev->data;
+	struct imx219_ctrls *ctrls = &drv_data->ctrls;
+	int ret;
+
+	ret = video_init_ctrl(
+		&ctrls->exposure, dev, VIDEO_CID_EXPOSURE,
+		(struct video_ctrl_range){.min = 0x0000, .max = 0xffff, .step = 1, .def = 1000});
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = video_init_ctrl(
+		&ctrls->brightness, dev, VIDEO_CID_BRIGHTNESS,
+		(struct video_ctrl_range){.min = 0x00, .max = 0x3ff, .step = 1, .def = 40});
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = video_init_ctrl(
+		&ctrls->analogue_gain, dev, VIDEO_CID_ANALOGUE_GAIN,
+		(struct video_ctrl_range){.min = 0x00, .max = 0xff, .step = 1, .def = 0x00});
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = video_init_ctrl(
+		&ctrls->digital_gain, dev, VIDEO_CID_DIGITAL_GAIN,
+		(struct video_ctrl_range){.min = 0x000, .max = 0xfff, .step = 1, .def = 0x100});
+	if (ret < 0) {
+		return ret;
+	}
+
+	ret = video_init_menu_ctrl(&ctrls->test_pattern, dev, VIDEO_CID_TEST_PATTERN, 0,
+				   imx219_test_pattern_menu);
+	if (ret < 0) {
+		return ret;
+	}
+
+	return 0;
+}
+
 static int imx219_init(const struct device *dev)
 {
 	const struct imx219_config *cfg = dev->config;
 	struct video_format fmt;
+	struct video_frmival frmival;
 	uint32_t reg;
 	int ret;
 
@@ -388,14 +460,14 @@ static int imx219_init(const struct device *dev)
 
 	ret = video_write_cci_reg(&cfg->i2c, IMX219_REG_SOFTWARE_RESET, 1);
 	if (ret < 0) {
-		goto err;
+		goto i2c_err;
 	}
 
 	k_sleep(K_MSEC(6)); /* t5 */
 
 	ret = video_read_cci_reg(&cfg->i2c, IMX219_REG_CHIP_ID, &reg);
 	if (ret < 0) {
-		goto err;
+		goto i2c_err;
 	}
 
 	if (reg != 0x0219) {
@@ -405,7 +477,7 @@ static int imx219_init(const struct device *dev)
 
 	ret = video_write_cci_multiregs(&cfg->i2c, imx219_init_regs, ARRAY_SIZE(imx219_init_regs));
 	if (ret < 0) {
-		goto err;
+		goto i2c_err;
 	}
 
 	fmt.width = imx219_fmts[0].width_min;
@@ -414,11 +486,19 @@ static int imx219_init(const struct device *dev)
 
 	ret = imx219_set_fmt(dev, &fmt);
 	if (ret < 0) {
-		goto err;
+		return ret;
 	}
 
-	return 0;
-err:
+	frmival.numerator = 1;
+	frmival.denominator = 15;
+
+	ret = imx219_set_frmival(dev, &frmival);
+	if (ret < 0) {
+		return ret;
+	}
+
+	return imx219_init_ctrls(dev);
+i2c_err:
 	LOG_ERR("I2C error during %s initialization: %s", dev->name, strerror(-ret));
 	return ret;
 }
