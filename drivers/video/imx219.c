@@ -138,7 +138,6 @@ static const struct video_reg imx219_init_regs[] = {
 	{IMX219_REG_Y_ADD_STA_A, (IMX219_FULL_HEIGHT - (height)) / 2},                             \
 	{IMX219_REG_Y_ADD_END_A, (IMX219_FULL_HEIGHT + (height)) / 2 - 1}
 
-
 static const struct video_reg imx219_fmt_raw10_regs[] = {
 	{IMX219_REG_CSI_DATA_FORMAT_A0, 10},
 	{IMX219_REG_CSI_DATA_FORMAT_A1, 10},
@@ -360,7 +359,7 @@ static int imx219_set_ctrl(const struct device *dev, unsigned int cid)
 	case VIDEO_CID_ANALOGUE_GAIN:
 		return video_write_cci_reg(&cfg->i2c, IMX219_REG_ANALOG_GAIN,
 					   ctrls->analogue_gain.val);
-	case VIDEO_CID_DIGITAL_GAIN:
+	case VIDEO_CID_GAIN:
 		return video_write_cci_reg(&cfg->i2c, IMX219_REG_DIGITAL_GAIN,
 					   ctrls->digital_gain.val);
 	case VIDEO_CID_BRIGHTNESS:
@@ -428,7 +427,7 @@ static int imx219_init_ctrls(const struct device *dev)
 	}
 
 	ret = video_init_ctrl(
-		&ctrls->digital_gain, dev, VIDEO_CID_DIGITAL_GAIN,
+		&ctrls->digital_gain, dev, VIDEO_CID_GAIN,
 		(struct video_ctrl_range){.min = 0x000, .max = 0xfff, .step = 1, .def = 0x100});
 	if (ret < 0) {
 		return ret;
