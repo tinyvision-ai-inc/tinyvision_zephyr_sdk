@@ -19,7 +19,12 @@
 
 LOG_MODULE_REGISTER(tvai_debayer, CONFIG_VIDEO_LOG_LEVEL);
 
-#define TVAI_DEBAYER_PIX_FMT VIDEO_PIX_FMT_SBGGR8
+#define TVAI_DEBAYER_PIX_FMT VIDEO_PIX_FMT_SBGGR10P
+
+#define TVAI_DEBAYER_MAX_SOURCE_WIDTH 1920
+#define TVAI_DEBAYER_MAX_SOURCE_HEIGHT 1080
+#define TVAI_DEBAYER_MIN_SOURCE_WIDTH 640
+#define TVAI_DEBAYER_MIN_SOURCE_HEIGHT 480
 
 struct tvai_debayer_config {
 	const struct device *source_dev;
@@ -31,6 +36,7 @@ static struct video_format_cap fmts[10];
 static int tvai_debayer_get_caps(const struct device *dev, struct video_caps *caps)
 {
 	const struct tvai_debayer_config *cfg = dev->config;
+	int ind = 0;
 	int ret;
 
 	ret = video_get_caps(cfg->source_dev, caps);
@@ -40,15 +46,50 @@ static int tvai_debayer_get_caps(const struct device *dev, struct video_caps *ca
 
 	/* Adjust the formats according to the conversion done in hardware */
 	for (int i = 0; caps->format_caps[i].pixelformat != 0; i++) {
-		if (i + 1 >= ARRAY_SIZE(fmts)) {
+		const struct video_format_cap *source_fmt = &caps->format_caps[i];
+		struct video_format_cap *self_fmt = &fmts[ind];
+
+		if (ind + 1 >= ARRAY_SIZE(fmts)) {
 			LOG_WRN("not enough format capabilities");
+			break;
 		}
 
-		fmts[i].pixelformat = VIDEO_PIX_FMT_YUYV;
-		fmts[i].width_min = MAX(caps->format_caps[i].width_min - 2, 0);
-		fmts[i].width_max = MAX(caps->format_caps[i].width_max - 2, 0);
-		fmts[i].height_min = MAX(caps->format_caps[i].height_min - 2, 0);
-		fmts[i].height_max = MAX(caps->format_caps[i].height_max - 2, 0);
+		/* Filter away the widht and heights with no overlapping value */
+		if (source_fmt->height_max < TVAI_DEBAYER_MIN_SOURCE_HEIGHT ||
+		    source_fmt->height_min > TVAI_DEBAYER_MAX_SOURCE_HEIGHT ||
+		    source_fmt->width_max < TVAI_DEBAYER_MIN_SOURCE_WIDTH ||
+		    source_fmt->width_min > TVAI_DEBAYER_MAX_SOURCE_WIDTH) {
+			LOG_INF("Skipping format [%ux%u, %ux%u] outside of range [%ux%u, %ux%u]",
+				source_fmt->width_max, source_fmt->height_max,
+				source_fmt->width_min,  source_fmt->height_min,
+				TVAI_DEBAYER_MIN_SOURCE_WIDTH, TVAI_DEBAYER_MIN_SOURCE_HEIGHT,
+				TVAI_DEBAYER_MAX_SOURCE_WIDTH, TVAI_DEBAYER_MAX_SOURCE_HEIGHT);
+			continue;
+		}
+
+		/* Filter away the incompatible pixel formats */
+		if (source_fmt->pixelformat != VIDEO_PIX_FMT_SBGGR10P &&
+		    source_fmt->pixelformat != VIDEO_PIX_FMT_SGRBG10P &&
+		    source_fmt->pixelformat != VIDEO_PIX_FMT_SRGGB10P &&
+		    source_fmt->pixelformat != VIDEO_PIX_FMT_SGBRG10P) {
+			LOG_INF("Skipping format '%s': only 10-bit packed bayer supported",
+				VIDEO_FOURCC_TO_STR(source_fmt->pixelformat));
+			continue;
+		}
+
+		self_fmt->pixelformat = VIDEO_PIX_FMT_YUYV;
+
+		/* Limit the source format and remove 2 pixels from it */
+		self_fmt->width_min = CLAMP(source_fmt->width_min, TVAI_DEBAYER_MIN_SOURCE_WIDTH,
+					    TVAI_DEBAYER_MAX_SOURCE_WIDTH) - 2;
+		self_fmt->width_max = CLAMP(source_fmt->width_max, TVAI_DEBAYER_MIN_SOURCE_WIDTH,
+					    TVAI_DEBAYER_MAX_SOURCE_WIDTH) - 2;
+		self_fmt->height_min = CLAMP(source_fmt->height_min, TVAI_DEBAYER_MIN_SOURCE_HEIGHT,
+					     TVAI_DEBAYER_MAX_SOURCE_HEIGHT) - 2;
+		self_fmt->height_max = CLAMP(source_fmt->height_max, TVAI_DEBAYER_MIN_SOURCE_HEIGHT,
+					     TVAI_DEBAYER_MAX_SOURCE_HEIGHT) - 2;
+
+		ind++;
 	}
 
 	caps->format_caps = fmts;
@@ -158,7 +199,6 @@ static const DEVICE_API(video, tvai_debayer_driver_api) = {
 	.get_frmival = tvai_debayer_get_frmival,
 	.enum_frmival = tvai_debayer_enum_frmival,
 	.set_stream = tvai_debayer_set_stream,
-
 };
 
 #define SOURCE_DEV(n) DEVICE_DT_GET(DT_NODE_REMOTE_DEVICE(DT_INST_ENDPOINT_BY_ID(n, 0, 0)))
