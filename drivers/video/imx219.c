@@ -9,11 +9,11 @@
 
 #include <zephyr/device.h>
 #include <zephyr/drivers/i2c.h>
-#include <zephyr/drivers/video.h>
 #include <zephyr/drivers/video-controls.h>
+#include <zephyr/drivers/video.h>
 #include <zephyr/kernel.h>
-#include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/byteorder.h>
 
 #include "video_common.h"
 #include "video_ctrls.h"
@@ -31,14 +31,13 @@ LOG_MODULE_REGISTER(imx219, CONFIG_VIDEO_LOG_LEVEL);
 #define IMX219_REG_SOFTWARE_RESET	IMX219_REG8(0x0103)
 #define IMX219_REG_MODE_SELECT		IMX219_REG8(0x0100)
 #define IMX219_MODE_SELECT_STANDBY	0x00
-#define IMX219_MODE_SELECT_STREAMING	0x00
+#define IMX219_MODE_SELECT_STREAMING	0x01
 #define IMX219_REG_ANALOG_GAIN		IMX219_REG8(0x0157)
 #define IMX219_REG_DIGITAL_GAIN		IMX219_REG16(0x0158)
 #define IMX219_REG_INTEGRATION_TIME	IMX219_REG16(0x015A)
 #define IMX219_REG_TESTPATTERN		IMX219_REG16(0x0600)
 #define IMX219_REG_TP_WINDOW_WIDTH	IMX219_REG16(0x0624)
 #define IMX219_REG_TP_WINDOW_HEIGHT	IMX219_REG16(0x0626)
-#define IMX219_REG_MODE_SELECT		IMX219_REG8(0x0100)
 #define IMX219_REG_CSI_LANE_MODE	IMX219_REG8(0x0114)
 #define IMX219_REG_DPHY_CTRL		IMX219_REG8(0x0128)
 #define IMX219_REG_EXCK_FREQ		IMX219_REG16(0x012a)
@@ -83,12 +82,11 @@ struct imx219_data {
 
 struct imx219_config {
 	struct i2c_dt_spec i2c;
+	uint32_t input_clk_hz;
 };
 
 /* Registers to crop down a resolution to a centered width and height */
 static const struct video_reg imx219_init_regs[] = {
-	{IMX219_REG_MODE_SELECT, 0x00},		/* Standby */
-
 	/* Enable access to registers from 0x3000 to 0x5fff */
 	{IMX219_REG8(0x30eb), 0x05},
 	{IMX219_REG8(0x30eb), 0x0c},
@@ -100,9 +98,6 @@ static const struct video_reg imx219_init_regs[] = {
 	/* MIPI configuration registers */
 	{IMX219_REG_CSI_LANE_MODE, 0x01},	/* 2 Lanes */
 	{IMX219_REG_DPHY_CTRL, 0x00},		/* Timing auto */
-
-	/* Clock configuration registers */
-	{IMX219_REG_EXCK_FREQ, 24 << 8},	/* 24 MHz */
 
 	/* Undocumented registers */
 	{IMX219_REG8(0x455e), 0x00},
@@ -132,11 +127,11 @@ static const struct video_reg imx219_init_regs[] = {
 	{IMX219_REG_ORIENTATION, 0x03},
 };
 
-#define IMX219_REGS_CROP(width, height)                                                            \
-	{IMX219_REG_X_ADD_STA_A, (IMX219_FULL_WIDTH - (width)) / 2},                               \
-	{IMX219_REG_X_ADD_END_A, (IMX219_FULL_WIDTH + (width)) / 2 - 1},                           \
-	{IMX219_REG_Y_ADD_STA_A, (IMX219_FULL_HEIGHT - (height)) / 2},                             \
-	{IMX219_REG_Y_ADD_END_A, (IMX219_FULL_HEIGHT + (height)) / 2 - 1}
+static const struct video_reg imx219_fmt_raw8_regs[] = {
+	{IMX219_REG_CSI_DATA_FORMAT_A0, 8},
+	{IMX219_REG_CSI_DATA_FORMAT_A1, 8},
+	{IMX219_REG_OPPXCK_DIV, 8},
+};
 
 static const struct video_reg imx219_fmt_raw10_regs[] = {
 	{IMX219_REG_CSI_DATA_FORMAT_A0, 10},
@@ -166,21 +161,21 @@ static const struct video_reg imx219_fps_15_regs[] = {
 	{IMX219_REG_PLL_OP_MPY, 50},		/* Output clock multiplier */
 };
 
-static const struct video_reg imx219_size_1920x1080_regs[] = {
-	IMX219_REGS_CROP(1920, 1080),
-	{IMX219_REG_X_OUTPUT_SIZE, 1920},
-	{IMX219_REG_Y_OUTPUT_SIZE, 1080},
-	{IMX219_REG_FRM_LENGTH_A, 1080 + 20},
-	/* Test pattern size */
-	{IMX219_REG_TP_WINDOW_WIDTH, 1920},
-	{IMX219_REG_TP_WINDOW_HEIGHT, 1080},
+enum {
+	IMX219_RAW8_FULL_FRAME,
+	IMX219_RAW10_FULL_FRAME,
 };
 
 static const struct video_format_cap imx219_fmts[] = {
-	{
+	[IMX219_RAW8_FULL_FRAME] = {
 		.pixelformat = VIDEO_PIX_FMT_SBGGR8,
-		.width_min = 1920, .width_max = 1920, .width_step = 0,
-		.height_min = 1080, .height_max = 1080, .height_step = 0,
+		.width_min = 4, .width_max = IMX219_FULL_WIDTH, .width_step = 4,
+		.height_min = 4, .height_max = IMX219_FULL_HEIGHT, .height_step = 4,
+	},
+	[IMX219_RAW10_FULL_FRAME] = {
+		.pixelformat = VIDEO_PIX_FMT_SBGGR10P,
+		.width_min = 4, .width_max = IMX219_FULL_WIDTH, .width_step = 4,
+		.height_min = 4, .height_max = IMX219_FULL_HEIGHT, .height_step = 4,
 	},
 	{0},
 };
@@ -189,6 +184,24 @@ static int imx219_set_fmt(const struct device *dev, struct video_format *fmt)
 {
 	const struct imx219_config *cfg = dev->config;
 	struct imx219_data *drv_data = dev->data;
+	struct video_reg crop_regs[] = {
+		/* Image crop size */
+		{IMX219_REG_X_ADD_STA_A, (IMX219_FULL_WIDTH - fmt->width) / 2},
+		{IMX219_REG_X_ADD_END_A, (IMX219_FULL_WIDTH + fmt->width) / 2 - 1},
+		{IMX219_REG_Y_ADD_STA_A, (IMX219_FULL_HEIGHT - fmt->height) / 2},
+		{IMX219_REG_Y_ADD_END_A, (IMX219_FULL_HEIGHT + fmt->height) / 2 - 1},
+
+		/* Update the output resolution */
+		{IMX219_REG_X_OUTPUT_SIZE, fmt->width},
+		{IMX219_REG_Y_OUTPUT_SIZE, fmt->height},
+
+		/* Make sure the mipi line long enough for the new output size */
+		{IMX219_REG_FRM_LENGTH_A, fmt->height + 20},
+
+		/* Test pattern size */
+		{IMX219_REG_TP_WINDOW_WIDTH, fmt->width},
+		{IMX219_REG_TP_WINDOW_HEIGHT, fmt->height}
+	};
 	size_t idx;
 	int ret;
 
@@ -199,27 +212,44 @@ static int imx219_set_fmt(const struct device *dev, struct video_format *fmt)
 		return -ENOTSUP;
 	}
 
+	if (fmt->width != imx219_fmts[idx].width_min &&
+	    (fmt->width - imx219_fmts[idx].width_min) % imx219_fmts[idx].width_step != 0) {
+		LOG_ERR("Unsupported width %u requested", fmt->width);
+		return -EINVAL;
+	}
+
+	if (fmt->height != imx219_fmts[idx].height_min &&
+	    (fmt->height - imx219_fmts[idx].height_min) % imx219_fmts[idx].height_step != 0) {
+		LOG_ERR("Unsupported height %u requested", fmt->height);
+		return -EINVAL;
+	}
+
 	ret = video_write_cci_reg(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_SELECT_STANDBY);
 	if (ret < 0) {
 		return ret;
 	}
 
+	/* Select the base resolution and imaging mode */
 	switch (idx) {
-	case 0:
+	case IMX219_RAW8_FULL_FRAME:
+		ret = video_write_cci_multiregs(&cfg->i2c, imx219_fmt_raw8_regs,
+						ARRAY_SIZE(imx219_fmt_raw8_regs));
+		break;
+	case IMX219_RAW10_FULL_FRAME:
 		ret = video_write_cci_multiregs(&cfg->i2c, imx219_fmt_raw10_regs,
 						ARRAY_SIZE(imx219_fmt_raw10_regs));
-		if (ret < 0) {
-			return ret;
-		}
-
-		ret = video_write_cci_multiregs(&cfg->i2c, imx219_size_1920x1080_regs,
-						ARRAY_SIZE(imx219_size_1920x1080_regs));
-		if (ret < 0) {
-			return ret;
-		}
 		break;
 	default:
 		CODE_UNREACHABLE;
+	}
+	if (ret < 0) {
+		return ret;
+	}
+
+	/* Apply a crop window on top of it */
+	ret = video_write_cci_multiregs(&cfg->i2c, crop_regs, ARRAY_SIZE(crop_regs));
+	if (ret < 0) {
+		return ret;
 	}
 
 	ret = video_write_cci_reg(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_SELECT_STREAMING);
@@ -320,12 +350,7 @@ static int imx219_set_frmival(const struct device *dev, struct video_frmival *fr
 		return ret;
 	}
 
-	ret = video_write_cci_reg(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_SELECT_STREAMING);
-	if (ret < 0) {
-		return ret;
-	}
-
-	return 0;
+	return video_write_cci_reg(&cfg->i2c, IMX219_REG_MODE_SELECT, IMX219_MODE_SELECT_STREAMING);
 }
 
 static int imx219_get_frmival(const struct device *dev, struct video_frmival *frmival)
@@ -342,7 +367,8 @@ static int imx219_set_stream(const struct device *dev, bool on, enum video_buf_t
 {
 	const struct imx219_config *cfg = dev->config;
 
-	return video_write_cci_reg(&cfg->i2c, IMX219_REG_MODE_SELECT, on ? 0x01 : 0x00);
+	return video_write_cci_reg(&cfg->i2c, IMX219_REG_MODE_SELECT,
+				   on ? IMX219_MODE_SELECT_STREAMING : IMX219_MODE_SELECT_STANDBY);
 }
 
 static int imx219_set_ctrl(const struct device *dev, unsigned int cid)
@@ -385,7 +411,7 @@ static const DEVICE_API(video, imx219_driver_api) = {
 	.enum_frmival = imx219_enum_frmival,
 };
 
-static const char *imx219_test_pattern_menu[] = {
+static const char *const imx219_test_pattern_menu[] = {
 	"Off",
 	"Solid color",
 	"100% color bars",
@@ -433,13 +459,20 @@ static int imx219_init_ctrls(const struct device *dev)
 		return ret;
 	}
 
-	ret = video_init_menu_ctrl(&ctrls->test_pattern, dev, VIDEO_CID_TEST_PATTERN, 0,
-				   imx219_test_pattern_menu);
-	if (ret < 0) {
-		return ret;
+	return video_init_menu_ctrl(&ctrls->test_pattern, dev, VIDEO_CID_TEST_PATTERN, 0,
+				    imx219_test_pattern_menu);
+}
+
+static int imx219_set_input_clk(const struct device *dev, uint32_t rate_hz)
+{
+	const struct imx219_config *cfg = dev->config;
+
+	if (rate_hz < MHZ(6) || rate_hz > MHZ(27) || rate_hz % MHZ(1) != 0) {
+		LOG_ERR("Unsupported INCK freq (%d Hz)\n", rate_hz);
+		return -EINVAL;
 	}
 
-	return 0;
+	return video_write_cci_reg(&cfg->i2c, IMX219_REG_EXCK_FREQ, (rate_hz / MHZ(1)) << 8);
 }
 
 static int imx219_init(const struct device *dev)
@@ -459,24 +492,29 @@ static int imx219_init(const struct device *dev)
 
 	ret = video_write_cci_reg(&cfg->i2c, IMX219_REG_SOFTWARE_RESET, 1);
 	if (ret < 0) {
-		goto i2c_err;
+		return ret;
 	}
 
 	k_sleep(K_MSEC(6)); /* t5 */
 
 	ret = video_read_cci_reg(&cfg->i2c, IMX219_REG_CHIP_ID, &reg);
 	if (ret < 0) {
-		goto i2c_err;
+		return ret;
 	}
 
 	if (reg != 0x0219) {
-		LOG_ERR("Wrong chip ID %04x", reg);
+		LOG_ERR("Wrong chip ID 0x%04x instead of 0x%04x", reg, IMX219_REG_CHIP_ID);
 		return -ENODEV;
+	}
+
+	ret = imx219_set_input_clk(dev, cfg->input_clk_hz);
+	if (ret < 0) {
+		return ret;
 	}
 
 	ret = video_write_cci_multiregs(&cfg->i2c, imx219_init_regs, ARRAY_SIZE(imx219_init_regs));
 	if (ret < 0) {
-		goto i2c_err;
+		return ret;
 	}
 
 	fmt.width = imx219_fmts[0].width_min;
@@ -497,9 +535,6 @@ static int imx219_init(const struct device *dev)
 	}
 
 	return imx219_init_ctrls(dev);
-i2c_err:
-	LOG_ERR("I2C error during %s initialization: %s", dev->name, strerror(-ret));
-	return ret;
 }
 
 #define IMX219_INIT(n)                                                                             \
@@ -507,6 +542,7 @@ i2c_err:
                                                                                                    \
 	static const struct imx219_config imx219_cfg_##n = {                                       \
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
+		.input_clk_hz = DT_INST_PROP_BY_PHANDLE(n, clocks, clock_frequency),               \
 	};                                                                                         \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(n, &imx219_init, NULL, &imx219_data_##n, &imx219_cfg_##n,            \

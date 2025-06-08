@@ -1,8 +1,16 @@
+# Copyright (c) 2025 tinyVIsion.ai Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 description: IMX219 8 Mega-Pixel CMOS image sensor
 
 compatible: "sony,imx219"
 
 include: i2c-device.yaml
+
+properties:
+  clocks:
+    description: Reference Input clock
+    required: true
 
 child-binding:
   child-binding:
