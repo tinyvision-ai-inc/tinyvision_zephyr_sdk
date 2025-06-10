@@ -43,6 +43,14 @@
 
 /* Camera 0 config */
 
+/ {
+	imx219ch0_input_clock: imx219ch0-input-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <24000000>;
+		#clock-cells = <0>;
+	};
+};
+
 &debayer0 {
 	status = "okay";
 };
@@ -59,6 +67,7 @@
 	imx219ch0@10 {
 		compatible = "sony,imx219";
 		reg = <0x10>;
+		clocks = <&imx219ch0_input_clock>;
 
 		port {
 			imx219ch0_ep_out: endpoint {
@@ -69,6 +78,14 @@
 };
 
 /* Camera 1 config */
+
+/ {
+	imx219ch1_input_clock: imx219ch1-input-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <24000000>;
+		#clock-cells = <0>;
+	};
+};
 
 &debayer1 {
 	status = "okay";
@@ -86,6 +103,7 @@
 	imx219ch1@10 {
 		compatible = "sony,imx219";
 		reg = <0x10>;
+		clocks = <&imx219ch1_input_clock>;
 
 		port {
 			imx219ch1_ep_out: endpoint {

@@ -16,6 +16,10 @@
 #include <riscv/tinyvision/add_i2c0_pll.dtsi>
 #include <riscv/tinyvision/add_i2c0_multiplexer.dtsi>
 
+&stacker {
+	start-delay-us = <30>;
+};
+
 /* USB interfaces */
 
 &zephyr_udc0 {
@@ -35,6 +39,14 @@
 
 /* Camera 0 config */
 
+/ {
+	imx219ch0_input_clock: imx219ch0-input-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <24000000>;
+		#clock-cells = <0>;
+	};
+};
+
 &csi0_ep_in {
 	remote-endpoint-label = "imx219ch0_ep_out";
 };
@@ -43,12 +55,23 @@
 	imx219ch0: imx219@10 {
 		compatible = "sony,imx219";
 		reg = <0x10>;
+		clocks = <&imx219ch0_input_clock>;
 
 		port {
 			imx219ch0_ep_out: endpoint {
 				remote-endpoint-label = "csi0_ep_in";
 			};
 		};
+	};
+};
+
+/* Camera 1 config */
+
+/ {
+	imx219ch1_input_clock: imx219ch1-input-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <24000000>;
+		#clock-cells = <0>;
 	};
 };
 
@@ -60,6 +83,7 @@
 	imx219ch1: imx219@10 {
 		compatible = "sony,imx219";
 		reg = <0x10>;
+		clocks = <&imx219ch1_input_clock>;
 
 		port {
 			imx219ch1_ep_out: endpoint {
@@ -67,8 +91,4 @@
 			};
 		};
 	};
-};
-
-&stacker {
-	start-delay-us = <30>;
 };
