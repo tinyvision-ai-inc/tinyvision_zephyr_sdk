@@ -13,6 +13,14 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/clock_control.h>
 
+#define SI5351_REG_LOL_A          0x05
+#define SI5351_VAL_LOL_A_LOCKED   0x00
+#define SI5351_VAL_LOL_A_UNLOCKED 0x01
+
+#define SI5351_REG_LOL_B          0x06
+#define SI5351_VAL_LOL_B_LOCKED   0x00
+#define SI5351_VAL_LOL_B_UNLOCKED 0x01
+
 struct si5351_config {
 	struct i2c_dt_spec i2c;
 };
@@ -89,6 +97,7 @@ static const struct {
 static int si5351_init(const struct device *dev)
 {
 	const struct si5351_config *config = dev->config;
+	uint8_t reg;
 	int ret;
 
 	/* Disable all clock outputs */
@@ -117,6 +126,14 @@ static int si5351_init(const struct device *dev)
 	if (ret) {
 		return ret;
 	}
+
+	/* Wait that PLL A is ready */
+	do {
+		ret = i2c_reg_read_byte_dt(&config->i2c, SI5351_REG_LOL_A, &reg);
+		if (ret < 0) {
+			return ret;
+		}
+	} while (reg == SI5351_VAL_LOL_A_LOCKED);
 
 	/* Enable all clock outputs */
 	ret = i2c_reg_write_byte_dt(&config->i2c, 3, 0x00);
