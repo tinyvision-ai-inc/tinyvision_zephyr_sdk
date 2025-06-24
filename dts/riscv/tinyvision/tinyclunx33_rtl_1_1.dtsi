@@ -4,6 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tinyclunx33_rtl.dtsi"
 #include "add_opencores_i2c.dtsi"
-#include "boot_0x200000.dtsi"
+#include "tinyclunx33_rtl.dtsi"
+
+/* Starting from RTL 1.1, devices boot at 0x200000 instead of 0x200000 */
+
+&boot_partition@0 {
+	reg = <0x000000 0x200000>;
+};
+
+&slot0_partition {
+	reg = <0x200000 0x100000>;
+};

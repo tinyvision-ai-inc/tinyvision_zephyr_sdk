@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <riscv/tinyvision/add_debayer0.dtsi>
-#include <riscv/tinyvision/add_uvcmanager0.dtsi>
+&debayer0 { status = "okay"; };
+&uvcmanager0 { status = "okay"; };
 
 &uvcmanager0_ep_in {
 	remote-endpoint-label = "debayer0_ep_out";

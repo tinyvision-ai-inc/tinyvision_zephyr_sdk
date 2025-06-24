@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <riscv/tinyvision/add_stacker.dtsi>
-#include <riscv/tinyvision/add_debayer0.dtsi>
+&stacker { status = "okay"; };
+&debayer0 { status = "okay"; };
 
 &stacker_ep_out {
 	remote-endpoint-label = "debayer0_ep_in";
