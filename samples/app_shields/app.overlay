@@ -8,8 +8,6 @@
 #include <riscv/tinyvision/from_csi0_to_debayer0.dtsi>
 #include <riscv/tinyvision/from_debayer0_to_uvcmanager0.dtsi>
 
-/* USB interfaces */
-
 &zephyr_udc0 {
 	num-in-endpoints = <2>;
 	num-out-endpoints = <1>;

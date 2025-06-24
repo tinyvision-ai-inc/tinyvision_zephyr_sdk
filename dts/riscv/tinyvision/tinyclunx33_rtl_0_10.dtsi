@@ -4,6 +4,5 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "tinyclunx33_rtl.dtsi"
 #include "add_litex_i2c.dtsi"
-#include "boot_0x100000.dtsi"
+#include "tinyclunx33_rtl.dtsi"

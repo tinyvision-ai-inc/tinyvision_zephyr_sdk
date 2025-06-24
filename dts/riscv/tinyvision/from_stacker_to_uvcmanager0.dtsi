@@ -4,30 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <riscv/tinyvision/add_stacker.dtsi>
-#include <riscv/tinyvision/add_uvcmanager0.dtsi>
-
-/ {
-	soc {
-		stacker: stacker {
-			compatible = "tinyvision,stacker";
-
-			port {
-				stacker_ep_in0: endpoint@0 {
-					reg = <0>;
-				};
-
-				stacker_ep_in1: endpoint@1 {
-					reg = <1>;
-				};
-
-				stacker_ep_out: endpoint@2 {
-					reg = <2>;
-				};
-			};
-		};
-	};
-};
+&stacker { status = "okay"; };
+&uvcmanager0 { status = "okay"; };
 
 &stacker_ep_out {
 	remote-endpoint-label = "uvcmanager0_ep_in";

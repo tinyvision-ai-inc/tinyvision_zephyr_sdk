@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <riscv/tinyvision/add_csi1.dtsi>
-#include <riscv/tinyvision/add_stats1.dtsi>
+&csi1 { status = "okay"; };
+&stats1 { status = "okay"; };
 
 &csi1_ep_out1 {
 	remote-endpoint-label = "stats1_ep_in";
