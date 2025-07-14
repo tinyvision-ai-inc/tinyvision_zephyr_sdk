@@ -12,9 +12,6 @@
 #include <riscv/tinyvision/from_csi1_to_debayer1.dtsi>
 #include <riscv/tinyvision/from_debayer1_to_uvcmanager1.dtsi>
 
-#include <riscv/tinyvision/add_i2c0_pll.dtsi>
-#include <riscv/tinyvision/add_i2c0_multiplexer.dtsi>
-
 /* USB interfaces */
 
 &zephyr_udc0 {

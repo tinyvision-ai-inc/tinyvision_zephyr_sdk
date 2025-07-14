@@ -13,9 +13,6 @@
 #include <riscv/tinyvision/from_stacker_to_debayer0.dtsi>
 #include <riscv/tinyvision/from_debayer0_to_uvcmanager0.dtsi>
 
-#include <riscv/tinyvision/add_i2c0_pll.dtsi>
-#include <riscv/tinyvision/add_i2c0_multiplexer.dtsi>
-
 &stacker {
 	start-delay-us = <30>;
 };
