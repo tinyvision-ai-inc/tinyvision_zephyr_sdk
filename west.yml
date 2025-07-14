@@ -6,7 +6,7 @@ manifest:
 
     - name: zephyr
       url: git@github.com:tinyvision-ai-inc/zephyr
-      revision: pr-usb3-uvc
+      revision: v4.2.0-rc3
       import:
         name-allowlist:
           - zephyr
