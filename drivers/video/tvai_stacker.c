@@ -80,18 +80,6 @@ static int tvai_stacker_get_caps(const struct device *dev, struct video_caps *ca
 	fmts1 = caps1.format_caps;
 
 	/* Adjust the formats according to the conversion done in hardware */
-	int j = 0;
-	do {
-		LOG_DBG("Device %s has format '%s' %ux%u to %ux%u at position %u",
-			cfg->source0_dev->name, VIDEO_FOURCC_TO_STR(fmts0->pixelformat),
-			fmts0->width_min, fmts0->height_min, fmts0->width_max, fmts0->height_max,
-			j);
-		LOG_DBG("Device %s has format '%s' %ux%u to %ux%u at position %u",
-			cfg->source1_dev->name, VIDEO_FOURCC_TO_STR(fmts0->pixelformat),
-			fmts0->width_min, fmts0->height_min, fmts0->width_max, fmts0->height_max,
-			j);
-		j++;
-	} while (fmts0[j].pixelformat != 0 && fmts1[j].pixelformat != 0);
 
 	for (size_t i = 0; fmts0[i].pixelformat != 0 && fmts1[i].pixelformat != 0; i++) {
 		if (i + 1 >= ARRAY_SIZE(fmts)) {
@@ -110,8 +98,8 @@ static int tvai_stacker_get_caps(const struct device *dev, struct video_caps *ca
 			fmts0[i].width_max, fmts0[i].height_max);
 
 		memcpy(&fmts[i], &fmts0[i].pixelformat, sizeof(fmts[i]));
-		fmts[i].height_min = fmts0[i].height_min * 2;
-		fmts[i].height_max = fmts0[i].height_max * 2;
+		fmts[i].height_min *= 2;
+		fmts[i].height_max *= 2;
 	}
 
 	caps->format_caps = fmts;
