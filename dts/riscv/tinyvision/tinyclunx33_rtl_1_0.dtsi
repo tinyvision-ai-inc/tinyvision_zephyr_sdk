@@ -6,4 +6,4 @@
 
 #include "tinyclunx33_rtl.dtsi"
 #include "add_opencores_i2c.dtsi"
-#include "boot_0x100000.dtsi"
+#include "boot_0x200000.dtsi"

@@ -13,26 +13,6 @@ config FLASH_LOAD_SIZE
 config FLASH_LOAD_OFFSET
 	default $(dt_chosen_reg_addr_hex,$(DT_CHOSEN_Z_CODE_PARTITION))
 
-config CLOCK_CONTROL
-	# For the external clock that provides the CPU its crystal-based clock
-	default y
-
-config CLOCK_CONTROL_INIT_PRIORITY
-	# Because the PLL is on I2C, it needs to be loaded late in the process
-	# before this happens, the system will be running off the internal
-	# oscillator
-	default 50
-
-config I2C
-	# Some I2C peripherals are on the SoM itself
-	default y
-
-config I2C_PCA9542A_ROOT_INIT_PRIO
-	default 50
-
-config I2C_PCA9542A_CHANNEL_INIT_PRIO
-	default 51
-
 config XIP
 	default y
 

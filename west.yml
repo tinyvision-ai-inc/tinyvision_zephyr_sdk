@@ -5,8 +5,8 @@ manifest:
   projects:
 
     - name: zephyr
-      url: git@github.com:tinyvision-ai-inc/zephyr
-      revision: pr-usb3-uvc
+      url: https://github.com/zephyrproject-rtos/zephyr
+      revision: v4.2.0-rc3
       import:
         name-allowlist:
           - zephyr

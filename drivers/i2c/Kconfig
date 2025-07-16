@@ -3,7 +3,6 @@
 
 if I2C
 
-rsource "Kconfig.pca9542a"
 rsource "Kconfig.opencores"
 
 endif

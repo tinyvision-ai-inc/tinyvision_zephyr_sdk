@@ -123,25 +123,5 @@
 			interrupts = <2 10>;
 			current-speed = <156200>;
 		};
-
-		zephyr_udc0: usb@b0000000 {
-			compatible = "snps,dwc3";
-			reg = <0xb0000000 0x1000000
-				0xe0005800 0x4
-				0xe0005804 0x4
-				0xe0005808 0x4>;
-			reg-names = "base",
-				"ev_status",
-				"ev_pending",
-				"ev_enable";
-			maximum-speed = "super-speed";
-			num-bidir-endpoints = <16>;
-			num-in-endpoints = <1>;
-			num-out-endpoints = <1>;
-			interrupts = <0 0>;
-			interrupt-names = "usb";
-			interrupt-parent = <&intc0>;
-			status = "disabled";
-		};
 	};
 };
