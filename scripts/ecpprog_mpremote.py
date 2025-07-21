@@ -21,13 +21,15 @@ from runners.core import BuildConfiguration, RunnerCaps, ZephyrBinaryRunner
 class EcpprogHookBinaryRunner(ZephyrBinaryRunner):
     '''Runner front-end for programming the FPGA flash at some offset.'''
 
-    def __init__(self, cfg, host=None, script=[], ecpprog=None, mpremote=None, device=None):
+    def __init__(self, cfg, host=None, script=[], ecpprog=None, mpremote=None, device=None,
+                 port=None):
         super().__init__(cfg)
         self.host = host
-        self.script = script
         self.ecpprog = ecpprog
         self.device = device
         self.mpremote = mpremote
+        self.port = port
+        self.script = script
 
     @classmethod
     def name(cls):
@@ -44,31 +46,41 @@ class EcpprogHookBinaryRunner(ZephyrBinaryRunner):
             help='SSH host to connect to (optional)'
         )
         parser.add_argument(
-            '--device', dest='device',
+            '--mpremote', dest='mpremote', default='.local/bin/mpremote',
+            help='Path to the mpremote binary on the remote host'
+        )
+        parser.add_argument(
+            '--mpremote-port', dest='port',
             help='Device to connect to using ecpprog -d flag (optional)'
         )
         parser.add_argument(
-            '--mpremote', dest='mpremote', default='.local/bin/mpremote',
-            help='Path to the mpremote binary on the remote host'
+            '--mpremote-script', dest='script', action='append', required=True,
+            help='Script to load with mpremote. Set multiple times to run several scripts.'
         )
         parser.add_argument(
             '--ecpprog', dest='ecpprog', default='.local/bin/ecpprog',
             help='Path to the ecpprog binary on the remote host'
         )
         parser.add_argument(
-            '--add-script', dest='script', action='append', required=True,
-            help='Script to load with mpremote. Set multiple times to run several scripts.'
+            '--ecpprog-device', dest='device',
+            help='Device to connect to using ecpprog -d flag (optional)'
         )
 
     @classmethod
     def do_create(cls, cfg, args):
         return EcpprogHookBinaryRunner(cfg, host=args.host, script=args.script,
                                        mpremote=args.mpremote, ecpprog=args.ecpprog,
-                                       device=args.device)
+                                       device=args.device, port=args.port)
 
     def do_run_mpremote(self, prefix):
         command = list(prefix)
-        command.extend(('.local/bin/mpremote', 'run', '/dev/stdin'))
+
+        command.append('.local/bin/mpremote')
+
+        if self.port is not None:
+            command.extend(('connect', self.port))
+
+        command.extend(('run', '/dev/stdin'))
 
         for script in self.script:
             self.logger.info(' '.join(command) + ' <' + script)
