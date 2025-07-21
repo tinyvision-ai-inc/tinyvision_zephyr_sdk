@@ -9,7 +9,7 @@
 
 /* Starting from RTL 1.1, devices boot at 0x200000 instead of 0x200000 */
 
-&boot_partition@0 {
+&boot_partition {
 	reg = <0x000000 0x200000>;
 };
 

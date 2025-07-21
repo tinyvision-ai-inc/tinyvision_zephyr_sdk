@@ -290,6 +290,46 @@
 			};
 		};
 
+		unpacker0: unpacker0 {
+			compatible = "tinyvision,unpacker";
+			status = "disabled";
+
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				unpacker0_ep_in: endpoint@0 {
+					reg = <0>;
+					remote-endpoint-label = "";
+				};
+
+				unpacker0_ep_out: endpoint@1 {
+					reg = <1>;
+					remote-endpoint-label = "";
+				};
+			};
+		};
+
+		unpacker1: unpacker1 {
+			compatible = "tinyvision,unpacker";
+			status = "disabled";
+
+			port {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				unpacker1_ep_in: endpoint@0 {
+					reg = <0>;
+					remote-endpoint-label = "";
+				};
+
+				unpacker1_ep_out: endpoint@1 {
+					reg = <1>;
+					remote-endpoint-label = "";
+				};
+			};
+		};
+
 		uvcmanager0: uvcmanager@b4000000 {
 			compatible = "tinyvision,uvcmanager";
 			reg = <0xb4000000 0x400

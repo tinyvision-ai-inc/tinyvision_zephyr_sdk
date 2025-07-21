@@ -18,6 +18,7 @@ rsource "Kconfig.tvai_debayer"
 rsource "Kconfig.tvai_stacker"
 rsource "Kconfig.tvai_stats"
 rsource "Kconfig.tvai_testpattern"
+rsource "Kconfig.tvai_unpacker"
 rsource "Kconfig.tvai_uvcmanager"
 
 endif

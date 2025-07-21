@@ -84,8 +84,11 @@ static int lscc_csi2rx_init(const struct device *dev)
 static int lscc_csi2rx_set_format(const struct device *dev, struct video_format *fmt)
 {
 	const struct lscc_csi2rx_config *cfg = dev->config;
+	int ret;
 
-	return video_set_format(cfg->source_dev, fmt);
+	ret = video_set_format(cfg->source_dev, fmt);
+	fmt->pitch = fmt->width * video_bits_per_pixel(fmt->pixelformat) / BITS_PER_BYTE;
+	return ret;
 }
 
 static int lscc_csi2rx_get_format(const struct device *dev, struct video_format *fmt)

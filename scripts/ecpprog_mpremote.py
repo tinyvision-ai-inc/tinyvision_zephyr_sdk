@@ -21,11 +21,12 @@ from runners.core import BuildConfiguration, RunnerCaps, ZephyrBinaryRunner
 class EcpprogHookBinaryRunner(ZephyrBinaryRunner):
     '''Runner front-end for programming the FPGA flash at some offset.'''
 
-    def __init__(self, cfg, host=None, script=[], ecpprog=None, mpremote=None):
+    def __init__(self, cfg, host=None, script=[], ecpprog=None, mpremote=None, device=None):
         super().__init__(cfg)
         self.host = host
         self.script = script
         self.ecpprog = ecpprog
+        self.device = device
         self.mpremote = mpremote
 
     @classmethod
@@ -43,6 +44,10 @@ class EcpprogHookBinaryRunner(ZephyrBinaryRunner):
             help='SSH host to connect to (optional)'
         )
         parser.add_argument(
+            '--device', dest='device',
+            help='Device to connect to using ecpprog -d flag (optional)'
+        )
+        parser.add_argument(
             '--mpremote', dest='mpremote', default='.local/bin/mpremote',
             help='Path to the mpremote binary on the remote host'
         )
@@ -58,7 +63,8 @@ class EcpprogHookBinaryRunner(ZephyrBinaryRunner):
     @classmethod
     def do_create(cls, cfg, args):
         return EcpprogHookBinaryRunner(cfg, host=args.host, script=args.script,
-                                       mpremote=args.mpremote, ecpprog=args.ecpprog)
+                                       mpremote=args.mpremote, ecpprog=args.ecpprog,
+                                       device=args.device)
 
     def do_run_mpremote(self, prefix):
         command = list(prefix)
@@ -74,7 +80,12 @@ class EcpprogHookBinaryRunner(ZephyrBinaryRunner):
         command = list(prefix)
         build_conf = BuildConfiguration(self.cfg.build_dir)
         load_offset = build_conf.get('CONFIG_FLASH_LOAD_OFFSET', 0)
-        command.extend(('ecpprog', '-o', hex(load_offset), '-'))
+        command.extend(('ecpprog', '-o', hex(load_offset)))
+
+        if self.device is not None:
+            command.extend(('-d', self.device))
+
+        command.append('-')
 
         self.logger.info(' '.join(command) + ' <' + self.cfg.bin_file)
         fd = os.open(self.cfg.bin_file , os.O_RDONLY)

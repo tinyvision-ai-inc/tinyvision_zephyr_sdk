@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-&csi0 { status = "okay"; };
+&unpacker0 { status = "okay"; };
 &stacker { status = "okay"; };
 
-&csi0_ep_out2 {
+&unpacker0_ep_out {
 	remote-endpoint-label = "stacker_ep_in0";
 };
 
 &stacker_ep_in0 {
-	remote-endpoint-label = "csi0_ep_out2";
+	remote-endpoint-label = "unpacker0_ep_out";
 };
