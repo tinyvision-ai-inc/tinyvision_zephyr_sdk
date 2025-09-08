@@ -197,6 +197,8 @@ static const DEVICE_API(video, tvai_stats_driver_api) = {
 
 DT_INST_FOREACH_STATUS_OKAY(TVAI_STATS_INIT)
 
+#ifdef CONFIG_SHELL
+
 static bool device_is_video_and_ready(const struct device *dev)
 {
 	return device_is_ready(dev) && DEVICE_API_IS(video, dev);
@@ -291,3 +293,5 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(tvai_stats, &sub_tvai_stats, "tinyVision.ai tvai_stats and statistics", NULL);
+
+#endif /* CONFIG_SHELL */

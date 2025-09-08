@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <mem.h>
+
 / {
 	compatible = "tinyvision,tinyclunx33";
 	model = "tinyvision,tinyclunx33";
@@ -39,23 +41,43 @@
 
 		/* Core SoC soft-peripherals */
 
-		flash0: flash@20000000 {
-			compatible = "soc-nv-flash";
-			reg = <0x20000000 0x1000000>;
+		//flashctrl: flash-controller@e0000000 {
+		flashctrl: flash-controller@e001f000 {
+			compatible = "tinyvision,flash";
+			//reg = <0xe0000000 0x30>;
+			reg = <0xe001f000 0x30>;
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-			partitions {
-				compatible = "fixed-partitions";
+			flash0: flash@20000000 {
+				compatible = "soc-nv-flash";
+				reg = <0x20000000 0x1000000>;
 				#address-cells = <1>;
-				#size-cells = <1>;
+				#size-cells = <0>;
 
-				boot_partition: partition@0 {
-					label = "fpga";
-					reg = <0x000000 0x100000>;
-				};
+				write-block-size = <256>;
+				erase-block-size = <DT_SIZE_K(4)>;
+				//jedec-id = [ef 60 18];
 
-				slot0_partition: partition@100000 {
-					label = "image-0";
-					reg = <0x100000 0x100000>;
+				partitions {
+					compatible = "fixed-partitions";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					boot_partition: partition@0 {
+						label = "fpga";
+						reg = <0x000000 0x200000>;
+					};
+
+					slot0_partition: partition@100000 {
+						label = "image-0";
+						reg = <0x200000 0x200000>;
+					};
+
+					storage_partition: partition@200000 {
+						label = "storage";
+						reg = <0x400000 0x200000>;
+					};
 				};
 			};
 		};
