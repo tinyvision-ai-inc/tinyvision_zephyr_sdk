@@ -24,3 +24,31 @@
 &uvcmanager0 {
 	usb-endpoint = <0x81>;
 };
+
+/* Camera 0 config */
+
+/ {
+	imx219_input_clock: imx219-input-clock {
+		compatible = "fixed-clock";
+		clock-frequency = <24000000>;
+		#clock-cells = <0>;
+	};
+};
+
+&i2c0ch0 {
+	imx219@10 {
+		compatible = "sony,imx219";
+		reg = <0x10>;
+		clocks = <&imx219_input_clock>;
+
+		port {
+			imx219_ep_out: endpoint {
+				remote-endpoint-label = "csi0_ep_in";
+			};
+		};
+	};
+};
+
+&csi0_ep_in {
+	remote-endpoint-label = "imx219_ep_out";
+};

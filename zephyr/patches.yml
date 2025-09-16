@@ -7,15 +7,6 @@ patches:
   date: '2025-07-14'
   merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/82801
   module: zephyr
-  path: zephyr/pr-usb3.patch
+  path: zephyr_usb3.patch
   sha256sum: 6d89d0a3d41de1fac4fdef631c3b8ed9276ea6b8c5d9d4c2d502efb97cdb9e3e
-  upstreamable: true
-
-- author: Josuah Demangeon
-  email: me@josuah.net
-  date: '2025-04-02'
-  merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/88011
-  module: zephyr
-  path: pr-imx219.patch
-  sha256sum: 83bda2db0474b2cdb14611673b4ba64b55c777098df2109cef008ee9db08a79f
   upstreamable: true

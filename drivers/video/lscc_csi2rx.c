@@ -159,6 +159,8 @@ static const DEVICE_API(video, lscc_csi2rx_driver_api) = {
 
 DT_INST_FOREACH_STATUS_OKAY(LSCC_CSI2RX_DEVICE_DEFINE)
 
+/* Shell commands */
+
 static bool device_is_video_and_ready(const struct device *dev)
 {
 	return device_is_ready(dev) && DEVICE_API_IS(video, dev);
